@@ -1,0 +1,13 @@
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Build outputs
+**/target/
+**/build/
+
