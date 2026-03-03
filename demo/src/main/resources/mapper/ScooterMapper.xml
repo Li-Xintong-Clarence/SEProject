@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.ScooterMapper">
+    <resultMap id="BaseResultMap" type="com.example.demo.entity.Scooter">
+        <id column="id" property="id"/>
+        <result column="scooter_number" property="scooterNumber"/>
+        <result column="status" property="status"/>
+        <result column="battery_level" property="batteryLevel"/>
+        <result column="latitude" property="latitude"/>
+        <result column="longitude" property="longitude"/>
+        <result column="location" property="location"/>
+        <result column="last_maintenance_date" property="lastMaintenanceDate"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT * FROM scooter
+    </select>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM scooter WHERE id = #{id}
+    </select>
+
+    <select id="findAvailable" resultMap="BaseResultMap">
+        SELECT * FROM scooter WHERE status = 'AVAILABLE'
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO scooter (scooter_number, status, battery_level, latitude, longitude, location, last_maintenance_date)
+        VALUES (#{scooterNumber}, #{status}, #{batteryLevel}, #{latitude}, #{longitude}, #{location}, #{lastMaintenanceDate})
+    </insert>
+
+    <update id="update">
+        UPDATE scooter
+        SET scooter_number = #{scooterNumber},
+            status = #{status},
+            battery_level = #{batteryLevel},
+            latitude = #{latitude},
+            longitude = #{longitude},
+            location = #{location},
+            last_maintenance_date = #{lastMaintenanceDate}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM scooter WHERE id = #{id}
+    </delete>
+</mapper>
