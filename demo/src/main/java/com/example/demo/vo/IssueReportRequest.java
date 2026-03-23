@@ -8,6 +8,6 @@ import lombok.Data;
  */
 @Data
 public class IssueReportRequest {
-    private Long scooterId;      // 出现问题的滑板车ID
+    private Long scooterId;       // 出现问题的滑板车ID
     private String description;  // 问题描述
 }

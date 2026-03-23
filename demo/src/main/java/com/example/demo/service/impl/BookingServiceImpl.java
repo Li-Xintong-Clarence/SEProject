@@ -1,263 +1,253 @@
 package com.example.demo.service.impl;
 
 import com.example.demo.entity.Booking;
-import com.example.demo.entity.HireOption;
+import com.example.demo.entity.Pricing;
 import com.example.demo.entity.Scooter;
+import com.example.demo.entity.User;
 import com.example.demo.mapper.BookingMapper;
-import com.example.demo.mapper.HireOptionMapper;
+import com.example.demo.mapper.PricingMapper;
 import com.example.demo.mapper.ScooterMapper;
+import com.example.demo.mapper.UserMapper;
 import com.example.demo.service.BookingService;
-import com.example.demo.vo.BookingRequest;
-import com.example.demo.vo.DailyIncomeResponse;
-import com.example.demo.vo.WeeklyIncomeResponse;
+import com.example.demo.service.EmailService;
+import com.example.demo.service.ScooterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
- * 预订服务实现类
- * 实现预订相关的业务逻辑
+ * 订单服务实现类
+ * 实现订单（租赁）相关的具体业务逻辑
+ * 包括创建订单、支付、取消、延期、统计等功能
  */
 @Service
 public class BookingServiceImpl implements BookingService {
 
     @Autowired
     private BookingMapper bookingMapper;
+
     @Autowired
-    private HireOptionMapper hireOptionMapper;
+    private PricingMapper pricingMapper;
+
     @Autowired
     private ScooterMapper scooterMapper;
 
-    /**
-     * 创建预订
-     * 1. 验证滑板车存在且可用
-     * 2. 获取租用选项信息
-     * 3. 计算预订结束时间
-     * 4. 创建预订记录
-     * 5. 更新滑板车状态为使用中
-     */
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private ScooterService scooterService;
+
+    @Autowired
+    private EmailService emailService;
+
     @Override
-    @Transactional
-    public Booking createBooking(Long userId, BookingRequest request) {
-        // 1. Verify scooter exists and is available
-        Scooter scooter = scooterMapper.findById(request.getScooterId());
-        if (scooter == null) {
-            throw new RuntimeException("Scooter not found");
-        }
-        if (!"AVAILABLE".equals(scooter.getStatus())) {
-            throw new RuntimeException("Scooter is not available for booking");
-        }
-
-        // 2. Get hire option details
-        List<HireOption> options = hireOptionMapper.findAllActive();
-        HireOption selectedOption = options.stream()
-                .filter(o -> o.getCode().equals(request.getHireOptionCode()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Invalid hire option"));
-
-        // 3. Calculate booking times
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime scheduledEnd = now.plusMinutes(selectedOption.getDurationMinutes());
-
-        // 4. Create booking
-        Booking booking = new Booking();
-        booking.setUserId(userId);
-        booking.setScooterId(request.getScooterId());
-        booking.setHireOptionCode(selectedOption.getCode());
-        booking.setStartTime(now);
-        booking.setScheduledEndTime(scheduledEnd);
-        booking.setCost(selectedOption.getPrice());
-        booking.setStatus("ACTIVE");
-        booking.setCreatedAt(now);
-
-        bookingMapper.insert(booking);
-
-        // 5. Update scooter status to IN_USE
-        scooter.setStatus("IN_USE");
-        scooterMapper.update(scooter);
-
-        return booking;
+    public List<Booking> findAll() {
+        return bookingMapper.findAll();
     }
 
-    /**
-     * 根据ID查询预订
-     */
+    @Override
+    public List<Booking> findByUserId(Long userId) {
+        return bookingMapper.findByUserId(userId);
+    }
+
     @Override
     public Booking findById(Long id) {
         return bookingMapper.findById(id);
     }
 
     /**
-     * 查询用户的所有预订
+     * 创建新订单
+     * 1. 根据hireOption获取价格
+     * 2. 设置订单状态为PENDING
+     * 3. 生成确认码
      */
     @Override
-    public List<Booking> findByUserId(Long userId) {
-        return bookingMapper.findByUserId(userId);
+    public boolean save(Booking booking) {
+        Pricing pricing = pricingMapper.findById(getPricingIdByOption(booking.getHireOption()));
+        if (pricing != null) {
+            booking.setTotalCost(pricing.getPrice());
+        }
+        booking.setStatus("PENDING");
+        booking.setCreatedAt(LocalDateTime.now());
+        booking.setConfirmationCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        return bookingMapper.insert(booking) > 0;
+    }
+
+    @Override
+    public boolean update(Booking booking) {
+        return bookingMapper.update(booking) > 0;
+    }
+
+    @Override
+    public boolean deleteById(Long id) {
+        return bookingMapper.deleteById(id) > 0;
     }
 
     /**
-     * 查询所有预订
+     * 延长租期
+     * 1. 查找订单，检查状态必须是ACTIVE
+     * 2. 计算新的结束时间
+     * 3. 增加相应费用
      */
     @Override
-    public List<Booking> findAll() {
-        return bookingMapper.findAll();
+    public boolean extendBooking(Long id, String hireOption) {
+        Booking booking = bookingMapper.findById(id);
+        if (booking == null || !"ACTIVE".equals(booking.getStatus())) {
+            return false;
+        }
+        LocalDateTime newEndTime = calculateEndTime(booking.getEndTime(), hireOption);
+        booking.setEndTime(newEndTime);
+
+        Pricing pricing = pricingMapper.findById(getPricingIdByOption(hireOption));
+        if (pricing != null) {
+            booking.setTotalCost(booking.getTotalCost().add(pricing.getPrice()));
+        }
+        return bookingMapper.update(booking) > 0;
     }
 
     /**
-     * 取消预订
-     * 1. 验证预订存在
-     * 2. 验证用户权限
-     * 3. 验证预订状态为ACTIVE
-     * 4. 更新预订状态为CANCELLED
-     * 5. 更新滑板车状态为AVAILABLE
+     * 取消订单
+     * 1. 检查订单状态（不能是已完成或已取消）
+     * 2. 更新状态为CANCELLED
+     * 3. 释放车辆（状态改回AVAILABLE）
      */
     @Override
     @Transactional
-    public boolean cancelBooking(Long bookingId, Long userId) {
-        Booking booking = bookingMapper.findById(bookingId);
-        if (booking == null) {
-            throw new RuntimeException("Booking not found");
+    public boolean cancelBooking(Long id) {
+        Booking booking = bookingMapper.findById(id);
+        if (booking == null || "COMPLETED".equals(booking.getStatus()) || "CANCELLED".equals(booking.getStatus())) {
+            return false;
         }
-        if (!booking.getUserId().equals(userId)) {
-            throw new RuntimeException("Unauthorized to cancel this booking");
-        }
-        if (!"ACTIVE".equals(booking.getStatus())) {
-            throw new RuntimeException("Only active bookings can be cancelled");
-        }
+        booking.setStatus("CANCELLED");
 
-        // Update booking status to CANCELLED
-        bookingMapper.updateStatus(bookingId, "CANCELLED");
-
-        // Update scooter status back to AVAILABLE
-        Scooter scooter = scooterMapper.findById(booking.getScooterId());
-        if (scooter != null) {
-            scooter.setStatus("AVAILABLE");
-            scooterMapper.update(scooter);
+        if (booking.getScooterId() != null) {
+            scooterService.updateStatus(booking.getScooterId(), "AVAILABLE");
         }
-
-        return true;
+        return bookingMapper.update(booking) > 0;
     }
 
     /**
-     * 延长预订时间
-     * 1. 验证预订存在
-     * 2. 验证用户权限
-     * 3. 验证预订状态为ACTIVE
-     * 4. 获取新的租用选项
-     * 5. 计算新的结束时间和费用
-     * 6. 更新预订信息
+     * 支付订单
+     * 1. 检查订单状态必须是PENDING
+     * 2. 更新状态为PAID，设置开始和结束时间
+     * 3. 更新车辆状态为IN_USE（使用中）
+     * 4. 发送确认邮件
      */
     @Override
     @Transactional
-    public boolean extendBooking(Long bookingId, Long userId, String hireOptionCode) {
-        Booking booking = bookingMapper.findById(bookingId);
-        if (booking == null) {
-            throw new RuntimeException("Booking not found");
+    public boolean payBooking(Long id) {
+        Booking booking = bookingMapper.findById(id);
+        if (booking == null || !"PENDING".equals(booking.getStatus())) {
+            return false;
         }
-        if (!booking.getUserId().equals(userId)) {
-            throw new RuntimeException("Unauthorized to extend this booking");
+        booking.setStatus("PAID");
+        booking.setStartTime(LocalDateTime.now());
+        booking.setEndTime(calculateEndTime(booking.getStartTime(), booking.getHireOption()));
+
+        if (booking.getScooterId() != null) {
+            scooterService.updateStatus(booking.getScooterId(), "IN_USE");
         }
-        if (!"ACTIVE".equals(booking.getStatus())) {
-            throw new RuntimeException("Only active bookings can be extended");
-        }
 
-        // Get new hire option
-        List<HireOption> options = hireOptionMapper.findAllActive();
-        HireOption newOption = options.stream()
-                .filter(o -> o.getCode().equals(hireOptionCode))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Invalid hire option"));
-
-        // Calculate new end time
-        LocalDateTime currentEnd = booking.getScheduledEndTime();
-        LocalDateTime newEnd = currentEnd.plusMinutes(newOption.getDurationMinutes());
-
-        // Add cost difference
-        BigDecimal additionalCost = newOption.getPrice().subtract(booking.getCost());
-        booking.setCost(booking.getCost().add(additionalCost));
-        booking.setScheduledEndTime(newEnd);
-        booking.setHireOptionCode(hireOptionCode);
-
-        bookingMapper.update(booking);
-        return true;
+        sendConfirmationEmail(booking);
+        return bookingMapper.update(booking) > 0;
     }
 
     /**
-     * 获取日收入统计
-     * 返回过去7天每天的收入数据
+     * 发送预订确认邮件
+     * 包含：确认码、车辆编号、租赁选项、时间、总费用
      */
-    @Override
-    public DailyIncomeResponse getDailyIncome() {
-        LocalDateTime endDate = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0);
-        LocalDateTime startDate = endDate.minusDays(7);
-
-        String startStr = startDate.toString().replace("T", " ");
-        String endStr = endDate.toString().replace("T", " ");
-
-        List<Map<String, Object>> results = bookingMapper.findDailyIncome(startStr, endStr);
-
-        Map<String, BigDecimal> dailyIncome = new LinkedHashMap<>();
-        BigDecimal total = BigDecimal.ZERO;
-
-        for (LocalDate d = startDate.toLocalDate(); !d.isAfter(endDate.minusDays(1).toLocalDate()); d = d.plusDays(1)) {
-            String dateStr = d.toString();
-            BigDecimal dayTotal = BigDecimal.ZERO;
-            for (Map<String, Object> row : results) {
-                Object dateObj = row.get("bookingDate");
-                if (dateObj != null && dateObj.toString().equals(dateStr)) {
-                    dayTotal = new BigDecimal(row.get("totalCost").toString());
-                    break;
-                }
+    private void sendConfirmationEmail(Booking booking) {
+        try {
+            User user = userMapper.findById(booking.getUserId());
+            if (user == null || user.getEmail() == null) {
+                return;
             }
-            dailyIncome.put(dateStr, dayTotal);
-            total = total.add(dayTotal);
-        }
 
-        DailyIncomeResponse response = new DailyIncomeResponse();
-        response.setStartDate(startDate.toLocalDate().toString());
-        response.setEndDate(endDate.minusDays(1).toLocalDate().toString());
-        response.setDailyIncome(dailyIncome);
-        response.setTotalIncome(total);
-        return response;
+            Scooter scooter = null;
+            if (booking.getScooterId() != null) {
+                scooter = scooterMapper.findById(booking.getScooterId());
+            }
+
+            String scooterNumber = scooter != null ? scooter.getScooterNumber() : "N/A";
+            String startTime = booking.getStartTime() != null ? booking.getStartTime().toString() : "N/A";
+            String endTime = booking.getEndTime() != null ? booking.getEndTime().toString() : "N/A";
+
+            emailService.sendBookingConfirmation(
+                user.getEmail(),
+                user.getUsername(),
+                booking.getConfirmationCode(),
+                scooterNumber,
+                booking.getHireOption(),
+                startTime,
+                endTime,
+                booking.getTotalCost() != null ? booking.getTotalCost().doubleValue() : 0.0
+            );
+        } catch (Exception e) {
+            System.err.println("发送确认邮件失败: " + e.getMessage());
+        }
     }
 
     /**
-     * 获取周收入统计（按租用选项分组）
-     * 返回过去7天按租用选项统计的收入数据
+     * 根据租赁选项获取价格ID
+     * 1hr -> 1, 4hr -> 2, 1day -> 3, 1week -> 4
+     */
+    private Long getPricingIdByOption(String option) {
+        return switch (option) {
+            case "1hr" -> 1L;
+            case "4hr" -> 2L;
+            case "1day" -> 3L;
+            case "1week" -> 4L;
+            default -> 1L;
+        };
+    }
+
+    /**
+     * 计算结束时间
+     * 根据租赁选项计算租期结束时间
+     */
+    private LocalDateTime calculateEndTime(LocalDateTime startTime, String hireOption) {
+        return switch (hireOption) {
+            case "1hr" -> startTime.plusHours(1);
+            case "4hr" -> startTime.plusHours(4);
+            case "1day" -> startTime.plusDays(1);
+            case "1week" -> startTime.plusWeeks(1);
+            default -> startTime.plusHours(1);
+        };
+    }
+
+    /**
+     * 获取用户统计信息
+     * 返回：订单总数、总消费金额、总租赁时长
      */
     @Override
-    public WeeklyIncomeResponse getWeeklyIncome() {
-        // Get last 7 days
-        LocalDateTime endDate = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0);
-        LocalDateTime startDate = endDate.minusDays(7);
+    public Map<String, Object> getUserStats(Long userId) {
+        int totalBookings = bookingMapper.countByUserId(userId);
+        double totalCost = bookingMapper.sumTotalCostByUserId(userId);
 
-        String startStr = startDate.toString().replace("T", " ");
-        String endStr = endDate.toString().replace("T", " ");
-
-        List<Map<String, Object>> results = bookingMapper.findWeeklyIncomeByOption(startStr, endStr);
-
-        Map<String, BigDecimal> incomeByOption = new LinkedHashMap<>();
-        BigDecimal total = BigDecimal.ZERO;
-
-        for (Map<String, Object> row : results) {
-            String code = (String) row.get("hireOptionCode");
-            BigDecimal cost = row.get("totalCost") != null ? new BigDecimal(row.get("totalCost").toString()) : BigDecimal.ZERO;
-            incomeByOption.put(code, cost);
-            total = total.add(cost);
+        List<Booking> userBookings = bookingMapper.findByUserId(userId);
+        double totalDuration = 0;
+        for (Booking b : userBookings) {
+            if ("PAID".equals(b.getStatus()) || "COMPLETED".equals(b.getStatus())) {
+                totalDuration += switch (b.getHireOption()) {
+                    case "1hr" -> 1;
+                    case "4hr" -> 4;
+                    case "1day" -> 24;
+                    case "1week" -> 168;
+                    default -> 1;
+                };
+            }
         }
 
-        WeeklyIncomeResponse response = new WeeklyIncomeResponse();
-        response.setStartDate(startDate.toLocalDate().toString());
-        response.setEndDate(endDate.minusDays(1).toLocalDate().toString());
-        response.setIncomeByOption(incomeByOption);
-        response.setTotalIncome(total);
-
-        return response;
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalBookings", totalBookings);
+        stats.put("totalDuration", totalDuration);
+        stats.put("totalCost", totalCost);
+        return stats;
     }
 }

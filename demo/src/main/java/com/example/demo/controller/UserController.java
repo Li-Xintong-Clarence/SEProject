@@ -2,15 +2,19 @@ package com.example.demo.controller;
 
 import com.example.demo.common.Result;
 import com.example.demo.entity.User;
+import com.example.demo.service.BookingService;
 import com.example.demo.service.UserService;
-import com.example.demo.util.JwtUtil;
-import com.example.demo.vo.LoginRequest;
-import com.example.demo.vo.LoginResponse;
-import com.example.demo.vo.RegisterRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * 用户控制器
+ * 处理用户信息查看、修改、删除等操作
+ * 路径: /api/users/*
+ */
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin
@@ -19,9 +23,12 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private BookingService bookingService;
+
     /**
-     * 获取所有用户列表
-     * @return 所有用户的列表
+     * 获取所有用户列表（管理员）
+     * GET /api/users
      */
     @GetMapping
     public Result<List<User>> findAll() {
@@ -29,9 +36,8 @@ public class UserController {
     }
 
     /**
-     * 根据用户ID查询单个用户信息
-     * @param id 用户ID
-     * @return 用户信息（密码已置空）
+     * 根据ID获取用户信息
+     * GET /api/users/{id}
      */
     @GetMapping("/{id}")
     public Result<User> findById(@PathVariable Long id) {
@@ -44,45 +50,35 @@ public class UserController {
     }
 
     /**
-     * 用户注册接口
-     * @param request 包含用户名、密码、邮箱、手机号等注册信息
-     * @return 注册成功返回用户信息，失败返回错误信息
+     * 获取当前登录用户信息
+     * GET /api/users/me
+     * 需要登录，从JWT中提取用户ID
      */
-    @PostMapping("/register")
-    public Result<User> register(@RequestBody RegisterRequest request) {
-        if (request.getUsername() == null || request.getPassword() == null) {
-            return Result.error("Username and password are required");
-        }
-        User user = userService.register(request);
+    @GetMapping("/me")
+    public Result<User> getCurrentUser(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        User user = userService.findById(userId);
         if (user != null) {
+            user.setPassword(null);
             return Result.success(user);
         }
-        return Result.error("Username already exists");
+        return Result.error("User not found");
     }
 
     /**
-     * 用户登录接口
-     * @param request 包含用户名和密码
-     * @return 登录成功返回JWT令牌和用户信息，失败返回错误信息
+     * 获取当前用户的统计数据（订单数、总消费等）
+     * GET /api/users/me/stats
      */
-    @PostMapping("/login")
-    public Result<LoginResponse> login(@RequestBody LoginRequest request) {
-        if (request.getUsername() == null || request.getPassword() == null) {
-            return Result.error("Username and password are required");
-        }
-        User user = userService.login(request);
-        if (user != null) {
-            String token = JwtUtil.generateToken(user.getUsername(), user.getRole());
-            LoginResponse response = new LoginResponse(token, user.getUsername(), user.getRole(), user.getId());
-            return Result.success(response);
-        }
-        return Result.error("Invalid username or password");
+    @GetMapping("/me/stats")
+    public Result<Map<String, Object>> getUserStats(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        Map<String, Object> stats = bookingService.getUserStats(userId);
+        return Result.success(stats);
     }
 
     /**
-     * 管理员添加用户（手动创建用户）
-     * @param user 用户信息
-     * @return 创建成功返回成功信息，失败返回错误信息
+     * 创建新用户
+     * POST /api/users
      */
     @PostMapping
     public Result<String> add(@RequestBody User user) {
@@ -94,8 +90,7 @@ public class UserController {
 
     /**
      * 更新用户信息
-     * @param user 用户信息（包含ID）
-     * @return 更新成功返回成功信息，失败返回错误信息
+     * PUT /api/users
      */
     @PutMapping
     public Result<String> update(@RequestBody User user) {
@@ -107,8 +102,7 @@ public class UserController {
 
     /**
      * 删除用户
-     * @param id 用户ID
-     * @return 删除成功返回成功信息，失败返回错误信息
+     * DELETE /api/users/{id}
      */
     @DeleteMapping("/{id}")
     public Result<String> delete(@PathVariable Long id) {

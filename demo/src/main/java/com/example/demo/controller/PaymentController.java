@@ -39,7 +39,7 @@ public class PaymentController {
 
         // Set amount from booking if not provided
         if (request.getAmount() == null) {
-            request.setAmount(booking.getCost().doubleValue());
+            request.setAmount(booking.getTotalCost().doubleValue());
         }
 
         PaymentResponse response = paymentService.processPayment(request);

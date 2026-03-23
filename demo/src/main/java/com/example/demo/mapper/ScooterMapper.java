@@ -1,53 +1,36 @@
 package com.example.demo.mapper;
 
 import com.example.demo.entity.Scooter;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 /**
- * 滑板车Mapper接口
- * 定义滑板车相关的数据库操作方法
+ * 电动车Mapper接口
+ * 对应数据库scooters表，使用MyBatis注解方式执行SQL
  */
 @Mapper
 public interface ScooterMapper {
-    /**
-     * 查询所有滑板车
-     * @return 所有滑板车列表
-     */
+    @Select("SELECT * FROM scooters")
     List<Scooter> findAll();
 
-    /**
-     * 根据ID查询滑板车
-     * @param id 滑板车ID
-     * @return 滑板车对象
-     */
-    Scooter findById(@Param("id") Long id);
+    @Select("SELECT * FROM scooters WHERE id = #{id}")
+    Scooter findById(Long id);
 
-    /**
-     * 查询所有可用的滑板车
-     * @return 可用滑板车列表
-     */
+    @Select("SELECT * FROM scooters WHERE status = 'AVAILABLE'")
     List<Scooter> findAvailable();
 
-    /**
-     * 插入滑板车
-     * @param scooter 滑板车对象
-     * @return 影响的行数
-     */
+    @Insert("INSERT INTO scooters(scooter_number, status, battery_level, latitude, longitude, location, last_maintenance_date) " +
+            "VALUES(#{scooterNumber}, #{status}, #{batteryLevel}, #{latitude}, #{longitude}, #{location}, #{lastMaintenanceDate})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Scooter scooter);
 
-    /**
-     * 更新滑板车信息
-     * @param scooter 滑板车对象
-     * @return 影响的行数
-     */
+    @Update("UPDATE scooters SET scooter_number=#{scooterNumber}, status=#{status}, battery_level=#{batteryLevel}, " +
+            "latitude=#{latitude}, longitude=#{longitude}, location=#{location}, last_maintenance_date=#{lastMaintenanceDate} WHERE id=#{id}")
     int update(Scooter scooter);
 
-    /**
-     * 删除滑板车
-     * @param id 滑板车ID
-     * @return 影响的行数
-     */
-    int deleteById(@Param("id") Long id);
+    @Delete("DELETE FROM scooters WHERE id = #{id}")
+    int deleteById(Long id);
+
+    @Update("UPDATE scooters SET status=#{status} WHERE id=#{id}")
+    int updateStatus(Long id, String status);
 }

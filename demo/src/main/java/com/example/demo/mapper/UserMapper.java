@@ -1,54 +1,53 @@
 package com.example.demo.mapper;
 
 import com.example.demo.entity.User;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 /**
  * 用户Mapper接口
- * 定义用户相关的数据库操作方法
+ * 对应数据库users表，使用MyBatis注解方式执行SQL
  */
 @Mapper
 public interface UserMapper {
     /**
-     * 查询所有用户
-     * @return 用户列表
-     */
-    List<User> findAll();
-
-    /**
      * 根据ID查询用户
-     * @param id 用户ID
-     * @return 用户对象
      */
-    User findById(@Param("id") Long id);
+    @Select("SELECT * FROM users WHERE id = #{id}")
+    User findById(Long id);
 
     /**
      * 根据用户名查询用户
-     * @param username 用户名
-     * @return 用户对象
      */
-    User findByUsername(@Param("username") String username);
+    @Select("SELECT * FROM users WHERE username = #{username}")
+    User findByUsername(String username);
 
     /**
-     * 插入用户
-     * @param user 用户对象
-     * @return 影响的行数
+     * 查询所有用户
      */
+    @Select("SELECT * FROM users")
+    List<User> findAll();
+
+    /**
+     * 插入新用户
+     * useGeneratedKeys: 自动生成主键
+     * keyProperty: 将生成的主键赋值给user对象的id属性
+     */
+    @Insert("INSERT INTO users(username, password, email, phone, role, registration_date, is_active) " +
+            "VALUES(#{username}, #{password}, #{email}, #{phone}, #{role}, #{registrationDate}, #{isActive})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(User user);
 
     /**
      * 更新用户信息
-     * @param user 用户对象
-     * @return 影响的行数
      */
+    @Update("UPDATE users SET username=#{username}, password=#{password}, email=#{email}, " +
+            "phone=#{phone}, role=#{role}, is_active=#{isActive} WHERE id=#{id}")
     int update(User user);
 
     /**
-     * 删除用户
-     * @param id 用户ID
-     * @return 影响的行数
+     * 根据ID删除用户
      */
-    int deleteById(@Param("id") Long id);
+    @Delete("DELETE FROM users WHERE id = #{id}")
+    int deleteById(Long id);
 }

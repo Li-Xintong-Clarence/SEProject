@@ -1,72 +1,39 @@
 package com.example.demo.mapper;
 
 import com.example.demo.entity.Booking;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 import java.util.List;
-import java.util.Map;
 
 /**
- * 预订Mapper接口
- * 定义预订相关的数据库操作方法
+ * 订单Mapper接口
+ * 对应数据库booking表，使用MyBatis注解方式执行SQL
  */
 @Mapper
 public interface BookingMapper {
-    /**
-     * 插入预订记录
-     * @param booking 预订对象
-     * @return 影响的行数
-     */
-    int insert(Booking booking);
-
-    /**
-     * 根据ID查询预订
-     * @param id 预订ID
-     * @return 预订对象
-     */
-    Booking findById(@Param("id") Long id);
-
-    /**
-     * 查询用户的所有预订
-     * @param userId 用户ID
-     * @return 预订列表
-     */
-    List<Booking> findByUserId(@Param("userId") Long userId);
-
-    /**
-     * 查询所有预订
-     * @return 所有预订列表
-     */
+    @Select("SELECT * FROM booking")
     List<Booking> findAll();
 
-    /**
-     * 更新预订信息
-     * @param booking 预订对象
-     * @return 影响的行数
-     */
+    @Select("SELECT * FROM booking WHERE user_id = #{userId}")
+    List<Booking> findByUserId(Long userId);
+
+    @Select("SELECT * FROM booking WHERE id = #{id}")
+    Booking findById(Long id);
+
+    @Insert("INSERT INTO booking(user_id, scooter_id, hire_option, start_time, end_time, total_cost, status, created_at, confirmation_code) " +
+            "VALUES(#{userId}, #{scooterId}, #{hireOption}, #{startTime}, #{endTime}, #{totalCost}, #{status}, #{createdAt}, #{confirmationCode})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insert(Booking booking);
+
+    @Update("UPDATE booking SET user_id=#{userId}, scooter_id=#{scooterId}, hire_option=#{hireOption}, " +
+            "start_time=#{startTime}, end_time=#{endTime}, total_cost=#{totalCost}, status=#{status}, confirmation_code=#{confirmationCode} WHERE id=#{id}")
     int update(Booking booking);
 
-    /**
-     * 更新预订状态
-     * @param id 预订ID
-     * @param status 新状态
-     * @return 影响的行数
-     */
-    int updateStatus(@Param("id") Long id, @Param("status") String status);
+    @Delete("DELETE FROM booking WHERE id = #{id}")
+    int deleteById(Long id);
 
-    /**
-     * 查询按租用选项分组的周收入
-     * @param startDate 开始日期
-     * @param endDate 结束日期
-     * @return 收入数据列表
-     */
-    List<Map<String, Object>> findWeeklyIncomeByOption(@Param("startDate") String startDate, @Param("endDate") String endDate);
+    @Select("SELECT COUNT(*) FROM booking WHERE user_id = #{userId}")
+    int countByUserId(Long userId);
 
-    /**
-     * 查询每日收入
-     * @param startDate 开始日期
-     * @param endDate 结束日期
-     * @return 每日收入数据列表
-     */
-    List<Map<String, Object>> findDailyIncome(@Param("startDate") String startDate, @Param("endDate") String endDate);
+    @Select("SELECT COALESCE(SUM(total_cost), 0) FROM booking WHERE user_id = #{userId} AND status IN ('PAID', 'COMPLETED')")
+    Double sumTotalCostByUserId(Long userId);
 }

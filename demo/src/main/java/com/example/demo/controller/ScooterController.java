@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 滑板车控制器
- * 处理滑板车管理相关的API请求（ID16：管理员配置滑板车）
- * 包括查询滑板车、添加滑板车、更新滑板车信息、删除滑板车等操作
+ * 电动车控制器
+ * 处理电动车（共享单车/滑板车）的增删改查操作
+ * 路径: /api/scooters/*
  */
 @RestController
 @RequestMapping("/api/scooters")
@@ -21,8 +21,8 @@ public class ScooterController {
     private ScooterService scooterService;
 
     /**
-     * 获取所有滑板车列表
-     * @return 所有滑板车的列表
+     * 获取所有电动车列表
+     * GET /api/scooters
      */
     @GetMapping
     public Result<List<Scooter>> findAll() {
@@ -30,8 +30,9 @@ public class ScooterController {
     }
 
     /**
-     * 获取所有可用的滑板车（状态为AVAILABLE）
-     * @return 可用滑板车列表
+     * 获取可用的电动车列表
+     * GET /api/scooters/available
+     * 返回状态为AVAILABLE的车辆
      */
     @GetMapping("/available")
     public Result<List<Scooter>> findAvailable() {
@@ -39,9 +40,8 @@ public class ScooterController {
     }
 
     /**
-     * 根据滑板车ID查询滑板车详情
-     * @param id 滑板车ID
-     * @return 滑板车详情
+     * 根据ID获取电动车信息
+     * GET /api/scooters/{id}
      */
     @GetMapping("/{id}")
     public Result<Scooter> findById(@PathVariable Long id) {
@@ -53,9 +53,8 @@ public class ScooterController {
     }
 
     /**
-     * 添加新的滑板车（管理员功能）
-     * @param scooter 滑板车信息
-     * @return 创建成功返回成功信息，失败返回错误信息
+     * 添加新电动车（管理员）
+     * POST /api/scooters
      */
     @PostMapping
     public Result<String> add(@RequestBody Scooter scooter) {
@@ -66,9 +65,8 @@ public class ScooterController {
     }
 
     /**
-     * 更新滑板车信息
-     * @param scooter 滑板车信息（包含ID）
-     * @return 更新成功返回成功信息，失败返回错误信息
+     * 更新电动车信息（管理员）
+     * PUT /api/scooters
      */
     @PutMapping
     public Result<String> update(@RequestBody Scooter scooter) {
@@ -79,9 +77,8 @@ public class ScooterController {
     }
 
     /**
-     * 删除滑板车
-     * @param id 滑板车ID
-     * @return 删除成功返回成功信息，失败返回错误信息
+     * 删除电动车（管理员）
+     * DELETE /api/scooters/{id}
      */
     @DeleteMapping("/{id}")
     public Result<String> delete(@PathVariable Long id) {
@@ -92,18 +89,15 @@ public class ScooterController {
     }
 
     /**
-     * Backlog ID16: Admin - configure scooter details.
+     * 更新电动车状态（管理员）
+     * PUT /api/scooters/{id}/status?status=AVAILABLE
+     * 状态可选: AVAILABLE（可用）, IN_USE（使用中）, MAINTENANCE（维护中）, RETIRED（已退役）
      */
     @PutMapping("/{id}/status")
     public Result<String> updateStatus(@PathVariable Long id, @RequestParam String status) {
-        Scooter scooter = scooterService.findById(id);
-        if (scooter == null) {
-            return Result.error("Scooter not found");
+        if (scooterService.updateStatus(id, status)) {
+            return Result.success("Status updated successfully");
         }
-        scooter.setStatus(status);
-        if (scooterService.update(scooter)) {
-            return Result.success("Scooter status updated to " + status);
-        }
-        return Result.error("Failed to update scooter status");
+        return Result.error("Failed to update status");
     }
 }

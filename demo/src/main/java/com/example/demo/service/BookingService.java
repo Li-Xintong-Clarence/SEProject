@@ -1,70 +1,54 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Booking;
-import com.example.demo.vo.BookingRequest;
-import com.example.demo.vo.DailyIncomeResponse;
-import com.example.demo.vo.WeeklyIncomeResponse;
 import java.util.List;
+import java.util.Map;
 
 /**
- * 预订服务接口
- * 定义预订相关的业务逻辑方法（ID5：预订滑板车）
+ * 订单服务接口
+ * 定义订单（租赁）相关的业务操作
  */
 public interface BookingService {
     /**
-     * 创建预订
-     * @param userId 用户ID
-     * @param request 预订请求（包含滑板车ID和租用选项代码）
-     * @return 创建的预订对象
-     */
-    Booking createBooking(Long userId, BookingRequest request);
-
-    /**
-     * 根据ID查询预订
-     * @param id 预订ID
-     * @return 预订对象，不存在返回null
-     */
-    Booking findById(Long id);
-
-    /**
-     * 查询用户的所有预订
-     * @param userId 用户ID
-     * @return 预订列表
-     */
-    List<Booking> findByUserId(Long userId);
-
-    /**
-     * 查询所有预订（管理员功能）
-     * @return 所有预订列表
+     * 查询所有订单（管理员）
      */
     List<Booking> findAll();
-
     /**
-     * 取消预订
-     * @param bookingId 预订ID
-     * @param userId 用户ID（验证是否为自己的预订）
-     * @return 是否取消成功
+     * 查询用户的订单列表
      */
-    boolean cancelBooking(Long bookingId, Long userId);
-
+    List<Booking> findByUserId(Long userId);
     /**
-     * 延长预订时间
-     * @param bookingId 预订ID
-     * @param userId 用户ID
-     * @param hireOptionCode 新的租用选项代码
-     * @return 是否延长成功
+     * 根据ID查询订单
      */
-    boolean extendBooking(Long bookingId, Long userId, String hireOptionCode);
-
+    Booking findById(Long id);
     /**
-     * 获取周收入统计（ID19：按租用选项查看周收入）
-     * @return 周收入统计数据
+     * 创建新订单
      */
-    WeeklyIncomeResponse getWeeklyIncome();
-
+    boolean save(Booking booking);
     /**
-     * 获取日收入统计（ID20：按天查看收入）
-     * @return 日收入统计数据
+     * 更新订单信息
      */
-    DailyIncomeResponse getDailyIncome();
+    boolean update(Booking booking);
+    /**
+     * 删除订单
+     */
+    boolean deleteById(Long id);
+    /**
+     * 延长租期
+     * @param id 订单ID
+     * @param hireOption 延长的时长选项（1hr, 4hr, 1day, 1week）
+     */
+    boolean extendBooking(Long id, String hireOption);
+    /**
+     * 取消订单
+     */
+    boolean cancelBooking(Long id);
+    /**
+     * 支付订单
+     */
+    boolean payBooking(Long id);
+    /**
+     * 获取用户统计信息（订单数、总消费、总时长）
+     */
+    Map<String, Object> getUserStats(Long userId);
 }

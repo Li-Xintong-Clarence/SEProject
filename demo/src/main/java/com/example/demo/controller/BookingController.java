@@ -2,20 +2,18 @@ package com.example.demo.controller;
 
 import com.example.demo.common.Result;
 import com.example.demo.entity.Booking;
-import com.example.demo.entity.User;
 import com.example.demo.service.BookingService;
-import com.example.demo.service.UserService;
-import com.example.demo.vo.BookingRequest;
-import com.example.demo.vo.DailyIncomeResponse;
-import com.example.demo.vo.WeeklyIncomeResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * 预订控制器
- * 处理滑板车租赁预订相关的API请求（ID5：预订滑板车）
- * 包括创建预订、查询预订、取消预订、延长预订等操作
+ * 订单控制器
+ * 处理租赁订单的创建、查询、支付、取消、延期等操作
+ * 路径: /api/bookings/*
  */
 @RestController
 @RequestMapping("/api/bookings")
@@ -24,42 +22,38 @@ public class BookingController {
 
     @Autowired
     private BookingService bookingService;
-    @Autowired
-    private UserService userService;
 
     /**
-     * 创建预订（ID5：预订滑板车）
-     * 需要用户登录（通过Authorization header传递JWT令牌）
-     * @param request 预订请求，包含滑板车ID和租用选项代码
-     * @param token JWT令牌（格式：Bearer xxx）
-     * @return 预订成功返回预订信息，失败返回错误信息
+     * 创建新订单（租车）
+     * POST /api/bookings
+     * 参数: scooterId, hireOption, startTime 等
      */
     @PostMapping
-    public Result<Booking> create(@RequestBody BookingRequest request,
-                                  @RequestHeader(value = "Authorization", required = false) String token) {
-        if (token == null || !token.startsWith("Bearer ")) {
-            return Result.error("Unauthorized");
-        }
-        String username = token.replace("Bearer ", "");
-        User user = userService.findByUsername(username);
-        if (user == null) {
-            return Result.error("User not found");
-        }
-        try {
-            Booking booking = bookingService.createBooking(user.getId(), request);
+    public Result<Booking> create(@RequestBody Booking booking, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        booking.setUserId(userId);
+        if (bookingService.save(booking)) {
             return Result.success(booking);
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
         }
+        return Result.error("Failed to create booking");
     }
 
     /**
-     * 根据预订ID查询预订详情
-     * @param id 预订ID
-     * @return 预订详情
+     * 获取当前用户的订单列表
+     * GET /api/bookings
+     */
+    @GetMapping
+    public Result<List<Booking>> findMyBookings(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success(bookingService.findByUserId(userId));
+    }
+
+    /**
+     * 根据ID获取订单详情
+     * GET /api/bookings/{id}
      */
     @GetMapping("/{id}")
-    public Result<Booking> getById(@PathVariable Long id) {
+    public Result<Booking> findById(@PathVariable Long id) {
         Booking booking = bookingService.findById(id);
         if (booking != null) {
             return Result.success(booking);
@@ -68,94 +62,60 @@ public class BookingController {
     }
 
     /**
-     * 查询当前登录用户的所有预订记录
-     * 需要用户登录
-     * @param token JWT令牌（格式：Bearer xxx）
-     * @return 当前用户的所有预订列表
+     * 延长租期
+     * PUT /api/bookings/{id}/extend?hireOption=1day
+     * 参数: hireOption - 延长的时长选项
      */
-    @GetMapping("/my")
-    public Result<List<Booking>> myBookings(@RequestHeader(value = "Authorization", required = false) String token) {
-        if (token == null || !token.startsWith("Bearer ")) {
-            return Result.error("Unauthorized");
+    @PutMapping("/{id}/extend")
+    public Result<String> extend(@PathVariable Long id, @RequestParam String hireOption) {
+        if (bookingService.extendBooking(id, hireOption)) {
+            return Result.success("Booking extended successfully");
         }
-        String username = token.replace("Bearer ", "");
-        User user = userService.findByUsername(username);
-        if (user == null) {
-            return Result.error("User not found");
-        }
-        return Result.success(bookingService.findByUserId(user.getId()));
+        return Result.error("Failed to extend booking");
     }
 
     /**
-     * 查询所有预订记录（管理员功能）
-     * @return 所有预订列表
-     */
-    @GetMapping
-    public Result<List<Booking>> findAll() {
-        return Result.success(bookingService.findAll());
-    }
-
-    /**
-     * 取消预订
-     * 需要用户登录，只能取消自己创建的预订且状态为ACTIVE的预订
-     * @param id 预订ID
-     * @param token JWT令牌（格式：Bearer xxx）
-     * @return 取消成功返回成功信息，失败返回错误信息
+     * 取消订单
+     * POST /api/bookings/{id}/cancel
      */
     @PostMapping("/{id}/cancel")
-    public Result<String> cancel(@PathVariable Long id,
-                                 @RequestHeader(value = "Authorization", required = false) String token) {
-        if (token == null || !token.startsWith("Bearer ")) {
-            return Result.error("Unauthorized");
-        }
-        String username = token.replace("Bearer ", "");
-        User user = userService.findByUsername(username);
-        if (user == null) {
-            return Result.error("User not found");
-        }
-        try {
-            bookingService.cancelBooking(id, user.getId());
+    public Result<String> cancel(@PathVariable Long id) {
+        if (bookingService.cancelBooking(id)) {
             return Result.success("Booking cancelled successfully");
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
         }
+        return Result.error("Failed to cancel booking");
     }
 
     /**
-     * 查看周收入统计（ID19：按租用选项查看周收入）
-     * 返回过去7天的收入，按租用选项分组统计
-     * @return 周收入统计数据
+     * 支付订单
+     * POST /api/bookings/{id}/pay
      */
-    @GetMapping("/weekly-income")
-    public Result<WeeklyIncomeResponse> weeklyIncome() {
-        return Result.success(bookingService.getWeeklyIncome());
+    @PostMapping("/{id}/pay")
+    public Result<String> pay(@PathVariable Long id) {
+        if (bookingService.payBooking(id)) {
+            return Result.success("Payment successful");
+        }
+        return Result.error("Payment failed");
     }
 
     /**
-     * 延长预订时间（ID11：延长当前预订）
-     * 需要用户登录，只能延长自己创建的且状态为ACTIVE的预订
-     * @param id 预订ID
-     * @param hireOptionCode 新的租用选项代码（如从1HR续到4HR）
-     * @param token JWT令牌（格式：Bearer xxx）
-     * @return 延长成功返回成功信息，失败返回错误信息
+     * 获取订单确认信息（生成确认码等）
+     * GET /api/bookings/{id}/confirmation
      */
-    @PostMapping("/{id}/extend")
-    public Result<String> extend(@PathVariable Long id,
-                                 @RequestParam String hireOptionCode,
-                                 @RequestHeader(value = "Authorization", required = false) String token) {
-        if (token == null || !token.startsWith("Bearer ")) {
-            return Result.error("Unauthorized");
+    @GetMapping("/{id}/confirmation")
+    public Result<Map<String, Object>> getConfirmation(@PathVariable Long id) {
+        Booking booking = bookingService.findById(id);
+        if (booking == null) {
+            return Result.error("Booking not found");
         }
-        String username = token.replace("Bearer ", "");
-        User user = userService.findByUsername(username);
-        if (user == null) {
-            return Result.error("User not found");
-        }
-        try {
-            bookingService.extendBooking(id, user.getId(), hireOptionCode);
-            return Result.success("Booking extended successfully");
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
-        }
+        Map<String, Object> confirmation = new HashMap<>();
+        confirmation.put("confirmationCode", booking.getConfirmationCode());
+        confirmation.put("scooterId", booking.getScooterId());
+        confirmation.put("hireOption", booking.getHireOption());
+        confirmation.put("startTime", booking.getStartTime());
+        confirmation.put("endTime", booking.getEndTime());
+        confirmation.put("totalCost", booking.getTotalCost());
+        confirmation.put("status", booking.getStatus());
+        return Result.success(confirmation);
     }
 }
