@@ -7,6 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
+/**
+ * 电动车服务实现类
+ * 实现电动车相关的具体业务逻辑
+ */
 @Service
 public class ScooterServiceImpl implements ScooterService {
 
@@ -41,5 +45,10 @@ public class ScooterServiceImpl implements ScooterService {
     @Override
     public boolean deleteById(Long id) {
         return scooterMapper.deleteById(id) > 0;
+    }
+
+    @Override
+    public boolean updateStatus(Long id, String status) {
+        return scooterMapper.updateStatus(id, status) > 0;
     }
 }

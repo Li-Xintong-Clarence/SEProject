@@ -1,17 +1,30 @@
 # 服务器配置
 server:
   port: 8080
+  address: 0.0.0.0
 
 # Spring 配置
 spring:
   application:
     name: scooter-rental-system
-  # 数据库配置
+  # 数据库配置（本地开发见 README；云服务器请改为实际密码）
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/scooter_rental?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: root
+    password: zyx050712
+  # 邮件配置（开发环境可填占位；生产环境请配置真实 SMTP）
+  mail:
+    host: smtp.example.com
+    port: 587
+    username: your-email@example.com
+    password: your-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 # MyBatis 配置
 mybatis:
