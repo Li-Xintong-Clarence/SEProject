@@ -10,7 +10,7 @@ spring:
   # 数据库配置（云服务器）
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://47.108.188.221:3306/sep2db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://47.108.188.221:3306/scooter_rental?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: sep2user
     password: Sep2Pass2026!
   # 邮件配置（开发环境可填占位；生产环境请配置真实 SMTP）
