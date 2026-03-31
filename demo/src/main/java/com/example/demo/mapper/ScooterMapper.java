@@ -4,10 +4,6 @@ import com.example.demo.entity.Scooter;
 import org.apache.ibatis.annotations.*;
 import java.util.List;
 
-/**
- * 电动车Mapper接口
- * 对应数据库scooters表，使用MyBatis注解方式执行SQL
- */
 @Mapper
 public interface ScooterMapper {
     @Select("SELECT * FROM scooters")
@@ -24,13 +20,11 @@ public interface ScooterMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Scooter scooter);
 
-    @Update("UPDATE scooters SET scooter_number=#{scooterNumber}, status=#{status}, battery_level=#{batteryLevel}, " +
-            "latitude=#{latitude}, longitude=#{longitude}, location=#{location}, last_maintenance_date=#{lastMaintenanceDate} WHERE id=#{id}")
     int update(Scooter scooter);
-
-    @Delete("DELETE FROM scooters WHERE id = #{id}")
-    int deleteById(Long id);
 
     @Update("UPDATE scooters SET status=#{status} WHERE id=#{id}")
     int updateStatus(Long id, String status);
+
+    @Delete("DELETE FROM scooters WHERE id = #{id}")
+    int deleteById(Long id);
 }
