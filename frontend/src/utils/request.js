@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus'
 
 // 创建 axios 实例
 const request = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE || 'http://47.108.188.221:8080', // 从环境变量读取，方便切换
+    baseURL: import.meta.env.VITE_API_BASE || 'http://47.108.188.221:8081', // 从环境变量读取，方便切换
     timeout: 10000 // 10秒超时
 })
 
