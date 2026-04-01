@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus'
 
 // 创建 axios 实例
 const request = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:8080/api', // 从环境变量读取，方便切换
+    baseURL: import.meta.env.VITE_API_BASE || 'http://47.108.188.221:8080', // 从环境变量读取，方便切换
     timeout: 10000 // 10秒超时
 })
 
@@ -12,14 +12,13 @@ const request = axios.create({
 request.interceptors.request.use(
     config => {
         const token = localStorage.getItem('token')
+        console.log('请求拦截器执行，token:', token)   // 新增
         if (token) {
             config.headers.Authorization = `Bearer ${token}`
         }
         return config
     },
-    error => {
-        return Promise.reject(error)
-    }
+    error => Promise.reject(error)
 )
 
 // 响应拦截器：统一处理错误提示

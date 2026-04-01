@@ -1,15 +1,14 @@
 <template>
-  <router-view />
+  <DefaultLayout v-if="isLoggedIn" />
+  <router-view v-else />
 </template>
 
 <script setup>
-// 不需要额外逻辑
-</script>
+import { computed } from 'vue'
+import DefaultLayout from '@/components/Layout/DefaultLayout.vue'
 
-<style>
-/* 全局样式可在这里添加 */
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
-</style>
+// 简单判断用户是否已登录
+const isLoggedIn = computed(() => {
+  return !!localStorage.getItem('token')
+})
+</script>

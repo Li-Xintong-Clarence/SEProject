@@ -52,7 +52,7 @@ const handleLogin = () => {
     if (valid) {
       loading.value = true
       try {
-        const res = await login(form.value)
+        const res = await login({ username: form.value.username, password: form.value.password })
         // 根据后端文档，成功时返回 { token, user }
         if (res.token && res.user) {
           localStorage.setItem('token', res.token)

@@ -3,18 +3,21 @@
     <el-page-header title="返回" @back="goBack" />
     <h2>预订滑板车</h2>
 
-    <el-card v-if="scooter">
-      <h3>{{ scooter.name }}</h3>
-      <p>位置：{{ scooter.location }}</p>
-      <p>价格：¥{{ scooter.pricePerHour }}/小时</p>
+    <el-skeleton v-if="loading" :rows="8" animated />
+
+    <el-card v-else-if="scooter" class="scooter-card">
+      <h3>{{ scooter.scooterNumber || scooter.name || '未知滑板车' }}</h3>
+      <p>位置：{{ scooter.location || `${scooter.latitude || scooter.lat}, ${scooter.longitude || scooter.lng}` }}</p>
+      <p>电量：{{ scooter.batteryLevel || '未知' }}%</p>
+      <p>价格：¥{{ scooter.pricePerHour || 5 }}/小时</p>
 
       <el-form :model="form" label-width="120px">
         <el-form-item label="租用时长">
           <el-radio-group v-model="form.hours">
-            <el-radio-button :label="1">1小时</el-radio-button>
-            <el-radio-button :label="4">4小时</el-radio-button>
-            <el-radio-button :label="24">1天</el-radio-button>
-            <el-radio-button :label="168">1周</el-radio-button>
+            <el-radio-button :value="1">1小时</el-radio-button>
+            <el-radio-button :value="4">4小时</el-radio-button>
+            <el-radio-button :value="24">1天</el-radio-button>
+            <el-radio-button :value="168">1周</el-radio-button>
           </el-radio-group>
         </el-form-item>
 
@@ -24,21 +27,26 @@
             type="datetime"
             placeholder="选择开始时间"
             :disabled-date="disabledDate"
+            format="YYYY-MM-DD HH:mm"
           />
+        </el-form-item>
+
+        <el-form-item label="预计结束时间">
+          <el-tag type="info">{{ endTimeFormatted }}</el-tag>
         </el-form-item>
 
         <el-form-item label="支付方式">
           <el-radio-group v-model="form.paymentMethod">
-            <el-radio label="credit">信用卡</el-radio>
-            <el-radio label="debit">借记卡</el-radio>
+            <el-radio value="credit">信用卡</el-radio>
+            <el-radio value="debit">借记卡</el-radio>
           </el-radio-group>
         </el-form-item>
 
         <el-form-item label="卡号" v-if="form.paymentMethod">
-          <el-input v-model="form.cardNumber" placeholder="卡号" maxlength="16" />
+          <el-input v-model="form.cardNumber" placeholder="请输入卡号" maxlength="16" />
         </el-form-item>
 
-        <el-form-item label="有效期" v-if="form.paymentMethod">
+        <el-form-item label="有效期 (MM/YY)" v-if="form.paymentMethod">
           <el-input v-model="form.expiry" placeholder="MM/YY" maxlength="5" />
         </el-form-item>
 
@@ -47,30 +55,40 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="handleSubmit" :loading="submitting">
+          <el-button 
+            type="primary" 
+            size="large" 
+            @click="handleSubmit" 
+            :loading="submitting"
+            style="width: 100%;"
+          >
             确认支付 ¥{{ totalPrice }}
           </el-button>
         </el-form-item>
       </el-form>
     </el-card>
+
+    <el-empty v-else description="未找到滑板车信息" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getScooters } from '@/api/scooter'
-import { createBooking } from '@/api/booking'
+import { getScooterById } from '@/api/scooter'
+import { createBooking, payBooking } from '@/api/booking'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
+
 const scooter = ref(null)
+const loading = ref(true)
 const submitting = ref(false)
 
 const form = ref({
   hours: 1,
-  startTime: new Date(),
+  startTime: new Date(Date.now() + 10 * 60 * 1000), // 默认10分钟后
   paymentMethod: 'credit',
   cardNumber: '',
   expiry: '',
@@ -80,12 +98,23 @@ const form = ref({
 // 计算总价
 const totalPrice = computed(() => {
   if (!scooter.value) return 0
-  return scooter.value.pricePerHour * form.value.hours
+  const price = scooter.value.pricePerHour || 5
+  return (price * form.value.hours).toFixed(2)
+})
+
+// 计算预计结束时间
+const endTimeFormatted = computed(() => {
+  if (!form.value.startTime) return '请选择开始时间'
+  const end = new Date(form.value.startTime.getTime() + form.value.hours * 60 * 60 * 1000)
+  return end.toLocaleString('zh-CN', { 
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  })
 })
 
 // 禁用过去时间
 const disabledDate = (time) => {
-  return time.getTime() < Date.now() - 8.64e7 // 禁止选择今天之前
+  return time.getTime() < Date.now() - 8.64e7 // 允许今天
 }
 
 const goBack = () => {
@@ -97,46 +126,69 @@ const handleSubmit = async () => {
     ElMessage.warning('请填写完整的支付信息')
     return
   }
+
   submitting.value = true
   try {
-    // 模拟支付成功，然后创建预订
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 1. 创建预订
     const bookingData = {
       scooterId: scooter.value.id,
-      scooterName: scooter.value.name,
-      startTime: form.value.startTime,
-      hours: form.value.hours,
-      totalPrice: totalPrice.value,
+      hireOption: `${form.value.hours}hr`,
+      startTime: form.value.startTime.toISOString()
     }
-    const res = await createBooking(bookingData)
-    ElMessage.success('预订成功！')
-    // 跳转到个人中心或列表页
-    router.push('/profile')
+
+    const bookingRes = await createBooking(bookingData)
+
+    const bookingId = bookingRes?.id || bookingRes?.data?.id || (bookingRes.code === 200 ? bookingRes.data?.id : null)
+
+    if (!bookingId) {
+      throw new Error('创建预订失败：无法获取预订ID')
+    }
+
+    // 2. 支付
+    const payRes = await payBooking(bookingId, {
+      cardLast4: form.value.cardNumber.slice(-4),
+      amount: parseFloat(totalPrice.value),
+      paymentMethod: form.value.paymentMethod
+    })
+
+    if (payRes?.code === 200 || payRes === 'Payment successful' || payRes?.success) {
+      ElMessage.success('预订与支付成功！')
+      router.push('/profile')
+    } else {
+      throw new Error(payRes?.message || '支付失败')
+    }
   } catch (error) {
-    ElMessage.error('预订失败，请重试')
+    console.error('预订失败:', error)
+    ElMessage.error(error.message || '预订失败，请重试')
   } finally {
     submitting.value = false
   }
 }
 
 onMounted(async () => {
+  console.log('路由参数:', route.query)
+  console.log('scooterId:', route.query.scooterId)
   const scooterId = route.query.scooterId
   if (!scooterId) {
-    ElMessage.error('未指定滑板车')
+    ElMessage.error('未指定滑板车ID')
     router.push('/scooters')
     return
   }
+
   try {
-    const res = await getScooters()
-    const found = res.data.find(s => s.id === parseInt(scooterId))
-    if (found) {
-      scooter.value = found
-    } else {
-      ElMessage.error('滑板车不存在')
-      router.push('/scooters')
+    const res = await getScooterById(scooterId)
+    // 兼容不同返回格式
+    scooter.value = res?.data || (Array.isArray(res) ? res[0] : res)
+    
+    if (!scooter.value) {
+      throw new Error('滑板车不存在')
     }
   } catch (error) {
+    console.error(error)
     ElMessage.error('获取滑板车信息失败')
+    router.push('/scooters')
+  } finally {
+    loading.value = false
   }
 })
 </script>
@@ -144,7 +196,10 @@ onMounted(async () => {
 <style scoped>
 .booking {
   padding: 20px;
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto;
+}
+.scooter-card {
+  margin-bottom: 20px;
 }
 </style>

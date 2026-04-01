@@ -18,7 +18,7 @@ const routes = [
     {
         path: '/scooters',
         name: 'Scooters',
-        component: () => import('../views/user/ScooterList.vue')
+        component: () => import('../views/user/MapView.vue')
     },
     {
         path: '/booking',
