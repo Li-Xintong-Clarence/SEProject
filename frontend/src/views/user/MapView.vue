@@ -72,6 +72,7 @@ onMounted(async () => {
 
     const map = new AMap.Map('map-container', {
       zoom: 15,
+      center: [103.9305, 30.7528], // 默认中心：成都西南交通大学犀浦校区
       resizeEnable: true
     })
 

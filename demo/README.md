@@ -1,5 +1,18 @@
 # 电动车租赁系统 - 后端项目
 
+## 项目架构说明（重要）
+
+本项目采用**前后端分离架构**：
+
+| 端口 | 服务 | 用途 |
+|------|------|------|
+| **8081** | Spring Boot 后端 | 处理 API 请求，返回 JSON |
+| **5174** | Vite 前端服务器 | 托管 Vue 页面（前端图形界面） |
+
+**记住**：看页面用 **5174**，测接口用 **8081**。
+
+---
+
 ## 技术栈
 
 | 类别 | 技术/工具 |
@@ -46,7 +59,7 @@ com.example.demo/
 
 **说明**：以下接口为 Sprint 1 统一约定，前端按此对接；如有新增或变更会在此文档更新并同步。
 
-- **基础地址**：`http://localhost:8080`
+- **基础地址**：`http://47.108.188.221:8081`
 - **统一响应格式**：所有接口返回 JSON，格式为 `{ "code": 200, "message": "success", "data": { ... } }`；失败时 `code` 非 200，`message` 为错误说明。
 - **需登录接口**：请求头携带 `Authorization: Bearer <token>`（登录后返回的 token）。
 
@@ -202,19 +215,65 @@ com.example.demo/
 
 ### 4. 配置文件
 
-- 端口: `8080`
+- 后端端口: `8081`
+- 前端端口: `5174`
 - 数据库连接: `root/root` (本地MySQL)
 
 ---
 
+## 系统访问指南
+
+### 前端页面地址（用浏览器打开）
+
+| 页面 | 地址 |
+|------|------|
+| 首页 | http://47.108.188.221:5174/ |
+| 登录页 | http://47.108.188.221:5174/login |
+| 注册页 | http://47.108.188.221:5174/register |
+| 个人中心 | http://47.108.188.221:5174/profile |
+| 电动车列表 | http://47.108.188.221:5174/scooters |
+| 管理员登录 | http://47.108.188.221:5174/admin/login |
+| 管理后台 | http://47.108.188.221:5174/admin |
+
+### 后端接口地址（用 Postman/curl 测试，或前端 JS 自动调用）
+
+| 功能 | 地址 |
+|------|------|
+| 用户登录 | POST http://47.108.188.221:8081/auth/login |
+| 管理员登录 | POST http://47.108.188.221:8081/auth/admin/login |
+| 用户注册 | POST http://47.108.188.221:8081/auth/register |
+| 电动车列表 | GET http://47.108.188.221:8081/api/scooters |
+| 租用选项 | GET http://47.108.188.221:8081/api/pricing |
+
+### 为什么 8081 会显示 404？
+
+8081 是后端 API 端口，**不是页面服务器**。直接用浏览器打开 `http://47.108.188.221:8081/login` 会报 404，因为 Spring Boot 没有 `/login` 页面路由。
+
+正确做法：
+- 想看页面 → 访问 `http://47.108.188.221:5174/login`
+- 想测接口 → 用 Postman/curl 请求 `http://47.108.188.221:8081/auth/login`
+
+---
+
 ## 如何运行
+
+### 后端启动
 
 ```powershell
 cd E:\SEP2\SEProject\demo
 .\mvnw.cmd spring-boot:run
 ```
 
-启动成功后访问: http://localhost:8080
+后端启动成功后：API 接口地址 http://47.108.188.221:8081
+
+### 前端启动
+
+```powershell
+cd E:\SEP2\SEProject\frontend
+npm run dev
+```
+
+前端启动成功后：页面地址 http://47.108.188.221:5174
 
 ---
 
@@ -222,7 +281,7 @@ cd E:\SEP2\SEProject\demo
 
 ### 前端工程师
 
-1. **API 基础地址**：`http://localhost:8080`
+1. **API 基础地址**：`http://47.108.188.221:8081`
 2. **接口文档**：以本文档 **「3. API 接口（前后端协作约定）」** 为准，所有路径、方法、请求/响应约定均按该节实现；后端会保持与此文档一致，如有变更会在此更新并同步。
 3. **统一数据格式**：所有接口返回 JSON，格式如下：
 
@@ -241,9 +300,9 @@ cd E:\SEP2\SEProject\demo
    - 管理员：用户名 `admin`，密码 `admin123`，登录用 POST `/auth/admin/login`
    - 普通用户：用户名 `testuser`，密码 `user123`，登录用 POST `/auth/login`
 5. **测试示例**（基础）：
-   - 获取租用选项：GET http://localhost:8080/api/pricing
-   - 获取电动车列表：GET http://localhost:8080/api/scooters
-   - 用户登录：POST http://localhost:8080/auth/login，body `{ "username": "testuser", "password": "user123" }`，返回 `data: { "token", "user" }`
+   - 获取租用选项：GET http://47.108.188.221:8081/api/pricing
+   - 获取电动车列表：GET http://47.108.188.221:8081/api/scooters
+   - 用户登录：POST http://47.108.188.221:8081/auth/login，body `{ "username": "testuser", "password": "user123" }`，返回 `data: { "token", "user" }`
 
 ### 后端工程师 (继续开发)
 
@@ -431,8 +490,8 @@ mvnw.cmd spring-boot:run
 
 | 测试内容 | 地址 |
 |---------|------|
-| 获取所有用户 | http://localhost:8080/api/users |
-| 获取所有电动车 | http://localhost:8080/api/scooters |
+| 获取所有用户 | http://47.108.188.221:8081/api/users |
+| 获取所有电动车 | http://47.108.188.221:8081/api/scooters |
 
 你可以在浏览器直接打开，或者用 Postman / Apifox 等工具测试。
 
@@ -440,7 +499,7 @@ mvnw.cmd spring-boot:run
 
 ### 常见问题
 
-#### Q1: 端口 8080 被占用？
+#### Q1: 端口 8081 被占用？
 
 ```powershell
 # 查找占用端口的进程
@@ -473,3 +532,32 @@ taskkill /PID 12345 /F
 1. **前端工程师**: 参考 "对接说明" 中的 API 文档，开始开发前端页面
 2. **后端工程师**: 参考 "待完成" 列表，分配任务继续开发
 3. **全组**: 确保每个人都能成功运行项目，进行接口联调
+
+🚀 电动车租赁系统 - 项目进度总结
+一、已完成的核心功能
+模块	状态	说明
+用户认证	✅ 完成	注册、登录、退出
+电动车列表	✅ 完成	显示电动车信息、筛选
+预约/租赁	✅ 完成	创建预约、查看我的预约
+支付（模拟）	✅ 完成	模拟支付流程
+个人中心	✅ 完成	个人信息、预约管理
+管理后台	✅ 完成	管理员登录、数据管理
+二、后端已实现的接口（共 12 个 Controller）
+✅ AuthController       - 认证（登录/注册）✅ UserController       - 用户管理✅ ScooterController    - 电动车管理✅ BookingController    - 预约管理✅ PaymentController    - 支付✅ PricingController    - 定价✅ HireOptionController  - 租赁选项✅ CardController       - 银行卡✅ FeedbackController   - 反馈✅ IssueReportController - 问题报告✅ AdminController      - 管理员功能✅ HelloController      - 测试
+三、前端已完成的页面
+✅ /login    - 登录页✅ /register - 注册页✅ /scooters - 电动车列表✅ /profile  - 个人中心✅ /admin/*  - 管理后台
+四、部署状态
+服务	地址	状态
+前端	http://47.108.188.221:5174	🟢 运行中
+后端	http://47.108.188.221:8081	🟢 运行中
+五、下一阶段建议
+测试完善 - 运行完整的功能测试
+边缘情况 - 错误处理、异常情况
+用户体验优化 - 加载动画、表单验证提示
+文档更新 - 更新 API 文档和测试用例
+性能优化 - 如有需要
+六、测试账号
+角色	用户名	密码
+管理员	admin	admin123
+普通用户	testuser	user123
+🎉 恭喜！项目主体功能已跑通，可以进入下一阶段的开发了！
