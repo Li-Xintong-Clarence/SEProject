@@ -25,8 +25,16 @@
         </div>
         <el-table v-else :data="bookings" style="width: 100%">
           <el-table-column prop="scooterName" label="滑板车" width="150" />
-          <el-table-column prop="startTime" label="开始时间" width="180" />
-          <el-table-column prop="endTime" label="结束时间" width="180" />
+          <el-table-column label="开始时间" width="180">
+            <template #default="{ row }">
+              {{ formatTime(row.startTime) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="结束时间" width="180">
+            <template #default="{ row }">
+              {{ formatTime(row.endTime) }}
+            </template>
+          </el-table-column>
           <el-table-column prop="totalPrice" label="价格 (¥)" width="100" />
           <el-table-column label="状态" width="120">
             <template #default="{ row }">
@@ -37,10 +45,10 @@
           </el-table-column>
           <el-table-column label="操作" width="100">
             <template #default="{ row }">
-              <el-button 
-                type="danger" 
-                size="small" 
-                :disabled="row.status !== 'active'"
+              <el-button
+                type="danger"
+                size="small"
+                :disabled="row.status === 'COMPLETED' || row.status === 'CANCELLED'"
                 @click="handleCancel(row.id)"
                 :loading="cancellingId === row.id"
               >
@@ -106,15 +114,28 @@ const issues = ref([])
 const showIssueDialog = ref(false)
 const issueForm = ref({ description: '' })
 
-// 状态映射
+// 格式化时间
+const formatTime = (time) => {
+  if (!time) return '-'
+  const date = new Date(time)
+  if (isNaN(date.getTime())) return time
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  })
+}
+
+// 状态映射（大写转中文）
 const getStatusType = (status) => {
-  const map = { active: 'warning', completed: 'success', cancelled: 'info' }
-  return map[status] || 'info'
+  const upperStatus = (status || '').toUpperCase()
+  const map = { 'ACTIVE': 'warning', 'PAID': 'warning', 'COMPLETED': 'success', 'CANCELLED': 'info', 'PENDING': 'info' }
+  return map[upperStatus] || 'info'
 }
 
 const getStatusText = (status) => {
-  const map = { active: '进行中', completed: '已完成', cancelled: '已取消' }
-  return map[status] || status
+  const upperStatus = (status || '').toUpperCase()
+  const map = { 'ACTIVE': '进行中', 'PAID': '已支付', 'COMPLETED': '已完成', 'CANCELLED': '已取消', 'PENDING': '待支付' }
+  return map[upperStatus] || status
 }
 
 const goBack = () => router.back()
@@ -138,9 +159,17 @@ const loadBookings = async () => {
   try {
     const res = await getUserBookings()
     if (Array.isArray(res)) {
-      bookings.value = res
+      bookings.value = res.map(b => ({
+        ...b,
+        scooterName: b.scooterName || b.scooterNumber || `滑板车 #${b.scooterId}` || '未知',
+        totalPrice: b.totalPrice || b.totalCost || 0
+      }))
     } else if (res?.code === 200) {
-      bookings.value = res.data || []
+      bookings.value = (res.data || []).map(b => ({
+        ...b,
+        scooterName: b.scooterName || b.scooterNumber || `滑板车 #${b.scooterId}` || '未知',
+        totalPrice: b.totalPrice || b.totalCost || 0
+      }))
     } else {
       bookings.value = []
     }

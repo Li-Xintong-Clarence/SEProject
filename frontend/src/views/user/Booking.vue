@@ -9,15 +9,15 @@
       <h3>{{ scooter.scooterNumber || scooter.name || '未知滑板车' }}</h3>
       <p>位置：{{ scooter.location || `${scooter.latitude || scooter.lat}, ${scooter.longitude || scooter.lng}` }}</p>
       <p>电量：{{ scooter.batteryLevel || '未知' }}%</p>
-      <p>价格：¥{{ scooter.pricePerHour || 5 }}/小时</p>
+      <p>价格：¥{{ HIRE_PRICE[form.hireOption] || 5 }}/小时</p>
 
       <el-form :model="form" label-width="120px">
         <el-form-item label="租用时长">
-          <el-radio-group v-model="form.hours">
-            <el-radio-button :value="1">1小时</el-radio-button>
-            <el-radio-button :value="4">4小时</el-radio-button>
-            <el-radio-button :value="24">1天</el-radio-button>
-            <el-radio-button :value="168">1周</el-radio-button>
+          <el-radio-group v-model="form.hireOption">
+            <el-radio-button value="1hr">1小时</el-radio-button>
+            <el-radio-button value="4hr">4小时</el-radio-button>
+            <el-radio-button value="1day">1天</el-radio-button>
+            <el-radio-button value="1week">1周</el-radio-button>
           </el-radio-group>
         </el-form-item>
 
@@ -86,8 +86,24 @@ const scooter = ref(null)
 const loading = ref(true)
 const submitting = ref(false)
 
+// 租赁选项对应的时长（小时）
+const HIRE_DURATION = {
+  '1hr': 1,
+  '4hr': 4,
+  '1day': 24,
+  '1week': 168
+}
+
+// 租赁选项对应的价格（元/小时）
+const HIRE_PRICE = {
+  '1hr': 5,
+  '4hr': 4,
+  '1day': 3,
+  '1week': 2.5
+}
+
 const form = ref({
-  hours: 1,
+  hireOption: '1hr',
   startTime: new Date(Date.now() + 10 * 60 * 1000), // 默认10分钟后
   paymentMethod: 'credit',
   cardNumber: '',
@@ -98,15 +114,17 @@ const form = ref({
 // 计算总价
 const totalPrice = computed(() => {
   if (!scooter.value) return 0
-  const price = scooter.value.pricePerHour || 5
-  return (price * form.value.hours).toFixed(2)
+  const hours = HIRE_DURATION[form.value.hireOption] || 1
+  const price = HIRE_PRICE[form.value.hireOption] || 5
+  return (price * hours).toFixed(2)
 })
 
 // 计算预计结束时间
 const endTimeFormatted = computed(() => {
   if (!form.value.startTime) return '请选择开始时间'
-  const end = new Date(form.value.startTime.getTime() + form.value.hours * 60 * 60 * 1000)
-  return end.toLocaleString('zh-CN', { 
+  const hours = HIRE_DURATION[form.value.hireOption] || 1
+  const end = new Date(form.value.startTime.getTime() + hours * 60 * 60 * 1000)
+  return end.toLocaleString('zh-CN', {
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit'
   })
@@ -132,7 +150,7 @@ const handleSubmit = async () => {
     // 1. 创建预订
     const bookingData = {
       scooterId: scooter.value.id,
-      hireOption: `${form.value.hours}hr`,
+      hireOption: form.value.hireOption,
       startTime: form.value.startTime.toISOString()
     }
 

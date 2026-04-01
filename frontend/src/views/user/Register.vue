@@ -9,6 +9,9 @@
         <el-form-item prop="email">
           <el-input v-model="form.email" placeholder="电子邮箱" prefix-icon="Message" />
         </el-form-item>
+        <el-form-item prop="phone">
+          <el-input v-model="form.phone" placeholder="手机号（选填）" prefix-icon="Phone" />
+        </el-form-item>
         <el-form-item prop="password">
           <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password />
         </el-form-item>
@@ -41,6 +44,7 @@ const loading = ref(false)
 const form = ref({
   username: '',
   email: '',
+  phone: '',
   password: '',
   confirmPassword: ''
 })
@@ -91,7 +95,14 @@ const handleRegister = () => {
     if (valid) {
       loading.value = true
       try {
-        const res = await register(form.value)   // 调用真实接口
+        // 发送注册数据（不包括 confirmPassword）
+        const registerData = {
+          username: form.value.username,
+          email: form.value.email,
+          phone: form.value.phone || null,
+          password: form.value.password
+        }
+        const res = await register(registerData)
         // 假设成功时 code === 200（拦截器已处理），res 是 data 部分
         ElMessage.success('注册成功，请登录')
         router.push('/login')

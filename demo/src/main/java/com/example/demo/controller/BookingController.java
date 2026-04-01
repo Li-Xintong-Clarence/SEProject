@@ -89,9 +89,10 @@ public class BookingController {
     /**
      * 支付订单
      * POST /api/bookings/{id}/pay
+     * 参数: cardLast4, amount, paymentMethod (可选)
      */
     @PostMapping("/{id}/pay")
-    public Result<String> pay(@PathVariable Long id) {
+    public Result<String> pay(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> paymentData) {
         if (bookingService.payBooking(id)) {
             return Result.success("Payment successful");
         }
