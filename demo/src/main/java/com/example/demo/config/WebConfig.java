@@ -2,6 +2,7 @@ package com.example.demo.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -9,6 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * Web配置类
  * 配置JWT拦截器，拦截需要认证的API请求
  * 配置请求日志拦截器，记录所有请求的IP、方法、路径
+ * 配置CORS，允许前端跨域访问
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -18,6 +20,19 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Autowired
     private RequestLogInterceptor requestLogInterceptor;
+
+    /**
+     * 配置CORS，允许跨域访问
+     */
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOriginPatterns("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
 
     /**
      * 添加拦截器配置
