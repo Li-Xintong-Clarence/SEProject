@@ -1,33 +1,58 @@
 <template>
-  <div class="register-container">
-    <el-card class="register-card">
-      <h2>用户注册</h2>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="0">
-        <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" />
-        </el-form-item>
-        <el-form-item prop="email">
-          <el-input v-model="form.email" placeholder="电子邮箱" prefix-icon="Message" />
-        </el-form-item>
-        <el-form-item prop="phone">
-          <el-input v-model="form.phone" placeholder="手机号（选填）" prefix-icon="Phone" />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password />
-        </el-form-item>
-        <el-form-item prop="confirmPassword">
-          <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" prefix-icon="Lock" show-password />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleRegister" :loading="loading" class="register-button">
-            {{ loading ? '注册中...' : '注册' }}
-          </el-button>
-        </el-form-item>
-      </el-form>
-      <div class="login-link">
-        已有账号？<router-link to="/login">立即登录</router-link>
+  <div class="register-page">
+    <div class="register-hero">
+      <div class="hero-inner">
+        <img class="hero-logo" src="/brand-logo.svg" alt="CapyGlide" width="96" height="96" />
+        <h1 class="hero-title">加入 CapyGlide</h1>
+        <p class="hero-tag">卡皮滑行 · 注册即享从容出行</p>
       </div>
-    </el-card>
+    </div>
+
+    <div class="register-panel">
+      <el-card class="register-card" shadow="never">
+        <h2 class="card-title">创建账号</h2>
+        <p class="card-sub">填写信息，开始你的第一次滑行</p>
+        <el-form ref="formRef" :model="form" :rules="rules" label-width="0">
+          <el-form-item prop="username">
+            <el-input v-model="form.username" placeholder="用户名" size="large" prefix-icon="User" />
+          </el-form-item>
+          <el-form-item prop="email">
+            <el-input v-model="form.email" placeholder="电子邮箱" size="large" prefix-icon="Message" />
+          </el-form-item>
+          <el-form-item prop="phone">
+            <el-input v-model="form.phone" placeholder="手机号（选填）" size="large" prefix-icon="Phone" />
+          </el-form-item>
+          <el-form-item prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="密码"
+              size="large"
+              prefix-icon="Lock"
+              show-password
+            />
+          </el-form-item>
+          <el-form-item prop="confirmPassword">
+            <el-input
+              v-model="form.confirmPassword"
+              type="password"
+              placeholder="确认密码"
+              size="large"
+              prefix-icon="Lock"
+              show-password
+            />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" size="large" @click="handleRegister" :loading="loading" class="register-btn">
+              {{ loading ? '注册中...' : '注册' }}
+            </el-button>
+          </el-form-item>
+        </el-form>
+        <div class="login-link">
+          已有账号？<router-link to="/login">立即登录</router-link>
+        </div>
+      </el-card>
+    </div>
   </div>
 </template>
 
@@ -35,7 +60,7 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { register } from '@/api/auth'   // 等接口 ready 后取消注释
+import { register } from '@/api/auth'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -49,7 +74,6 @@ const form = ref({
   confirmPassword: ''
 })
 
-// 自定义确认密码验证
 const validateConfirmPassword = (rule, value, callback) => {
   if (value !== form.value.password) {
     callback(new Error('两次输入的密码不一致'))
@@ -77,37 +101,21 @@ const rules = {
   ]
 }
 
-// 模拟注册函数（真实接口 ready 后替换）
-const mockRegister = (data) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        code: 200,
-        message: '注册成功',
-        data: { id: 1, username: data.username, email: data.email }
-      })
-    }, 500)
-  })
-}
-
 const handleRegister = () => {
   formRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
       try {
-        // 发送注册数据（不包括 confirmPassword）
         const registerData = {
           username: form.value.username,
           email: form.value.email,
           phone: form.value.phone || null,
           password: form.value.password
         }
-        const res = await register(registerData)
-        // 假设成功时 code === 200（拦截器已处理），res 是 data 部分
+        await register(registerData)
         ElMessage.success('注册成功，请登录')
         router.push('/login')
       } catch (error) {
-        // 错误已在拦截器中处理（比如弹出错误信息），这里可以忽略或打印
         console.error('注册出错:', error)
       } finally {
         loading.value = false
@@ -118,32 +126,103 @@ const handleRegister = () => {
 </script>
 
 <style scoped>
-.register-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.register-page {
   min-height: 100vh;
-  background-color: #f0f2f5;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 480px);
 }
-.register-card {
-  width: 450px;
-  max-width: 90%;
+
+@media (max-width: 960px) {
+  .register-page {
+    grid-template-columns: 1fr;
+  }
+  .register-hero {
+    min-height: 180px;
+    padding: 28px 20px 12px;
+  }
 }
-.register-card h2 {
+
+.register-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: linear-gradient(160deg, var(--cg-navy) 0%, var(--cg-charcoal) 100%);
+  color: #fff;
+}
+
+.hero-inner {
   text-align: center;
-  margin-bottom: 30px;
-  color: #409eff;
 }
-.register-button {
+
+.hero-logo {
+  border-radius: 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  margin-bottom: 16px;
+}
+
+.hero-title {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.hero-tag {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--cg-sand);
+}
+
+.register-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px;
+  background: var(--cg-mist);
+}
+
+.register-card {
   width: 100%;
+  max-width: 460px;
+  border-radius: var(--cg-radius-lg) !important;
+  box-shadow: var(--cg-shadow) !important;
+  padding: 8px 4px 12px;
 }
+
+.card-title {
+  margin: 0 0 6px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--cg-navy);
+}
+
+.card-sub {
+  margin: 0 0 22px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.register-btn {
+  width: 100%;
+  height: 46px;
+}
+
 .login-link {
   text-align: center;
-  margin-top: 15px;
+  margin-top: 6px;
   font-size: 14px;
+  color: #6b7280;
 }
+
 .login-link a {
-  color: #409eff;
+  color: var(--cg-navy-soft);
+  font-weight: 600;
   text-decoration: none;
+}
+
+.login-link a:hover {
+  color: var(--cg-accent);
 }
 </style>

@@ -1,54 +1,70 @@
 <template>
-  <el-container class="layout-container">
-    <!-- 顶部导航栏 -->
-    <el-header class="header">
+  <div class="layout-container">
+    <!-- 顶部导航 -->
+    <header class="header">
       <div class="header-content">
         <div class="logo" @click="goHome">
-          <h1>电动滑板车租赁系统</h1>
+          <img src="/brand-logo.svg" alt="CapyGlide" width="36" height="36" />
+          <span class="brand-name">CapyGlide</span>
         </div>
 
         <el-menu
           :default-active="activeIndex"
           mode="horizontal"
-          class="menu"
+          class="nav-menu"
           @select="handleSelect"
         >
-          <el-menu-item index="scooters">找车</el-menu-item>
-          <el-menu-item index="profile">个人中心</el-menu-item>
+          <el-menu-item index="scooters">
+            <el-icon><Location /></el-icon>
+            找车
+          </el-menu-item>
+          <el-menu-item index="profile">
+            <el-icon><User /></el-icon>
+            个人中心
+          </el-menu-item>
         </el-menu>
 
-        <div class="user-info">
+        <div class="user-section">
           <el-dropdown @command="handleCommand">
-            <span class="el-dropdown-link">
-              {{ username }} <el-icon><ArrowDown /></el-icon>
+            <span class="user-trigger">
+              <el-avatar :size="32" class="user-avatar">
+                {{ username?.charAt(0)?.toUpperCase() || 'U' }}
+              </el-avatar>
+              <span class="user-name">{{ username }}</span>
+              <el-icon class="arrow"><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">个人中心</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>个人中心
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided>
+                  <el-icon><SwitchButton /></el-icon>退出登录
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>
       </div>
-    </el-header>
+    </header>
 
-    <!-- 主要内容区 -->
-    <el-main class="main-content">
+    <!-- 主要内容 -->
+    <main class="main-content">
       <router-view />
-    </el-main>
+    </main>
 
-    <el-footer class="footer">
-      © 2026 电动滑板车租赁系统 | Sprint 1
-    </el-footer>
-  </el-container>
+    <!-- 页脚 -->
+    <footer class="footer">
+      <span>© 2026 CapyGlide 卡皮滑行 · 电动滑板车租赁系统</span>
+    </footer>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watchEffect } from 'vue'        // ← 确保 watchEffect 已导入
+import { ref, onMounted, watchEffect } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { Location, User, ArrowDown, SwitchButton } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -102,72 +118,127 @@ watchEffect(() => {
 
 <style scoped>
 .layout-container {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--cg-mist);
 }
 
+/* 顶部导航 */
 .header {
-  background-color: #409eff;
-  color: white;
-  padding: 0;
+  background: var(--cg-white);
+  border-bottom: 1px solid rgba(30, 58, 95, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .header-content {
+  max-width: 1280px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
-  height: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  height: 60px;
   padding: 0 20px;
+  gap: 24px;
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
-  margin-right: 40px;
+  flex-shrink: 0;
 }
 
-.logo h1 {
-  margin: 0;
-  font-size: 22px;
-  color: white;
-  font-weight: bold;
+.logo img {
+  border-radius: var(--cg-radius-md);
 }
 
-.menu {
+.brand-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--cg-navy);
+  letter-spacing: 0.02em;
+}
+
+/* 导航菜单 */
+.nav-menu {
   flex: 1;
-  background-color: transparent;
   border-bottom: none;
+  background: transparent;
 }
 
-.menu :deep(.el-menu-item) {
-  color: white !important;
+.nav-menu :deep(.el-menu-item) {
+  color: var(--cg-charcoal);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.menu :deep(.el-menu-item.is-active) {
-  color: white !important;
-  border-bottom-color: white !important;
+.nav-menu :deep(.el-menu-item:hover),
+.nav-menu :deep(.el-menu-item.is-active) {
+  color: var(--cg-navy);
+  background: transparent;
+  border-bottom: 2px solid var(--cg-navy);
 }
 
-.user-info {
-  color: white;
-  font-size: 16px;
+.nav-menu :deep(.el-menu-item .el-icon) {
+  margin-right: 2px;
+}
+
+/* 用户区域 */
+.user-section {
+  flex-shrink: 0;
+}
+
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--cg-radius-md);
+  transition: background 0.2s;
 }
 
+.user-trigger:hover {
+  background: var(--cg-mist);
+}
+
+.user-avatar {
+  background: var(--cg-navy);
+  color: white;
+  font-weight: 600;
+}
+
+.user-name {
+  font-weight: 500;
+  color: var(--cg-charcoal);
+}
+
+.arrow {
+  color: #9ca3af;
+}
+
+/* 主内容 */
 .main-content {
-  background-color: #f5f7fa;
-  padding: 24px;
   flex: 1;
-  overflow: auto;
+  padding: 0;
 }
 
+/* 页脚 */
 .footer {
+  background: var(--cg-navy);
+  color: rgba(255, 255, 255, 0.8);
   text-align: center;
-  color: #999;
-  font-size: 14px;
-  background-color: #fff;
-  border-top: 1px solid #eee;
-  line-height: 60px;
+  padding: 16px 20px;
+  font-size: 13px;
+}
+
+.footer span {
+  opacity: 0.8;
 }
 </style>

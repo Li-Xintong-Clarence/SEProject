@@ -1,0 +1,191 @@
+/* CapyGlide 统一主题样式 */
+:root {
+  /* 品牌色系 - 深海蓝 + 暖沙色 */
+  --cg-navy-deep: #0d2137;
+  --cg-navy: #1e3a5f;
+  --cg-navy-soft: #2c5282;
+  --cg-charcoal: #3d4f5f;
+  --cg-accent: #c45c5c;
+  --cg-sand: #e8dcc8;
+  --cg-mist: #f0f3f7;
+  --cg-white: #ffffff;
+
+  /* 圆角 */
+  --cg-radius-sm: 6px;
+  --cg-radius-md: 10px;
+  --cg-radius-lg: 16px;
+  --cg-radius-xl: 24px;
+
+  /* 阴影 */
+  --cg-shadow: 0 4px 24px rgba(30, 58, 95, 0.1);
+  --cg-shadow-lg: 0 8px 40px rgba(30, 58, 95, 0.15);
+}
+
+/* 全局重置 */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--cg-mist);
+  color: var(--cg-charcoal);
+}
+
+/* 通用卡片样式 */
+.cg-card {
+  background: var(--cg-white);
+  border-radius: var(--cg-radius-lg);
+  box-shadow: var(--cg-shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+/* 通用按钮样式 */
+.cg-btn {
+  background: var(--cg-navy);
+  color: white;
+  border: none;
+  border-radius: var(--cg-radius-md);
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cg-btn:hover {
+  background: var(--cg-navy-soft);
+  transform: translateY(-1px);
+}
+
+.cg-btn:active {
+  transform: translateY(0);
+}
+
+.cg-btn--secondary {
+  background: var(--cg-mist);
+  color: var(--cg-navy);
+}
+
+.cg-btn--danger {
+  background: var(--cg-accent);
+}
+
+/* 通用标题样式 */
+.cg-title {
+  color: var(--cg-navy);
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.cg-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+/* 页面容器 */
+.cg-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Element Plus 覆盖样式 */
+/* 覆盖 el-button primary */
+.el-button--primary {
+  --el-button-bg-color: var(--cg-navy);
+  --el-button-border-color: var(--cg-navy);
+  --el-button-hover-bg-color: var(--cg-navy-soft);
+  --el-button-hover-border-color: var(--cg-navy-soft);
+}
+
+/* 覆盖 el-tag */
+.el-tag--success {
+  --el-tag-bg-color: #d1fae5;
+  --el-tag-text-color: #065f46;
+  --el-tag-border-color: #a7f3d0;
+}
+
+.el-tag--warning {
+  --el-tag-bg-color: #fef3c7;
+  --el-tag-text-color: #92400e;
+  --el-tag-border-color: #fde68a;
+}
+
+.el-tag--danger {
+  --el-tag-bg-color: #fee2e2;
+  --el-tag-text-color: #991b1b;
+  --el-tag-border-color: #fecaca;
+}
+
+.el-tag--info {
+  --el-tag-bg-color: var(--cg-mist);
+  --el-tag-text-color: var(--cg-charcoal);
+  --el-tag-border-color: #d1d5db;
+}
+
+/* 覆盖 el-input focus */
+.el-input__wrapper:focus-within {
+  box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.2);
+}
+
+/* 覆盖 el-table */
+.el-table {
+  --el-table-border-color: #e5e7eb;
+}
+
+.el-table th.el-table__cell {
+  background: var(--cg-mist);
+  color: var(--cg-navy);
+  font-weight: 600;
+}
+
+/* 覆盖 el-dialog */
+.el-dialog {
+  border-radius: var(--cg-radius-lg);
+}
+
+.el-dialog__header {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* 覆盖 el-tabs */
+.el-tabs__item.is-active {
+  color: var(--cg-navy);
+  font-weight: 600;
+}
+
+.el-tabs__active-bar {
+  background-color: var(--cg-navy);
+}
+
+/* 覆盖 el-page-header */
+.el-page-header__title {
+  color: var(--cg-navy);
+  font-weight: 600;
+}
+
+/* 覆盖 el-link */
+.el-link {
+  --el-link-text-color: var(--cg-navy-soft);
+}
+
+.el-link:hover {
+  color: var(--cg-accent);
+}
+
+/* 覆盖 el-dropdown */
+.el-dropdown-link {
+  cursor: pointer;
+  color: var(--cg-navy);
+}
+
+.el-dropdown-link:hover {
+  color: var(--cg-accent);
+}
