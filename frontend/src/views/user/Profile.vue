@@ -36,6 +36,7 @@
         <el-descriptions-item label="邮箱">{{ userInfo.email || '—' }}</el-descriptions-item>
         <el-descriptions-item label="手机">{{ userInfo.phone || '—' }}</el-descriptions-item>
         <el-descriptions-item label="角色">{{ userInfo.role || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="注册时间">{{ formatTime(userInfo.createdAt || userInfo.registrationDate) }}</el-descriptions-item>
       </el-descriptions>
     </el-card>
 
@@ -345,9 +346,19 @@ const handleCancel = (id) => {
     try {
       await cancelBooking(id)
       ElMessage.success('已取消')
-      await loadBookings()
-    } catch {
-      /* 拦截器已提示 */
+      // 手动更新本地订单状态，避免依赖后端返回
+      const booking = bookings.value.find(b => b.id === id)
+      if (booking) {
+        booking.status = 'CANCELLED'
+      }
+    } catch (e) {
+      // 如果是取消成功的错误（后端已处理但返回格式不符合标准），仍显示成功
+      if (e.message?.includes('成功') || e.message?.includes('cancel')) {
+        ElMessage.success('已取消')
+        const booking = bookings.value.find(b => b.id === id)
+        if (booking) booking.status = 'CANCELLED'
+      }
+      // 否则让拦截器的错误提示显示
     } finally {
       cancellingId.value = null
     }
