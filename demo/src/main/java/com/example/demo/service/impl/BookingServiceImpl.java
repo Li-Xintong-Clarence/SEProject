@@ -98,7 +98,8 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public boolean extendBooking(Long id, String hireOption) {
         Booking booking = bookingMapper.findById(id);
-        if (booking == null || !"ACTIVE".equals(booking.getStatus())) {
+        // 支付完成后状态为 PAID，仍应允许延长（与前端「进行中/已支付」一致）
+        if (booking == null || !("ACTIVE".equals(booking.getStatus()) || "PAID".equals(booking.getStatus()))) {
             return false;
         }
         LocalDateTime newEndTime = calculateEndTime(booking.getEndTime(), hireOption);
@@ -108,6 +109,7 @@ public class BookingServiceImpl implements BookingService {
         if (pricing != null) {
             booking.setTotalCost(booking.getTotalCost().add(pricing.getPrice()));
         }
+        booking.setStatus("ACTIVE");
         return bookingMapper.update(booking) > 0;
     }
 

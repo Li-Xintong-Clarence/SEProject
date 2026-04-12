@@ -49,6 +49,13 @@ public class WebConfig implements WebMvcConfigurer {
         // JWT拦截器 - 只拦截需要认证的API
         registry.addInterceptor(jwtInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/auth/**", "/api/users", "/api/scooters", "/api/scooters/available", "/api/pricing");
+                .excludePathPatterns(
+                        "/api/auth/**",
+                        "/api/users",
+                        "/api/scooters",
+                        "/api/scooters/available",
+                        "/api/pricing",
+                        "/api/hire-options",
+                        "/api/hire-options/**");
     }
 }

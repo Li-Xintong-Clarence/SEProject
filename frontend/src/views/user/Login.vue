@@ -36,6 +36,9 @@
         <div class="register-link">
           还没有账号？<router-link to="/register">立即注册</router-link>
         </div>
+        <div class="admin-entry">
+          <router-link to="/admin/login">员工 / 管理后台登录</router-link>
+        </div>
       </el-card>
     </div>
   </div>
@@ -213,5 +216,19 @@ const handleLogin = () => {
 
 .register-link a:hover {
   color: var(--cg-accent);
+}
+
+.admin-entry {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 13px;
+}
+.admin-entry a {
+  color: #6b7280;
+  text-decoration: none;
+}
+.admin-entry a:hover {
+  color: var(--cg-navy-soft);
+  text-decoration: underline;
 }
 </style>

@@ -34,3 +34,12 @@ export const getScooterById = (id) => {
         method: 'get'
     })
 }
+
+/** ID10 更新车辆状态（管理员/员工） */
+export const updateScooterStatus = (id, status) => {
+    return request({
+        url: `/api/scooters/${id}/status`,
+        method: 'put',
+        params: { status }
+    })
+}

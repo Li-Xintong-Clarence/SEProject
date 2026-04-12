@@ -1,14 +1,21 @@
 <template>
-  <DefaultLayout v-if="isLoggedIn" />
+  <DefaultLayout v-if="showLayout" />
   <router-view v-else />
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import DefaultLayout from '@/components/Layout/DefaultLayout.vue'
 
-// 简单判断用户是否已登录
-const isLoggedIn = computed(() => {
-  return !!localStorage.getItem('token')
+const route = useRoute()
+
+const showLayout = computed(() => {
+  const token = localStorage.getItem('token')
+  if (!token) return false
+  const p = route.path
+  if (['/login', '/register', '/admin/login'].includes(p)) return false
+  if (p.startsWith('/admin')) return false
+  return true
 })
 </script>

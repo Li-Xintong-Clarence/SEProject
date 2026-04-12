@@ -19,8 +19,10 @@
           active-text-color="#ffffff"
           @select="handleSelect"
         >
-          <el-menu-item index="scooters">找车</el-menu-item>
+          <el-menu-item index="scooter-map">地图找车</el-menu-item>
+          <el-menu-item index="scooter-list">车辆列表</el-menu-item>
           <el-menu-item index="profile">个人中心</el-menu-item>
+          <el-menu-item v-if="isAdmin" index="admin">管理后台</el-menu-item>
         </el-menu>
 
         <div class="user-info">
@@ -50,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watchEffect } from 'vue'
+import { ref, onMounted, watchEffect, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
@@ -58,8 +60,11 @@ import { ArrowDown } from '@element-plus/icons-vue'
 const router = useRouter()
 const route = useRoute()
 
-const activeIndex = ref('scooters')
+const activeIndex = ref('scooter-map')
 const username = ref('用户')
+const userRole = ref('')
+
+const isAdmin = computed(() => userRole.value === 'ADMIN')
 
 onMounted(() => {
   const userStr = localStorage.getItem('user')
@@ -67,6 +72,7 @@ onMounted(() => {
     try {
       const user = JSON.parse(userStr)
       username.value = user.username || user.name || '用户'
+      userRole.value = user.role || ''
     } catch (e) {
       console.error('解析用户信息失败')
     }
@@ -78,8 +84,10 @@ const goHome = () => {
 }
 
 const handleSelect = (index) => {
-  if (index === 'scooters') router.push('/scooters')
+  if (index === 'scooter-map') router.push('/scooters')
+  if (index === 'scooter-list') router.push('/scooters/list')
   if (index === 'profile') router.push('/profile')
+  if (index === 'admin') router.push('/admin')
 }
 
 const handleCommand = (command) => {
@@ -95,8 +103,10 @@ const handleCommand = (command) => {
 
 watchEffect(() => {
   const path = route.path
-  if (path.includes('scooters') || path.includes('booking')) {
-    activeIndex.value = 'scooters'
+  if (path === '/scooters/list') {
+    activeIndex.value = 'scooter-list'
+  } else if (path.startsWith('/scooters') || path.includes('booking')) {
+    activeIndex.value = 'scooter-map'
   } else if (path.includes('profile')) {
     activeIndex.value = 'profile'
   }

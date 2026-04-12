@@ -18,6 +18,9 @@
         <span class="available-dot"></span> 可用车辆（点击即可预订）
       </div>
       <div class="legend-item">
+        <span class="depot-dot"></span> 五个服务站点 (ID18)
+      </div>
+      <div class="legend-item">
         <span class="unavailable-dot"></span> 使用中 / 不可用
       </div>
     </div>
@@ -35,6 +38,26 @@ const router = useRouter()
 const nearbyScooters = ref([])
 
 const goBack = () => router.back()
+
+/** ID18：五个服务站点示意（可在课程文档中替换为 sheet2 精确坐标） */
+const SERVICE_DEPOTS = [
+  { name: '服务点 A', lng: 103.922, lat: 30.746 },
+  { name: '服务点 B', lng: 103.936, lat: 30.754 },
+  { name: '服务点 C', lng: 103.915, lat: 30.758 },
+  { name: '服务点 D', lng: 103.944, lat: 30.739 },
+  { name: '服务点 E', lng: 103.928, lat: 30.765 }
+]
+
+const addDepotMarkers = (AMap, map) => {
+  SERVICE_DEPOTS.forEach((d) => {
+    new AMap.Marker({
+      position: [d.lng, d.lat],
+      map,
+      title: `${d.name}（停车/取车点）`,
+      icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png'
+    })
+  })
+}
 
 // 计算两点间距离（单位：公里）
 const getDistance = (lat1, lng1, lat2, lng2) => {
@@ -75,6 +98,7 @@ onMounted(async () => {
       center: [103.9305, 30.7528], // 默认中心：成都西南交通大学犀浦校区
       resizeEnable: true
     })
+    addDepotMarkers(AMap, map)
 
     AMap.plugin('AMap.Geolocation', () => {
       const geolocation = new AMap.Geolocation({
@@ -148,6 +172,8 @@ onMounted(async () => {
             return
           }
 
+          nearbyScooters.value = availableScooters
+
           // 将地图视野调整到第一个滑板车位置
           const first = availableScooters[0]
           map.setCenter([first.lng, first.lat])
@@ -208,9 +234,10 @@ onMounted(async () => {
 }
 .legend { margin-top: 20px; display: flex; gap: 30px; font-size: 15px; color: #5c6570; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 10px; }
-.available-dot, .unavailable-dot {
+.available-dot, .unavailable-dot, .depot-dot {
   display: inline-block; width: 16px; height: 16px; border-radius: 50%;
 }
 .available-dot { background: #c45c5c; box-shadow: 0 0 0 3px rgba(196, 92, 92, 0.25); }
+.depot-dot { background: #1e3a5f; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.2); }
 .unavailable-dot { background: #9ca3af; }
 </style>
