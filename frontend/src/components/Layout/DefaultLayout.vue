@@ -1,16 +1,22 @@
 <template>
   <el-container class="layout-container">
-    <!-- 顶部导航栏 -->
     <el-header class="header">
       <div class="header-content">
-        <div class="logo" @click="goHome">
-          <h1>电动滑板车租赁系统</h1>
+        <div class="brand" @click="goHome">
+          <img class="brand-mark" src="/brand-logo.png" alt="" width="40" height="40" />
+          <div class="brand-text">
+            <span class="brand-en">CapyGlide</span>
+            <span class="brand-zh">卡皮滑行</span>
+          </div>
         </div>
 
         <el-menu
           :default-active="activeIndex"
           mode="horizontal"
           class="menu"
+          background-color="transparent"
+          text-color="rgba(255,255,255,0.88)"
+          active-text-color="#ffffff"
           @select="handleSelect"
         >
           <el-menu-item index="scooters">找车</el-menu-item>
@@ -33,19 +39,18 @@
       </div>
     </el-header>
 
-    <!-- 主要内容区 -->
     <el-main class="main-content">
       <router-view />
     </el-main>
 
     <el-footer class="footer">
-      © 2026 电动滑板车租赁系统 | Sprint 1
+      © 2026 CapyGlide 卡皮滑行 · 电动滑板车租赁
     </el-footer>
   </el-container>
 </template>
 
 <script setup>
-import { ref, onMounted, watchEffect } from 'vue'        // ← 确保 watchEffect 已导入
+import { ref, onMounted, watchEffect } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
@@ -56,7 +61,6 @@ const route = useRoute()
 const activeIndex = ref('scooters')
 const username = ref('用户')
 
-// 加载用户名
 onMounted(() => {
   const userStr = localStorage.getItem('user')
   if (userStr) {
@@ -89,7 +93,6 @@ const handleCommand = (command) => {
   }
 }
 
-// 路由变化时自动更新菜单高亮
 watchEffect(() => {
   const path = route.path
   if (path.includes('scooters') || path.includes('booking')) {
@@ -108,55 +111,88 @@ watchEffect(() => {
 }
 
 .header {
-  background-color: #409eff;
-  color: white;
   padding: 0;
+  background: linear-gradient(115deg, var(--cg-navy-deep) 0%, var(--cg-navy) 42%, var(--cg-navy-soft) 100%);
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(21, 42, 69, 0.25);
 }
 
 .header-content {
   display: flex;
   align-items: center;
   height: 100%;
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
-.logo {
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   cursor: pointer;
-  margin-right: 40px;
+  margin-right: 36px;
 }
 
-.logo h1 {
-  margin: 0;
-  font-size: 22px;
-  color: white;
-  font-weight: bold;
+.brand-mark {
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.brand-en {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.brand-zh {
+  font-size: 0.75rem;
+  opacity: 0.82;
+  color: var(--cg-sand-light);
 }
 
 .menu {
   flex: 1;
-  background-color: transparent;
-  border-bottom: none;
+  border-bottom: none !important;
 }
 
 .menu :deep(.el-menu-item) {
-  color: white !important;
+  font-weight: 600;
+  border-bottom: 2px solid transparent !important;
+}
+
+.menu :deep(.el-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
 .menu :deep(.el-menu-item.is-active) {
-  color: white !important;
-  border-bottom-color: white !important;
+  border-bottom-color: var(--cg-sand) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .user-info {
-  color: white;
-  font-size: 16px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
 }
 
+.el-dropdown-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .main-content {
-  background-color: #f5f7fa;
+  background: linear-gradient(180deg, var(--cg-mist) 0%, #ebe6dc 100%);
   padding: 24px;
   flex: 1;
   overflow: auto;
@@ -164,10 +200,10 @@ watchEffect(() => {
 
 .footer {
   text-align: center;
-  color: #999;
-  font-size: 14px;
-  background-color: #fff;
-  border-top: 1px solid #eee;
-  line-height: 60px;
+  color: #7a8494;
+  font-size: 13px;
+  background: var(--cg-white);
+  border-top: 1px solid rgba(30, 58, 95, 0.08);
+  line-height: 52px;
 }
 </style>

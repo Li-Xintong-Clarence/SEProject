@@ -1,7 +1,8 @@
 <template>
   <div class="booking">
     <el-page-header title="返回" @back="goBack" />
-    <h2>预订滑板车</h2>
+    <h2 class="page-title">预订滑板车</h2>
+    <p class="page-lead">确认时长与支付 · CapyGlide</p>
 
     <el-skeleton v-if="loading" :rows="8" animated />
 
@@ -216,6 +217,17 @@ onMounted(async () => {
   padding: 20px;
   max-width: 650px;
   margin: 0 auto;
+}
+.page-title {
+  margin: 0 0 6px;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--cg-navy);
+}
+.page-lead {
+  margin: 0 0 18px;
+  font-size: 0.88rem;
+  color: #6b7280;
 }
 .scooter-card {
   margin-bottom: 20px;

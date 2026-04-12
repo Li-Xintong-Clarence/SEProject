@@ -1,0 +1,75 @@
+/**
+ * CapyGlide 卡皮滑行 — 品牌主题（与卡皮巴拉 + 滑板车图标一致）
+ * 主色：深海蓝 | 辅色：炭灰、暖沙、雾白
+ */
+:root {
+  --cg-navy: #1e3a5f;
+  --cg-navy-deep: #152a45;
+  --cg-navy-soft: #2d5080;
+  --cg-charcoal: #3d4555;
+  --cg-sand: #e8dcc8;
+  --cg-sand-light: #f2ebe0;
+  --cg-mist: #f4f1eb;
+  --cg-white: #ffffff;
+  --cg-accent: #6b9ac4;
+  --cg-accent-soft: rgba(107, 154, 196, 0.22);
+  --cg-shadow: 0 18px 48px rgba(30, 58, 95, 0.12);
+  --cg-radius-lg: 20px;
+  --cg-radius-md: 14px;
+
+  /* Element Plus 主色对齐品牌蓝 */
+  --el-color-primary: #1e3a5f;
+  --el-color-primary-light-3: #4a6288;
+  --el-color-primary-light-5: #6d819f;
+  --el-color-primary-light-7: #91a0b6;
+  --el-color-primary-light-8: #a3afbf;
+  --el-color-primary-light-9: #b5bec9;
+  --el-color-primary-dark-2: #182e4c;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+  color: var(--cg-charcoal);
+  background: var(--cg-mist);
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* 主按钮略圆、更有产品感 */
+.el-button--primary {
+  --el-button-hover-bg-color: var(--cg-navy-soft);
+  --el-button-hover-border-color: var(--cg-navy-soft);
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.el-card {
+  border-radius: var(--cg-radius-md);
+  border: 1px solid rgba(30, 58, 95, 0.08);
+}
+
+.el-input__wrapper {
+  border-radius: 12px !important;
+}

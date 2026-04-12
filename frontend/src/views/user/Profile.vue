@@ -1,7 +1,8 @@
 <template>
   <div class="profile">
     <el-page-header title="返回" @back="goBack" />
-    <h2>个人中心</h2>
+    <h2 class="page-title">个人中心</h2>
+    <p class="page-lead">管理预订与反馈 · CapyGlide</p>
 
     <!-- 用户基本信息卡片 -->
     <el-card class="user-info-card">
@@ -242,6 +243,17 @@ onMounted(() => {
   padding: 20px;
   max-width: 1000px;
   margin: 0 auto;
+}
+.page-title {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--cg-navy);
+}
+.page-lead {
+  margin: 0 0 20px;
+  font-size: 0.9rem;
+  color: #6b7280;
 }
 .user-info-card {
   margin-bottom: 30px;

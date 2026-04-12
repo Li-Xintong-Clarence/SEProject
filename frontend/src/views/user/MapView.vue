@@ -1,7 +1,8 @@
 <template>
   <div class="map-view">
     <el-page-header title="返回" @back="goBack" />
-    <h2>附近滑板车</h2>
+    <h2 class="page-title">附近车辆</h2>
+    <p class="page-lead">CapyGlide · 定位附近可用滑板车，点选标记即可预订</p>
 
     <div class="info-bar">
       <el-tag type="success" size="large">已定位到您的位置</el-tag>
@@ -10,7 +11,7 @@
       </span>
     </div>
 
-    <div id="map-container" style="width: 100%; height: 680px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"></div>
+    <div id="map-container" class="map-shell"></div>
 
     <div class="legend">
       <div class="legend-item">
@@ -24,7 +25,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getScooters } from '@/api/scooter'
@@ -34,7 +35,6 @@ const router = useRouter()
 const nearbyScooters = ref([])
 
 const goBack = () => router.back()
-const availableCount = computed(() => nearbyScooters.value.length)
 
 // 计算两点间距离（单位：公里）
 const getDistance = (lat1, lng1, lat2, lng2) => {
@@ -176,14 +176,41 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.map-view { padding: 20px; max-width: 1280px; margin: 0 auto; }
-.info-bar { margin: 15px 0 20px; font-size: 17px; display: flex; align-items: center; gap: 15px; }
-.count-text { color: #555; }
-.legend { margin-top: 20px; display: flex; gap: 30px; font-size: 15px; color: #666; }
+.map-view {
+  padding: 20px 24px 32px;
+  max-width: 1280px;
+  margin: 0 auto;
+  background: var(--cg-white);
+  border-radius: var(--cg-radius-lg);
+  box-shadow: var(--cg-shadow);
+  border: 1px solid rgba(30, 58, 95, 0.06);
+}
+.page-title {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--cg-navy);
+  letter-spacing: 0.02em;
+}
+.page-lead {
+  margin: 0 0 16px;
+  font-size: 0.92rem;
+  color: #6b7280;
+}
+.info-bar { margin: 8px 0 20px; font-size: 17px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+.count-text { color: var(--cg-charcoal); }
+.map-shell {
+  width: 100%;
+  height: 680px;
+  border-radius: var(--cg-radius-md);
+  box-shadow: 0 8px 28px rgba(30, 58, 95, 0.1);
+  overflow: hidden;
+}
+.legend { margin-top: 20px; display: flex; gap: 30px; font-size: 15px; color: #5c6570; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 10px; }
 .available-dot, .unavailable-dot {
   display: inline-block; width: 16px; height: 16px; border-radius: 50%;
 }
-.available-dot { background: #ff4d4f; }
-.unavailable-dot { background: #999; }
+.available-dot { background: #c45c5c; box-shadow: 0 0 0 3px rgba(196, 92, 92, 0.25); }
+.unavailable-dot { background: #9ca3af; }
 </style>
