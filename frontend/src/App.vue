@@ -1,5 +1,5 @@
 <template>
-  <DefaultLayout v-if="showLayout" />
+  <DefaultLayout v-if="shouldShowLayout" />
   <router-view v-else />
 </template>
 
@@ -10,7 +10,7 @@ import DefaultLayout from '@/components/Layout/DefaultLayout.vue'
 
 const route = useRoute()
 
-const showLayout = computed(() => {
+const shouldShowLayout = computed(() => {
   const token = localStorage.getItem('token')
   if (!token) return false
   const p = route.path

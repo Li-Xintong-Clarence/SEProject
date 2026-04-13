@@ -280,13 +280,20 @@ const goBack = () => router.back()
 
 const loadMe = async () => {
   try {
-    const u = await getCurrentUser()
-    if (u) {
-      userInfo.value = u
-      localStorage.setItem('user', JSON.stringify({ ...JSON.parse(localStorage.getItem('user') || '{}'), ...u }))
+    console.log('开始加载用户信息...')
+    const res = await getCurrentUser()
+    console.log('getCurrentUser 返回:', res)
+    if (res) {
+      userInfo.value = res
+      localStorage.setItem('user', JSON.stringify({ ...JSON.parse(localStorage.getItem('user') || '{}'), ...res }))
+      console.log('用户信息加载成功:', res)
+    } else {
+      console.warn('getCurrentUser 返回空数据')
+      ElMessage.error('获取用户信息失败：user not found')
     }
-  } catch {
-    /* 忽略 */
+  } catch (e) {
+    console.error('获取用户信息异常:', e)
+    ElMessage.error('获取用户信息失败，请重新登录')
   }
 }
 

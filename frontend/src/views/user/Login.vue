@@ -77,7 +77,8 @@ const handleLogin = () => {
           localStorage.setItem('token', res.token)
           localStorage.setItem('user', JSON.stringify(res.user))
           ElMessage.success('登录成功')
-          router.push('/scooters')
+          // 使用 window.location 强制重新加载页面，确保 App.vue 的导航栏能正确渲染
+          window.location.href = '/scooters'
         } else {
           ElMessage.error('登录失败：返回数据格式不正确')
         }

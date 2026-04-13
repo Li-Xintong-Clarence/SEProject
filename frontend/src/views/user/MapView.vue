@@ -89,7 +89,7 @@ onMounted(async () => {
   // 2. 加载高德地图
   try {
     const AMap = await AMapLoader.load({
-      key: '27ec2a64ff4acc99ccf61c8c897a69d3',     // 你的真实 Key
+      key: import.meta.env.VITE_AMAP_KEY,
       version: '2.0'
     })
 
