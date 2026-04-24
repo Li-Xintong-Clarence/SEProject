@@ -9,12 +9,14 @@ import com.example.demo.mapper.PricingMapper;
 import com.example.demo.mapper.ScooterMapper;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.service.BookingService;
+import com.example.demo.service.DiscountService;
 import com.example.demo.service.EmailService;
 import com.example.demo.service.ScooterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +47,9 @@ public class BookingServiceImpl implements BookingService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private DiscountService discountService;
 
     @Override
     public List<Booking> findAll() {
@@ -80,7 +85,13 @@ public class BookingServiceImpl implements BookingService {
 
         Pricing pricing = pricingMapper.findById(getPricingIdByOption(booking.getHireOption()));
         if (pricing != null) {
-            booking.setTotalCost(pricing.getPrice());
+            // 获取用户信息用于折扣计算
+            User bookingUser = userMapper.findById(booking.getUserId());
+            double originalPrice = pricing.getPrice();
+            // 计算折后价格
+            double finalPrice = discountService.calculateDiscountedPrice(originalPrice,
+                    bookingUser != null ? bookingUser.getUserType() : "NORMAL");
+            booking.setTotalCost(BigDecimal.valueOf(finalPrice));
         }
         booking.setStatus("PENDING");
         booking.setCreatedAt(LocalDateTime.now());

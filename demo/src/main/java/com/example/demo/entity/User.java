@@ -21,6 +21,8 @@ public class User {
     private String phone;
     /** 角色：CUSTOMER=普通用户，ADMIN=管理员 */
     private String role = "CUSTOMER";
+    /** 用户类型：NORMAL=普通用户，STUDENT=学生，SENIOR=长者 */
+    private String userType = "NORMAL";
     /** 注册时间 */
     private LocalDateTime registrationDate;
     /** 是否激活 */
