@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * 用户服务实现类
@@ -93,5 +94,14 @@ public class UserServiceImpl implements UserService {
         }
         user.setPassword(null);
         return user;
+    }
+
+    @Override
+    public boolean isValidEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        return Pattern.matches(emailRegex, email);
     }
 }

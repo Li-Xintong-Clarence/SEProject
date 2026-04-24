@@ -48,4 +48,53 @@ public class EmailServiceImpl implements EmailService {
             System.err.println("邮件发送失败: " + e.getMessage());
         }
     }
+
+    @Override
+    public void sendBookingCancellation(String toEmail, String username, String confirmationCode,
+                                       String scooterNumber, String hireOption) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("预订已取消 - Scooter Rental");
+        String text = "亲爱的 " + username + "，\n\n" +
+            "您的电动车预订已被取消。\n\n" +
+            "确认码: " + confirmationCode + "\n" +
+            "车辆编号: " + scooterNumber + "\n" +
+            "租赁时长: " + hireOption + "\n\n" +
+            "如需重新预订，请访问我们的网站。\n\n" +
+            "如有疑问，请联系我们。\n" +
+            "Scooter Rental Team";
+        message.setText(text);
+
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("邮件发送失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void sendRideCompletion(String toEmail, String username, String confirmationCode,
+                                  String scooterNumber, String startTime, String endTime, double totalCost) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("骑行结束 - Scooter Rental");
+        String text = "亲爱的 " + username + "，\n\n" +
+            "感谢您使用 Scooter Rental！\n\n" +
+            "您的骑行已结束。\n\n" +
+            "确认码: " + confirmationCode + "\n" +
+            "车辆编号: " + scooterNumber + "\n" +
+            "开始时间: " + startTime + "\n" +
+            "结束时间: " + endTime + "\n" +
+            "总费用: £" + String.format("%.2f", totalCost) + "\n\n" +
+            "请将车辆停放在指定区域并锁好。\n\n" +
+            "期待再次为您服务！\n" +
+            "Scooter Rental Team";
+        message.setText(text);
+
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("邮件发送失败: " + e.getMessage());
+        }
+    }
 }

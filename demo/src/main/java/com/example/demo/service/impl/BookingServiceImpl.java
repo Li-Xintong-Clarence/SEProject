@@ -63,12 +63,21 @@ public class BookingServiceImpl implements BookingService {
 
     /**
      * 创建新订单
-     * 1. 根据hireOption获取价格
-     * 2. 设置订单状态为PENDING
-     * 3. 生成确认码
+     * 1. 检查用户是否有进行中的订单（一人一车限制）
+     * 2. 根据hireOption获取价格
+     * 3. 设置订单状态为PENDING
+     * 4. 生成确认码
      */
     @Override
     public boolean save(Booking booking) {
+        // 一人一车限制：检查用户是否有进行中的订单
+        List<Booking> activeBookings = bookingMapper.findByUserId(booking.getUserId());
+        for (Booking b : activeBookings) {
+            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
+                return false; // 用户已有进行中的订单
+            }
+        }
+
         Pricing pricing = pricingMapper.findById(getPricingIdByOption(booking.getHireOption()));
         if (pricing != null) {
             booking.setTotalCost(pricing.getPrice());
@@ -116,6 +125,7 @@ public class BookingServiceImpl implements BookingService {
      * 1. 检查订单状态（不能是已完成或已取消）
      * 2. 更新状态为CANCELLED
      * 3. 释放车辆（状态改回AVAILABLE）
+     * 4. 发送取消邮件
      */
     @Override
     @Transactional
@@ -129,6 +139,33 @@ public class BookingServiceImpl implements BookingService {
         if (booking.getScooterId() != null) {
             scooterService.updateStatus(booking.getScooterId(), "AVAILABLE");
         }
+
+        sendCancellationEmail(booking);
+        return bookingMapper.update(booking) > 0;
+    }
+
+    /**
+     * 还车（结束骑行）
+     * 1. 检查订单状态必须是PAID或ACTIVE
+     * 2. 更新状态为COMPLETED
+     * 3. 释放车辆（状态改回AVAILABLE）
+     * 4. 发送结束邮件
+     */
+    @Override
+    @Transactional
+    public boolean returnScooter(Long id) {
+        Booking booking = bookingMapper.findById(id);
+        if (booking == null || !("PAID".equals(booking.getStatus()) || "ACTIVE".equals(booking.getStatus()))) {
+            return false;
+        }
+        booking.setStatus("COMPLETED");
+        booking.setEndTime(LocalDateTime.now());
+
+        if (booking.getScooterId() != null) {
+            scooterService.updateStatus(booking.getScooterId(), "AVAILABLE");
+        }
+
+        sendCompletionEmail(booking);
         return bookingMapper.update(booking) > 0;
     }
 
@@ -190,6 +227,68 @@ public class BookingServiceImpl implements BookingService {
             );
         } catch (Exception e) {
             System.err.println("发送确认邮件失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 发送取消预订邮件
+     */
+    private void sendCancellationEmail(Booking booking) {
+        try {
+            User user = userMapper.findById(booking.getUserId());
+            if (user == null || user.getEmail() == null) {
+                return;
+            }
+
+            Scooter scooter = null;
+            if (booking.getScooterId() != null) {
+                scooter = scooterMapper.findById(booking.getScooterId());
+            }
+
+            String scooterNumber = scooter != null ? scooter.getScooterNumber() : "N/A";
+
+            emailService.sendBookingCancellation(
+                user.getEmail(),
+                user.getUsername(),
+                booking.getConfirmationCode(),
+                scooterNumber,
+                booking.getHireOption()
+            );
+        } catch (Exception e) {
+            System.err.println("发送取消邮件失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 发送结束骑行邮件
+     */
+    private void sendCompletionEmail(Booking booking) {
+        try {
+            User user = userMapper.findById(booking.getUserId());
+            if (user == null || user.getEmail() == null) {
+                return;
+            }
+
+            Scooter scooter = null;
+            if (booking.getScooterId() != null) {
+                scooter = scooterMapper.findById(booking.getScooterId());
+            }
+
+            String scooterNumber = scooter != null ? scooter.getScooterNumber() : "N/A";
+            String startTime = booking.getStartTime() != null ? booking.getStartTime().toString() : "N/A";
+            String endTime = booking.getEndTime() != null ? booking.getEndTime().toString() : "N/A";
+
+            emailService.sendRideCompletion(
+                user.getEmail(),
+                user.getUsername(),
+                booking.getConfirmationCode(),
+                scooterNumber,
+                startTime,
+                endTime,
+                booking.getTotalCost() != null ? booking.getTotalCost().doubleValue() : 0.0
+            );
+        } catch (Exception e) {
+            System.err.println("发送结束邮件失败: " + e.getMessage());
         }
     }
 

@@ -18,4 +18,16 @@ public interface EmailService {
      */
     void sendBookingConfirmation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption, String startTime, String endTime, double totalCost);
+
+    /**
+     * 发送订单取消邮件
+     */
+    void sendBookingCancellation(String toEmail, String username, String confirmationCode,
+                                 String scooterNumber, String hireOption);
+
+    /**
+     * 发送结束骑行邮件
+     */
+    void sendRideCompletion(String toEmail, String username, String confirmationCode,
+                           String scooterNumber, String startTime, String endTime, double totalCost);
 }

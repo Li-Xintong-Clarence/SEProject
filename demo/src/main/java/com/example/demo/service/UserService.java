@@ -18,4 +18,10 @@ public interface UserService {
     boolean deleteById(Long id);
     User register(RegisterRequest request);
     User login(LoginRequest request);
+    /**
+     * 验证邮箱格式是否合法
+     * @param email 邮箱地址
+     * @return 是否合法
+     */
+    boolean isValidEmail(String email);
 }
