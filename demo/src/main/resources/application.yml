@@ -13,12 +13,12 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/scooter_rental?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: sep2user
     password: Sep2Pass2026!
-  # 邮件配置（开发环境可填占位；生产环境请配置真实 SMTP）
+  # 邮件配置
   mail:
-    host: smtp.example.com
+    host: smtp.qq.com
     port: 587
-    username: your-email@example.com
-    password: your-password
+    username: 1755269020@qq.com
+    password: xdjukjqzpxzkcbhj
     properties:
       mail:
         smtp:

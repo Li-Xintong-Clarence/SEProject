@@ -53,6 +53,19 @@ public class ScooterController {
     }
 
     /**
+     * 根据车牌号获取电动车信息
+     * GET /api/scooters/number?scooterNumber=SC001
+     */
+    @GetMapping("/number")
+    public Result<Scooter> findByNumber(@RequestParam String scooterNumber) {
+        Scooter scooter = scooterService.findByScooterNumber(scooterNumber);
+        if (scooter != null) {
+            return Result.success(scooter);
+        }
+        return Result.error("Scooter not found");
+    }
+
+    /**
      * 添加新电动车（管理员）
      * POST /api/scooters
      */

@@ -51,4 +51,9 @@ public interface BookingService {
      * 获取用户统计信息（订单数、总消费、总时长）
      */
     Map<String, Object> getUserStats(Long userId);
+    /**
+     * 还车（结束骑行）
+     * @param id 订单ID
+     */
+    boolean returnScooter(Long id);
 }

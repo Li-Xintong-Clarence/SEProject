@@ -82,6 +82,9 @@ public class UserController {
      */
     @PostMapping
     public Result<String> add(@RequestBody User user) {
+        if (!userService.isValidEmail(user.getEmail())) {
+            return Result.error("Invalid email format");
+        }
         if (userService.save(user)) {
             return Result.success("User created successfully");
         }
@@ -94,6 +97,9 @@ public class UserController {
      */
     @PutMapping
     public Result<String> update(@RequestBody User user) {
+        if (user.getEmail() != null && !userService.isValidEmail(user.getEmail())) {
+            return Result.error("Invalid email format");
+        }
         if (userService.update(user)) {
             return Result.success("User updated successfully");
         }

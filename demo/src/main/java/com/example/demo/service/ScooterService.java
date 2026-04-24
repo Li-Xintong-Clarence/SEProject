@@ -10,6 +10,7 @@ import java.util.List;
 public interface ScooterService {
     List<Scooter> findAll();
     Scooter findById(Long id);
+    Scooter findByScooterNumber(String scooterNumber);
     List<Scooter> findAvailable();
     boolean save(Scooter scooter);
     boolean update(Scooter scooter);

@@ -49,6 +49,23 @@ public class BookingController {
     }
 
     /**
+     * 获取当前进行中的骑行
+     * GET /api/bookings/current
+     * 用于检查用户是否有进行中的骑行（一人一车）
+     */
+    @GetMapping("/current")
+    public Result<Booking> getCurrentRide(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        List<Booking> bookings = bookingService.findByUserId(userId);
+        for (Booking b : bookings) {
+            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
+                return Result.success(b);
+            }
+        }
+        return Result.error("No active ride");
+    }
+
+    /**
      * 根据ID获取订单详情
      * GET /api/bookings/{id}
      */
@@ -84,6 +101,18 @@ public class BookingController {
             return Result.success("Booking cancelled successfully");
         }
         return Result.error("Failed to cancel booking");
+    }
+
+    /**
+     * 还车（结束骑行）
+     * POST /api/bookings/{id}/return
+     */
+    @PostMapping("/{id}/return")
+    public Result<String> returnScooter(@PathVariable Long id) {
+        if (bookingService.returnScooter(id)) {
+            return Result.success("Scooter returned successfully");
+        }
+        return Result.error("Failed to return scooter");
     }
 
     /**
