@@ -87,9 +87,9 @@ public class BookingServiceImpl implements BookingService {
         if (pricing != null) {
             // 获取用户信息用于折扣计算
             User bookingUser = userMapper.findById(booking.getUserId());
-            double originalPrice = pricing.getPrice();
+            BigDecimal originalPrice = pricing.getPrice();
             // 计算折后价格
-            double finalPrice = discountService.calculateDiscountedPrice(originalPrice,
+            double finalPrice = discountService.calculateDiscountedPrice(originalPrice.doubleValue(),
                     bookingUser != null ? bookingUser.getUserType() : "NORMAL");
             booking.setTotalCost(BigDecimal.valueOf(finalPrice));
         }
