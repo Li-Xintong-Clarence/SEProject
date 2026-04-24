@@ -38,13 +38,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 允许的前端地址（开发环境允许所有，生产环境应限制为实际域名）
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:*",
-            "http://127.0.0.1:*",
-            "http://10.*",
-            "http://192.168.*"
-        ));
+        // 允许所有来源（开发/测试环境）
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         // 允许的HTTP方法
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // 允许的请求头
