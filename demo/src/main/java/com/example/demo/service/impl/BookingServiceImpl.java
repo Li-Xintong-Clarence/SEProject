@@ -93,7 +93,7 @@ public class BookingServiceImpl implements BookingService {
      * 延长租期
      * 1. 查找订单，检查状态必须是ACTIVE
      * 2. 计算新的结束时间
-     * 3. 增加相应费用
+     * 3. 增加相应费用（不重复折扣）
      */
     @Override
     public boolean extendBooking(Long id, String hireOption) {

@@ -2,7 +2,7 @@
   <div class="login-page">
     <div class="login-hero">
       <div class="hero-inner">
-        <img class="hero-logo" src="/brand-logo.svg" alt="CapyGlide" width="120" height="120" />
+        <img class="hero-logo" src="/brand-logo.png" alt="CapyGlide" width="120" height="120" />
         <h1 class="hero-title">CapyGlide</h1>
         <p class="hero-tag">卡皮滑行 · 轻松租一辆，慢慢逛一城</p>
         <p class="hero-desc">和卡皮巴拉一样从容：定位附近车辆，一键预订，随时出发。</p>
@@ -79,6 +79,8 @@ const handleLogin = () => {
           localStorage.setItem('token', res.token)
           localStorage.setItem('user', JSON.stringify(res.user))
           ElMessage.success('登录成功')
+          // 触发登录状态变更事件
+          window.dispatchEvent(new Event('login-state-change'))
           router.push('/scooters')
         } else {
           ElMessage.error('登录失败：返回数据格式不正确')
@@ -97,7 +99,7 @@ const handleLogin = () => {
 .login-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 420px);
+  grid-template-columns: 1fr 480px;
 }
 
 @media (max-width: 900px) {
@@ -105,8 +107,8 @@ const handleLogin = () => {
     grid-template-columns: 1fr;
   }
   .login-hero {
-    min-height: 220px;
-    padding: 32px 24px 16px;
+    min-height: 280px;
+    padding: 40px 24px;
   }
 }
 
@@ -116,11 +118,7 @@ const handleLogin = () => {
   align-items: center;
   justify-content: center;
   padding: 48px;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(107, 154, 196, 0.35) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 85% 70%, rgba(232, 220, 200, 0.45) 0%, transparent 50%),
-    linear-gradient(145deg, var(--cg-navy-deep) 0%, var(--cg-navy) 55%, var(--cg-navy-soft) 100%);
-  color: #fff;
+  background: var(--cg-gradient-navy);
   overflow: hidden;
 }
 
@@ -128,8 +126,7 @@ const handleLogin = () => {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  opacity: 0.9;
+  background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
   pointer-events: none;
 }
 
@@ -137,102 +134,114 @@ const handleLogin = () => {
   position: relative;
   text-align: center;
   max-width: 420px;
+  z-index: 1;
 }
 
 .hero-logo {
-  border-radius: 28px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-  margin-bottom: 20px;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  margin-bottom: 24px;
 }
 
 .hero-title {
-  margin: 0 0 8px;
-  font-size: 2.25rem;
+  margin: 0 0 12px;
+  font-size: 2.5rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  color: white;
+  letter-spacing: -0.02em;
 }
 
 .hero-tag {
   margin: 0 0 16px;
-  font-size: 1rem;
-  color: var(--cg-sand);
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
 }
 
 .hero-desc {
   margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.65;
-  opacity: 0.88;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .login-panel {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px 24px;
-  background: var(--cg-mist);
+  padding: 48px 32px;
+  background: var(--cg-white);
 }
 
 .login-card {
   width: 100%;
-  max-width: 400px;
-  border-radius: var(--cg-radius-lg) !important;
-  box-shadow: var(--cg-shadow) !important;
-  padding: 8px 4px 16px;
+  max-width: 380px;
 }
 
 .card-title {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   text-align: center;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--cg-navy);
+  letter-spacing: -0.02em;
 }
 
 .card-sub {
-  margin: 0 0 28px;
+  margin: 0 0 32px;
   text-align: center;
-  font-size: 0.9rem;
-  color: #6b7280;
+  font-size: 15px;
+  color: var(--cg-text-light);
 }
 
 .login-btn {
   width: 100%;
-  height: 46px;
-  margin-top: 4px;
+  height: 48px;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--cg-gradient) !important;
+  border: none !important;
+  border-radius: var(--cg-radius-md);
+  margin-top: 8px;
+  transition: var(--cg-transition);
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--cg-shadow-accent);
 }
 
 .register-link {
   text-align: center;
-  margin-top: 8px;
+  margin-top: 24px;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--cg-text-light);
 }
 
 .register-link a {
-  color: var(--cg-navy-soft);
+  color: var(--cg-accent);
   font-weight: 600;
   text-decoration: none;
+  transition: var(--cg-transition);
 }
 
 .register-link a:hover {
-  color: var(--cg-accent);
+  color: var(--cg-accent-dark);
 }
 
 .admin-entry {
   text-align: center;
-  margin-top: 14px;
+  margin-top: 20px;
   font-size: 13px;
 }
 
 .admin-entry a {
-  color: #6b7280;
+  color: var(--cg-text-muted);
   text-decoration: none;
+  transition: var(--cg-transition);
 }
 
 .admin-entry a:hover {
-  color: var(--cg-navy-soft);
-  text-decoration: underline;
+  color: var(--cg-navy);
 }
 </style>

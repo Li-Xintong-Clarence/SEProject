@@ -10,6 +10,7 @@ const routes = [
   { path: '/scooters', name: 'Scooters', component: () => import('../views/user/MapView.vue') },
   { path: '/scooters/list', name: 'ScooterList', component: () => import('../views/user/ScooterList.vue') },
   { path: '/booking', name: 'Booking', component: () => import('../views/user/Booking.vue') },
+  { path: '/trip', name: 'CurrentTrip', component: () => import('../views/user/CurrentTrip.vue') },
   { path: '/profile', name: 'Profile', component: () => import('../views/user/Profile.vue') },
 
   // 管理员页面
@@ -19,6 +20,18 @@ const routes = [
     name: 'AdminDashboard',
     meta: { requiresAdmin: true },
     component: () => import('../views/admin/AdminDashboard.vue')
+  },
+  {
+    path: '/admin/users',
+    name: 'UserManagement',
+    meta: { requiresAdmin: true },
+    component: () => import('../views/admin/UserManagement.vue')
+  },
+  {
+    path: '/admin/issues',
+    name: 'IssuesManagement',
+    meta: { requiresAdmin: true },
+    component: () => import('../views/admin/IssuesManagement.vue')
   }
 ]
 

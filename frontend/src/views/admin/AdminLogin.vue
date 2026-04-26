@@ -2,7 +2,7 @@
   <div class="admin-login-page">
     <div class="login-card">
       <div class="brand-row">
-        <img src="/brand-logo.svg" alt="" width="56" height="56" class="logo" />
+        <img src="/brand-logo.png" alt="" width="56" height="56" class="logo" />
         <div>
           <h1>员工 / 管理后台</h1>
           <p class="sub">CapyGlide · 代客预订 · 报表 · 车辆与价格</p>
@@ -96,7 +96,7 @@ const submit = () => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: linear-gradient(145deg, var(--cg-navy-deep) 0%, var(--cg-navy) 100%);
+  background: var(--cg-gradient-navy);
 }
 
 .login-card {

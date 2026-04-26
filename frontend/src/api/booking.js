@@ -34,8 +34,8 @@ export const payBooking = (id, paymentData) => {
 export const extendBooking = (id, hireOption) => {
     return request({
         url: `/api/bookings/${id}/extend`,
-        method: 'put',
-        params: { hireOption }
+        method: 'post',
+        data: { hireOption }
     })
 }
 
@@ -43,5 +43,12 @@ export const getBookingConfirmation = (id) => {
     return request({
         url: `/api/bookings/${id}/confirmation`,
         method: 'get'
+    })
+}
+
+export const returnScooter = (id) => {
+    return request({
+        url: `/api/bookings/${id}/return`,
+        method: 'post'
     })
 }

@@ -5,6 +5,15 @@
       <p class="page-sub">查看可用状态与坐标 · <router-link to="/scooters">打开地图模式</router-link></p>
     </div>
 
+    <el-alert v-if="hasActiveBooking" type="warning" :closable="false" class="active-alert">
+      <template #title>
+        您有正在进行的行程
+        <el-button type="warning" size="small" @click="$router.push('/trip')" style="margin-left: 12px;">
+          前往当前行程
+        </el-button>
+      </template>
+    </el-alert>
+
     <div class="view-toggle">
       <el-button-group>
         <el-button :type="viewMode === 'list' ? 'primary' : ''" @click="viewMode = 'list'">列表模式</el-button>
@@ -54,6 +63,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Location } from '@element-plus/icons-vue'
 import { getScooters } from '@/api/scooter'
+import { getUserBookings } from '@/api/booking'
 import { ElMessage } from 'element-plus'
 import MapView from './MapView.vue'
 
@@ -61,6 +71,7 @@ const router = useRouter()
 const viewMode = ref('list')
 const scooters = ref([])
 const loading = ref(false)
+const hasActiveBooking = ref(false)
 
 const statusType = (s) => {
   const u = String(s || '').toUpperCase()
@@ -78,11 +89,31 @@ const statusText = (s) => {
 }
 
 const handleBook = (scooterId) => {
+  if (hasActiveBooking.value) {
+    ElMessage.warning('您已有正在进行的行程，请先完成或取消当前行程')
+    router.push('/trip')
+    return
+  }
   router.push({ path: '/booking', query: { scooterId } })
+}
+
+// 检查是否有进行中的订单
+const checkActiveBooking = async () => {
+  try {
+    const res = await getUserBookings()
+    const list = Array.isArray(res) ? res : []
+    hasActiveBooking.value = list.some(b => {
+      const s = (b.status || '').toUpperCase()
+      return s === 'ACTIVE' || s === 'PAID'
+    })
+  } catch {
+    hasActiveBooking.value = false
+  }
 }
 
 onMounted(async () => {
   loading.value = true
+  await checkActiveBooking()
   try {
     const res = await getScooters()
     scooters.value = Array.isArray(res) ? res : (res?.data || [])
@@ -97,35 +128,52 @@ onMounted(async () => {
 
 <style scoped>
 .scooter-list {
-  padding: 20px;
+  padding: 32px 24px;
   max-width: 1280px;
   margin: 0 auto;
 }
 
 .page-header {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .page-title {
   margin: 0 0 6px;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: var(--cg-navy);
+  color: var(--cg-text);
+  letter-spacing: -0.02em;
 }
 
 .page-sub {
   margin: 0;
-  font-size: 0.9rem;
-  color: #6b7280;
+  font-size: 15px;
+  color: var(--cg-text-light);
 }
 
 .page-sub a {
-  color: var(--cg-navy-soft);
+  color: var(--cg-primary);
   font-weight: 600;
+  text-decoration: none;
+  transition: var(--cg-transition);
+}
+
+.page-sub a:hover {
+  color: var(--cg-highlight);
 }
 
 .view-toggle {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.active-alert {
+  margin-bottom: 24px;
+}
+
+.active-alert :deep(.el-alert__title) {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
 }
 
 .loading {
@@ -134,12 +182,15 @@ onMounted(async () => {
 
 .scooter-card {
   margin-bottom: 20px;
-  border-radius: var(--cg-radius-md);
-  transition: all 0.2s;
+  border-radius: var(--cg-radius-lg);
+  border: 1px solid var(--cg-border-light);
+  transition: var(--cg-transition);
+  overflow: hidden;
 }
 
 .scooter-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: var(--cg-shadow-lg);
 }
 
 .card-header {
@@ -152,13 +203,14 @@ onMounted(async () => {
 .card-header h3 {
   margin: 0;
   font-size: 1rem;
-  color: var(--cg-navy);
+  font-weight: 700;
+  color: var(--cg-text);
 }
 
 .card-meta p {
   margin: 6px 0;
   font-size: 14px;
-  color: #555;
+  color: var(--cg-text-light);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -166,6 +218,14 @@ onMounted(async () => {
 
 .book-btn {
   width: 100%;
-  margin-top: 12px;
+  margin-top: 16px;
+  border-radius: var(--cg-radius-md);
+  font-weight: 600;
+  background: var(--cg-gradient) !important;
+  border: none !important;
+}
+
+.book-btn:hover {
+  box-shadow: var(--cg-shadow-accent);
 }
 </style>
