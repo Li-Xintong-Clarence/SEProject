@@ -8,3 +8,9 @@ export const getUserStats = (userId = null) =>
 
 export const listUsers = () =>
   request({ url: '/api/users', method: 'get' })
+
+export const getAllUsers = () =>
+  request({ url: '/api/users/all', method: 'get' })
+
+export const updateUserStatus = (id, status) =>
+  request({ url: `/api/users/${id}/status`, method: 'put', data: { status } })

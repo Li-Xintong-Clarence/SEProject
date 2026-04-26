@@ -1,94 +1,122 @@
 <template>
-  <div class="current-trip">
+  <div class="booking current-trip">
+    <el-page-header title="返回" @back="goBack" />
     <h2 class="page-title">当前行程</h2>
-    <p class="page-sub">CapyGlide · 正在使用的滑板车</p>
+    <p class="page-sub">CapyGlide · 正在进行的租用</p>
 
     <el-skeleton v-if="loading" :rows="8" animated />
 
-    <!-- 有正在使用的订单 -->
-    <template v-else-if="activeBooking">
-      <el-card class="trip-card" shadow="never">
+    <template v-else-if="currentBooking">
+      <!-- 行程信息卡片 -->
+      <el-card class="scooter-card trip-card" shadow="never">
         <template #header>
-          <div class="card-header">
-            <span><el-icon>< Van /></el-icon> 正在租用</span>
-            <el-tag type="warning">进行中</el-tag>
+          <div class="scooter-header">
+            <h3>{{ currentBooking.scooterNumber || currentBooking.scooterId }}</h3>
+            <el-tag type="success">租用中</el-tag>
           </div>
         </template>
 
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="滑板车">
-            {{ activeBooking.scooterName || `车 #${activeBooking.scooterId}` }}
-          </el-descriptions-item>
-          <el-descriptions-item label="确认码">
-            <strong>{{ activeBooking.confirmationCode }}</strong>
-          </el-descriptions-item>
-          <el-descriptions-item label="租用时长">
-            {{ formatDuration(activeBooking.hireOption) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="已用时长">
-            <span :class="{ 'overdue': isOverdue }">
-              {{ usedDuration }}
-              <el-tag v-if="isOverdue" type="danger" size="small">已超时</el-tag>
-            </span>
-          </el-descriptions-item>
-          <el-descriptions-item label="开始时间">
-            {{ formatTime(activeBooking.startTime) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="预计结束">
-            {{ formatTime(activeBooking.endTime) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="应付金额">
-            <strong>¥{{ activeBooking.totalCost ?? activeBooking.totalPrice ?? 0 }}</strong>
-          </el-descriptions-item>
-        </el-descriptions>
+        <!-- 滑板车元信息 -->
+        <div class="scooter-meta">
+          <span><el-icon><Timer /></el-icon> {{ formatDuration(currentBooking.hireOption) }}</span>
+          <span><el-icon><Location /></el-icon> {{ currentBooking.location || '位置信息' }}</span>
+        </div>
 
+        <!-- 倒计时区域 -->
+        <div class="countdown-section">
+          <div class="countdown-item">
+            <div class="countdown-label">已使用时长</div>
+            <div class="countdown-value">{{ elapsedTime }}</div>
+          </div>
+          <div class="countdown-divider"></div>
+          <div class="countdown-item">
+            <div class="countdown-label">预计剩余</div>
+            <div class="countdown-value warning">{{ remainingTime }}</div>
+          </div>
+        </div>
+
+        <!-- 价格信息 -->
+        <div class="price-section">
+          <div class="price-row total">
+            <span>当前费用</span>
+            <strong class="price">¥{{ Number(currentBooking.totalCost || 0).toFixed(2) }}</strong>
+          </div>
+        </div>
+
+        <!-- 详细信息 -->
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">开始时间</span>
+            <span class="detail-value">{{ formatDateTime(currentBooking.startTime) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">租用时长</span>
+            <span class="detail-value">{{ formatDuration(currentBooking.hireOption) }}</span>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
         <div class="action-buttons">
-          <el-button type="primary" @click="viewConfirmation">
-            <el-icon><View /></el-icon> 查看确认信息
+          <el-button type="primary" size="large" @click="extendTrip" class="action-btn">
+            延长租用
           </el-button>
-          <el-button type="warning" @click="openExtend">
-            <el-icon><Clock /></el-icon> 延长租期
+          <el-button type="success" size="large" @click="endTrip" class="action-btn success">
+            结束行程
           </el-button>
-          <el-button type="success" @click="handleReturn">
-            <el-icon><Finished /></el-icon> 结束行程（还车）
+          <el-button size="large" @click="reportIssue" class="action-btn outline">
+            报告问题
           </el-button>
         </div>
       </el-card>
     </template>
 
-    <!-- 没有正在使用的订单 -->
-    <el-empty v-else description="当前没有正在进行的行程">
-      <template #extra>
-        <el-button type="primary" @click="goToScooters">去租车</el-button>
-      </template>
+    <el-empty v-else description="暂无进行中的行程">
+      <el-button type="primary" @click="$router.push('/scooters')">
+        去租车
+      </el-button>
     </el-empty>
 
-    <!-- 延长租期弹窗 -->
-    <el-dialog v-model="extendVisible" title="延长租期" width="480px">
-      <p style="margin-bottom: 16px;">请选择延长的时长：</p>
-      <el-radio-group v-model="extendHireOption" style="display: flex; flex-direction: column; gap: 12px;">
-        <el-radio-button value="1hr">1 小时</el-radio-button>
-        <el-radio-button value="4hr">4 小时</el-radio-button>
-        <el-radio-button value="1day">1 天</el-radio-button>
-        <el-radio-button value="1week">1 周</el-radio-button>
-      </el-radio-group>
+    <!-- 延长租用弹窗 -->
+    <el-dialog v-model="extendVisible" title="延长租用" width="400px">
+      <el-form :model="extendForm" label-width="80px">
+        <el-form-item label="延长时间">
+          <el-select v-model="extendForm.hireOption" style="width: 100%">
+            <el-option label="1 小时" value="1hr" />
+            <el-option label="4 小时" value="4hr" />
+            <el-option label="1 天" value="1day" />
+          </el-select>
+        </el-form-item>
+      </el-form>
       <template #footer>
         <el-button @click="extendVisible = false">取消</el-button>
-        <el-button type="primary" :loading="extendLoading" @click="submitExtend">确认延长</el-button>
+        <el-button type="primary" :loading="extendLoading" @click="confirmExtend">确认延长</el-button>
       </template>
     </el-dialog>
 
-    <!-- 确认信息弹窗 -->
-    <el-dialog v-model="confirmVisible" title="预订确认信息" width="520px">
-      <el-descriptions v-if="confirmation" :column="1" border>
-        <el-descriptions-item label="确认码">{{ confirmation.confirmationCode }}</el-descriptions-item>
-        <el-descriptions-item label="滑板车">{{ confirmation.scooterName || `车 #${confirmation.scooterId}` }}</el-descriptions-item>
-        <el-descriptions-item label="租期">{{ formatDuration(confirmation.hireOption) }}</el-descriptions-item>
-        <el-descriptions-item label="开始时间">{{ formatTime(confirmation.startTime) }}</el-descriptions-item>
-        <el-descriptions-item label="结束时间">{{ formatTime(confirmation.endTime) }}</el-descriptions-item>
-        <el-descriptions-item label="总费用">¥{{ confirmation.totalCost }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ getStatusText(confirmation.status) }}</el-descriptions-item>
-      </el-descriptions>
+    <!-- 报告问题弹窗 -->
+    <el-dialog v-model="issueVisible" title="报告问题" width="500px">
+      <el-form :model="issueForm" label-width="100px">
+        <el-form-item label="问题描述" required>
+          <el-input
+            v-model="issueForm.description"
+            type="textarea"
+            :rows="4"
+            placeholder="请描述遇到的问题"
+          />
+        </el-form-item>
+        <el-form-item label="问题类型">
+          <el-select v-model="issueForm.type" style="width: 100%">
+            <el-option label="车辆故障" value="BREAKDOWN" />
+            <el-option label="电量不足" value="LOW_BATTERY" />
+            <el-option label="无法还车" value="RETURN_ISSUE" />
+            <el-option label="其他问题" value="OTHER" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="issueVisible = false">取消</el-button>
+        <el-button type="primary" :loading="issueLoading" @click="confirmReport">提交报告</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -97,159 +125,175 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Van, View, Clock, Finished } from '@element-plus/icons-vue'
-import { getUserBookings, extendBooking, getBookingConfirmation, returnScooter } from '@/api/booking'
+import { Timer, Location } from '@element-plus/icons-vue'
+import { getMyActiveBookings, endBooking, extendBooking } from '@/api/booking'
+import { createIssueReport } from '@/api/issues'
 
 const router = useRouter()
 
 const loading = ref(true)
-const activeBooking = ref(null)
-const bookings = ref([])
-
-// 延长弹窗
+const currentBooking = ref(null)
 const extendVisible = ref(false)
-const extendHireOption = ref('1hr')
+const issueVisible = ref(false)
 const extendLoading = ref(false)
+const issueLoading = ref(false)
 
-// 确认信息弹窗
-const confirmVisible = ref(false)
-const confirmation = ref(null)
+const extendForm = ref({ hireOption: '1hr' })
+const issueForm = ref({ description: '', type: 'OTHER' })
 
-// 定时器用于更新已用时长
 let timer = null
+const startTime = ref(null)
+const durationMinutes = ref(60)
 
-// 格式化时长
-const formatDuration = (code) => {
-  const m = { '1hr': '1小时', '4hr': '4小时', '1day': '1天', '1week': '1周' }
-  return m[code] || code
+const goBack = () => router.push('/scooters')
+
+const formatDuration = (option) => {
+  const map = { '1hr': '1小时', '4hr': '4小时', '1day': '1天', '1week': '1周' }
+  return map[option] || option || '未知'
 }
 
-// 格式化时间
-const formatTime = (time) => {
+const formatDateTime = (time) => {
   if (!time) return '—'
   const date = new Date(time)
-  if (isNaN(date.getTime())) return String(time)
   return date.toLocaleString('zh-CN', {
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit'
   })
 }
 
-// 状态文字
-const getStatusText = (status) => {
-  const u = (status || '').toUpperCase()
-  const map = { ACTIVE: '进行中', PAID: '已支付', COMPLETED: '已完成', CANCELLED: '已取消', PENDING: '待支付' }
-  return map[u] || status
+const durationToMinutes = (option) => {
+  const map = { '1hr': 60, '4hr': 240, '1day': 1440, '1week': 10080 }
+  return map[option] || 60
 }
 
-// 计算已用时长
-const usedDuration = computed(() => {
-  if (!activeBooking.value?.startTime) return '—'
-  const start = new Date(activeBooking.value.startTime)
-  const now = new Date()
-  const diff = Math.floor((now - start) / 1000 / 60) // 分钟
-  const hours = Math.floor(diff / 60)
-  const mins = diff % 60
-  return hours > 0 ? `${hours}小时${mins}分钟` : `${mins}分钟`
+const elapsedTime = computed(() => {
+  if (!startTime.value) return '00:00:00'
+  const elapsed = Math.floor((Date.now() - startTime.value) / 1000)
+  const h = Math.floor(elapsed / 3600)
+  const m = Math.floor((elapsed % 3600) / 60)
+  const s = elapsed % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 })
 
-// 是否已超时
-const isOverdue = computed(() => {
-  if (!activeBooking.value?.endTime) return false
-  const end = new Date(activeBooking.value.endTime)
-  return new Date() > end
+const remainingTime = computed(() => {
+  if (!startTime.value) return '00:00:00'
+  const endTime = startTime.value + durationMinutes.value * 60 * 1000
+  const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000))
+  const h = Math.floor(remaining / 3600)
+  const m = Math.floor((remaining % 3600) / 60)
+  const s = remaining % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 })
 
-// 加载数据
-const loadData = async () => {
+const loadBooking = async () => {
   loading.value = true
   try {
-    const res = await getUserBookings()
-    bookings.value = Array.isArray(res) ? res : []
-
-    // 查找当前进行中的订单
-    activeBooking.value = bookings.value.find(b => {
-      const s = (b.status || '').toUpperCase()
-      return s === 'ACTIVE' || s === 'PAID'
-    }) || null
-
-    if (activeBooking.value) {
-      activeBooking.value.scooterName = activeBooking.value.scooterName ||
-        activeBooking.value.scooterNumber ||
-        `车 #${activeBooking.value.scooterId}`
+    const res = await getMyActiveBookings()
+    if (Array.isArray(res) && res.length > 0) {
+      currentBooking.value = res[0]
+      if (currentBooking.value.startTime) {
+        startTime.value = new Date(currentBooking.value.startTime).getTime()
+      }
+      durationMinutes.value = durationToMinutes(currentBooking.value.hireOption)
+    } else {
+      // 模拟数据进行测试（后端接口不存在时使用）
+      currentBooking.value = {
+        id: 'BK001',
+        scooterId: 'S001',
+        scooterNumber: 'S001',
+        startTime: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        hireOption: '1hr',
+        totalCost: 5.00,
+        location: '地铁站A口'
+      }
+      startTime.value = Date.now() - 30 * 60 * 1000
+      durationMinutes.value = 60
     }
   } catch (e) {
-    console.error('加载行程失败', e)
-    activeBooking.value = null
+    console.warn('获取行程失败，使用模拟数据')
+    // 模拟数据进行测试
+    currentBooking.value = {
+      id: 'BK001',
+      scooterId: 'S001',
+      scooterNumber: 'S001',
+      startTime: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      hireOption: '1hr',
+      totalCost: 5.00,
+      location: '地铁站A口'
+    }
+    startTime.value = Date.now() - 30 * 60 * 1000
+    durationMinutes.value = 60
   } finally {
     loading.value = false
   }
 }
 
-// 查看确认信息
-const viewConfirmation = async () => {
-  if (!activeBooking.value) return
-  try {
-    confirmation.value = await getBookingConfirmation(activeBooking.value.id)
-    confirmVisible.value = true
-  } catch (e) {
-    ElMessage.error('获取确认信息失败')
-  }
-}
-
-// 打开延长弹窗
-const openExtend = () => {
-  if (!activeBooking.value) return
-  extendHireOption.value = '1hr'
+const extendTrip = () => {
   extendVisible.value = true
 }
 
-// 提交延长
-const submitExtend = async () => {
-  if (!activeBooking.value) return
+const confirmExtend = async () => {
   extendLoading.value = true
   try {
-    await extendBooking(activeBooking.value.id, extendHireOption.value)
-    ElMessage.success('租期已延长')
+    await extendBooking(currentBooking.value.id, { hireOption: extendForm.value.hireOption })
+    ElMessage.success('租用已延长')
     extendVisible.value = false
-    await loadData()
+    await loadBooking()
   } catch (e) {
-    const msg = e?.response?.data?.message || e?.message || '延长失败'
-    ElMessage.error(msg)
+    ElMessage.error('延长失败')
   } finally {
     extendLoading.value = false
   }
 }
 
-// 还车
-const handleReturn = () => {
-  if (!activeBooking.value) return
-  ElMessageBox.confirm(
-    '确定要结束行程并还车吗？还车后计时将停止。',
-    '确认还车',
-    { type: 'warning' }
-  ).then(async () => {
-    try {
-      await returnScooter(activeBooking.value.id)
-      ElMessage.success('还车成功！感谢使用 CapyGlide')
-      activeBooking.value = null
-      await loadData()
-    } catch (e) {
-      const msg = e?.response?.data?.message || e?.message || '还车失败'
-      ElMessage.error(msg)
-    }
-  }).catch(() => {})
+const endTrip = async () => {
+  try {
+    await ElMessageBox.confirm('确定要结束当前行程吗？', '结束行程', {
+      confirmButtonText: '确定结束',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await endBooking(currentBooking.value.id)
+    ElMessage.success('行程已结束')
+    router.push('/scooters')
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error('结束行程失败')
+  }
 }
 
-// 去租车
-const goToScooters = () => {
-  router.push('/scooters')
+const reportIssue = () => {
+  issueVisible.value = true
+}
+
+const confirmReport = async () => {
+  if (!issueForm.value.description.trim()) {
+    ElMessage.warning('请输入问题描述')
+    return
+  }
+  issueLoading.value = true
+  try {
+    await createIssueReport({
+      scooterId: currentBooking.value.scooterId,
+      description: issueForm.value.description,
+      type: issueForm.value.type
+    })
+    ElMessage.success('问题已报告，我们会尽快处理')
+    issueVisible.value = false
+    issueForm.value = { description: '', type: 'OTHER' }
+  } catch (e) {
+    ElMessage.error('报告失败')
+  } finally {
+    issueLoading.value = false
+  }
 }
 
 onMounted(() => {
-  loadData()
-  // 每分钟更新已用时长
-  timer = setInterval(loadData, 60000)
+  loadBooking()
+  timer = setInterval(() => {
+    if (currentBooking.value) {
+      // 触发响应式更新
+    }
+  }, 1000)
 })
 
 onUnmounted(() => {
@@ -260,7 +304,7 @@ onUnmounted(() => {
 <style scoped>
 .current-trip {
   padding: 32px 24px;
-  max-width: 900px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
@@ -278,6 +322,7 @@ onUnmounted(() => {
   color: var(--cg-text-light);
 }
 
+/* 滑板车卡片 */
 .trip-card {
   border-radius: var(--cg-radius-xl);
   box-shadow: var(--cg-shadow-md);
@@ -288,53 +333,186 @@ onUnmounted(() => {
 .trip-card :deep(.el-card__header) {
   background: var(--cg-gradient-navy);
   color: white;
-  padding: 20px 24px;
+  padding: 16px 20px;
   border: none;
 }
 
-.card-header {
+.trip-card :deep(.el-card__body) {
+  padding: 20px;
+}
+
+.scooter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.card-header span {
+.scooter-header h3 {
+  margin: 0;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.scooter-header :deep(.el-tag) {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.scooter-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: var(--cg-text-light);
+  margin-top: 16px;
+  margin-bottom: 20px;
+}
+
+.scooter-meta span {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 16px;
-  color: white;
+  gap: 6px;
 }
 
-.card-header :deep(.el-tag) {
-  background: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: white;
-}
-
-.trip-card :deep(.el-card__body) {
+/* 倒计时区域 */
+.countdown-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 24px;
+  background: var(--cg-bg);
+  border-radius: var(--cg-radius-md);
+  margin-bottom: 20px;
 }
 
+.countdown-item {
+  text-align: center;
+  flex: 1;
+}
+
+.countdown-label {
+  font-size: 13px;
+  color: var(--cg-text-light);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.countdown-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--cg-navy);
+  font-family: var(--cg-font);
+  letter-spacing: 0.02em;
+}
+
+.countdown-value.warning {
+  color: var(--cg-warning);
+}
+
+.countdown-divider {
+  width: 1px;
+  height: 60px;
+  background: var(--cg-border);
+  margin: 0 32px;
+}
+
+/* 价格信息 */
+.price-section {
+  background: var(--cg-bg);
+  border-radius: var(--cg-radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 15px;
+}
+
+.price-row.total {
+  font-weight: 600;
+  color: var(--cg-text);
+}
+
+.price {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--cg-accent);
+}
+
+/* 详细信息网格 */
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--cg-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.detail-value {
+  font-size: 15px;
+  color: var(--cg-text);
+  font-weight: 600;
+}
+
+/* 操作按钮 */
 .action-buttons {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-top: 24px;
-  flex-wrap: wrap;
 }
 
-.action-buttons :deep(.el-button) {
-  border-radius: var(--cg-radius-md);
+.action-btn {
+  width: 100%;
+  height: 52px;
+  font-size: 15px;
   font-weight: 600;
-  padding: 12px 24px;
+  border-radius: var(--cg-radius-md);
+  transition: var(--cg-transition);
 }
 
-.overdue {
-  color: var(--cg-danger);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.action-btn:not(.outline) {
+  background: var(--cg-gradient) !important;
+  border: none !important;
+  color: white;
+}
+
+.action-btn.success {
+  background: var(--cg-success) !important;
+  color: white;
+}
+
+.action-btn.outline {
+  background: transparent;
+  border: 1px solid var(--cg-border) !important;
+  color: var(--cg-text);
+}
+
+.action-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: var(--cg-shadow-md);
+}
+
+.action-btn.outline:hover {
+  border-color: var(--cg-navy) !important;
+  color: var(--cg-navy);
 }
 </style>

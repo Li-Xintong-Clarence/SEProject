@@ -1,295 +1,186 @@
 <template>
-  <div class="issues-management">
-    <h2 class="page-title">问题报告管理</h2>
-    <p class="page-sub">CapyGlide · 车辆故障与用户反馈</p>
+  <div class="issues-management cg-page">
+    <div class="page-header">
+      <h2 class="cg-title">问题管理</h2>
+      <el-select v-model="filterStatus" placeholder="筛选状态" clearable style="width: 150px">
+        <el-option label="待处理" value="OPEN" />
+        <el-option label="处理中" value="IN_PROGRESS" />
+        <el-option label="已解决" value="RESOLVED" />
+      </el-select>
+    </div>
 
-    <el-tabs v-model="activeTab" type="border-card">
-      <!-- 故障工单 -->
-      <el-tab-pane label="故障工单" name="issues">
-        <el-card shadow="never">
-          <template #header>
-            <div class="card-header">
-              <span>车辆故障报告</span>
-              <el-button type="primary" @click="loadIssues" :loading="loadingIssues">
-                <el-icon><Refresh /></el-icon> 刷新
-              </el-button>
-            </div>
-          </template>
-          <el-table :data="issues" v-loading="loadingIssues" stripe>
-            <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="scooterId" label="车辆ID" width="100" />
-            <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="priority" label="优先级" width="100">
-              <template #default="{ row }">
-                <el-tag :type="getPriorityType(row.priority)" size="small">{{ row.priority }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="status" label="状态" width="120">
-              <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)" size="small">{{ row.status }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="createdAt" label="时间" width="180">
-              <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
-            </el-table-column>
-            <el-table-column label="操作" width="120" fixed="right">
-              <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="openProcessIssue(row)">处理</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-tab-pane>
+    <el-skeleton v-if="loading" :rows="8" animated />
 
-      <!-- 用户反馈 -->
-      <el-tab-pane label="用户反馈" name="feedbacks">
-        <el-card shadow="never">
-          <template #header>
-            <div class="card-header">
-              <span>用户反馈</span>
-              <el-button type="primary" @click="loadFeedbacks" :loading="loadingFeedbacks">
-                <el-icon><Refresh /></el-icon> 刷新
-              </el-button>
-            </div>
-          </template>
-          <el-table :data="feedbacks" v-loading="loadingFeedbacks" stripe>
-            <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="userId" label="用户ID" width="100" />
-            <el-table-column prop="description" label="内容" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="priority" label="优先级" width="100">
-              <template #default="{ row }">
-                <el-tag :type="getPriorityType(row.priority)" size="small">{{ row.priority }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="status" label="状态" width="120">
-              <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)" size="small">{{ row.status }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="adminResponse" label="回复" min-width="150" show-overflow-tooltip />
-            <el-table-column label="操作" width="120" fixed="right">
-              <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="openProcessFeedback(row)">处理</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-tab-pane>
-    </el-tabs>
+    <template v-else>
+      <el-card shadow="never">
+        <el-table :data="filteredIssues" stripe>
+          <el-table-column prop="id" label="ID" width="80" />
+          <el-table-column label="问题类型" width="120">
+            <template #default="{ row }">
+              <el-tag :type="getTypeTagType(row.type)">{{ getTypeLabel(row.type) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="scooterId" label="滑板车" width="100" />
+          <el-table-column prop="reporterName" label="报告人" width="120" />
+          <el-table-column prop="description" label="问题描述" min-width="200" show-overflow-tooltip />
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="getStatusTagType(row.status)">{{ getStatusLabel(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="报告时间" width="160">
+            <template #default="{ row }">
+              {{ formatDate(row.createdAt) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="200" fixed="right">
+            <template #default="{ row }">
+              <el-button size="small" type="primary" @click="viewDetail(row)">详情</el-button>
+              <el-dropdown v-if="row.status === 'OPEN'" @command="(cmd) => handleAction(row, cmd)">
+                <el-button size="small" type="success">
+                  处理 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="accept">接受</el-dropdown-item>
+                    <el-dropdown-item command="resolve">标记已解决</el-dropdown-item>
+                    <el-dropdown-item command="reject">拒绝</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+    </template>
 
-    <!-- 处理故障弹窗 -->
-    <el-dialog v-model="issueDialogVisible" title="处理故障工单" width="500px">
-      <el-form :model="issueForm" label-width="100px">
-        <el-form-item label="状态">
-          <el-select v-model="issueForm.status" style="width: 100%">
-            <el-option label="待处理 (OPEN)" value="OPEN" />
-            <el-option label="处理中 (IN_PROGRESS)" value="IN_PROGRESS" />
-            <el-option label="已解决 (RESOLVED)" value="RESOLVED" />
-            <el-option label="已关闭 (CLOSED)" value="CLOSED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="优先级">
-          <el-select v-model="issueForm.priority" style="width: 100%">
-            <el-option label="低 (LOW)" value="LOW" />
-            <el-option label="中 (MEDIUM)" value="MEDIUM" />
-            <el-option label="高 (HIGH)" value="HIGH" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="处理备注">
-          <el-input v-model="issueForm.adminResponse" type="textarea" :rows="3" placeholder="输入处理备注" />
-        </el-form-item>
-      </el-form>
+    <el-dialog v-model="detailVisible" title="问题详情" width="600px">
+      <el-descriptions v-if="selectedIssue" :column="1" border>
+        <el-descriptions-item label="问题ID">{{ selectedIssue.id }}</el-descriptions-item>
+        <el-descriptions-item label="问题类型">{{ getTypeLabel(selectedIssue.type) }}</el-descriptions-item>
+        <el-descriptions-item label="滑板车">{{ selectedIssue.scooterId }}</el-descriptions-item>
+        <el-descriptions-item label="报告人">{{ selectedIssue.reporterName || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ getStatusLabel(selectedIssue.status) }}</el-descriptions-item>
+        <el-descriptions-item label="问题描述">{{ selectedIssue.description }}</el-descriptions-item>
+        <el-descriptions-item label="报告时间">{{ formatDate(selectedIssue.createdAt) }}</el-descriptions-item>
+        <el-descriptions-item v-if="selectedIssue.resolvedAt" label="解决时间">
+          {{ formatDate(selectedIssue.resolvedAt) }}
+        </el-descriptions-item>
+      </el-descriptions>
       <template #footer>
-        <el-button @click="issueDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitIssue">提交</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 处理反馈弹窗 -->
-    <el-dialog v-model="feedbackDialogVisible" title="处理用户反馈" width="500px">
-      <el-form :model="feedbackForm" label-width="100px">
-        <el-form-item label="状态">
-          <el-select v-model="feedbackForm.status" style="width: 100%">
-            <el-option label="待处理 (OPEN)" value="OPEN" />
-            <el-option label="处理中 (IN_PROGRESS)" value="IN_PROGRESS" />
-            <el-option label="已解决 (RESOLVED)" value="RESOLVED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="优先级">
-          <el-select v-model="feedbackForm.priority" style="width: 100%">
-            <el-option label="低 (LOW)" value="LOW" />
-            <el-option label="中 (MEDIUM)" value="MEDIUM" />
-            <el-option label="高 (HIGH)" value="HIGH" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="回复内容">
-          <el-input v-model="feedbackForm.adminResponse" type="textarea" :rows="4" placeholder="输入回复内容" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="feedbackDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitFeedback">提交</el-button>
+        <el-button @click="detailVisible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
-import { getAllFeedbacks, processFeedback } from '@/api/admin'
+import { ArrowDown } from '@element-plus/icons-vue'
 import { getAllIssueReports, updateIssueReport } from '@/api/issues'
 
-const activeTab = ref('issues')
-
+const loading = ref(true)
 const issues = ref([])
-const loadingIssues = ref(false)
-const feedbacks = ref([])
-const loadingFeedbacks = ref(false)
+const filterStatus = ref('')
+const detailVisible = ref(false)
+const selectedIssue = ref(null)
 
-const issueDialogVisible = ref(false)
-const feedbackDialogVisible = ref(false)
-const submitting = ref(false)
+const filteredIssues = computed(() => {
+  if (!filterStatus.value) return issues.value
+  return issues.value.filter(i => i.status === filterStatus.value)
+})
 
-const currentIssue = ref(null)
-const issueForm = ref({ status: 'OPEN', priority: 'LOW', adminResponse: '' })
-
-const currentFeedback = ref(null)
-const feedbackForm = ref({ status: 'OPEN', priority: 'LOW', adminResponse: '' })
-
-const formatTime = (time) => {
-  if (!time) return '—'
-  const date = new Date(time)
-  if (isNaN(date.getTime())) return String(time)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit'
-  })
-}
-
-const getPriorityType = (priority) => {
-  const map = { HIGH: 'danger', MEDIUM: 'warning', LOW: 'info' }
-  return map[priority] || 'info'
-}
-
-const getStatusType = (status) => {
+const getTypeLabel = (type) => {
   const map = {
-    OPEN: 'warning',
-    IN_PROGRESS: 'primary',
-    RESOLVED: 'success',
-    CLOSED: 'info',
-    PENDING: 'warning'
+    BREAKDOWN: '车辆故障',
+    LOW_BATTERY: '电量不足',
+    RETURN_ISSUE: '无法还车',
+    OTHER: '其他问题'
   }
-  return map[status] || 'info'
+  return map[type] || type || '未知'
+}
+
+const getTypeTagType = (type) => {
+  const map = {
+    BREAKDOWN: 'danger',
+    LOW_BATTERY: 'warning',
+    RETURN_ISSUE: 'info',
+    OTHER: ''
+  }
+  return map[type] || ''
+}
+
+const getStatusLabel = (status) => {
+  const map = {
+    OPEN: '待处理',
+    IN_PROGRESS: '处理中',
+    RESOLVED: '已解决',
+    REJECTED: '已拒绝'
+  }
+  return map[status] || status || '未知'
+}
+
+const getStatusTagType = (status) => {
+  const map = {
+    OPEN: 'danger',
+    IN_PROGRESS: 'warning',
+    RESOLVED: 'success',
+    REJECTED: 'info'
+  }
+  return map[status] || ''
+}
+
+const formatDate = (date) => {
+  if (!date) return '—'
+  return new Date(date).toLocaleString('zh-CN')
 }
 
 const loadIssues = async () => {
-  loadingIssues.value = true
+  loading.value = true
   try {
     const res = await getAllIssueReports()
-    issues.value = Array.isArray(res) ? res : []
+    issues.value = Array.isArray(res) ? res : (res?.data || [])
   } catch (e) {
     console.error(e)
   } finally {
-    loadingIssues.value = false
+    loading.value = false
   }
 }
 
-const loadFeedbacks = async () => {
-  loadingFeedbacks.value = true
+const viewDetail = (issue) => {
+  selectedIssue.value = issue
+  detailVisible.value = true
+}
+
+const handleAction = async (issue, action) => {
   try {
-    const res = await getAllFeedbacks()
-    feedbacks.value = Array.isArray(res) ? res : []
-  } catch (e) {
-    console.error(e)
-  } finally {
-    loadingFeedbacks.value = false
-  }
-}
-
-const openProcessIssue = (row) => {
-  currentIssue.value = row
-  issueForm.value = {
-    status: row.status || 'OPEN',
-    priority: row.priority || 'LOW',
-    adminResponse: row.adminResponse || ''
-  }
-  issueDialogVisible.value = true
-}
-
-const submitIssue = async () => {
-  if (!currentIssue.value) return
-  submitting.value = true
-  try {
-    await updateIssueReport(currentIssue.value.id, issueForm.value)
-    ElMessage.success('处理成功')
-    issueDialogVisible.value = false
+    let updateData = {}
+    if (action === 'accept') {
+      updateData = { status: 'IN_PROGRESS' }
+    } else if (action === 'resolve') {
+      updateData = { status: 'RESOLVED' }
+    } else if (action === 'reject') {
+      updateData = { status: 'REJECTED' }
+    }
+    await updateIssueReport(issue.id, updateData)
+    ElMessage.success('操作成功')
     await loadIssues()
   } catch (e) {
-    ElMessage.error('处理失败')
-  } finally {
-    submitting.value = false
-  }
-}
-
-const openProcessFeedback = (row) => {
-  currentFeedback.value = row
-  feedbackForm.value = {
-    status: row.status || 'OPEN',
-    priority: row.priority || 'LOW',
-    adminResponse: row.adminResponse || ''
-  }
-  feedbackDialogVisible.value = true
-}
-
-const submitFeedback = async () => {
-  if (!currentFeedback.value) return
-  submitting.value = true
-  try {
-    await processFeedback(currentFeedback.value.id, feedbackForm.value)
-    ElMessage.success('回复成功')
-    feedbackDialogVisible.value = false
-    await loadFeedbacks()
-  } catch (e) {
-    ElMessage.error('回复失败')
-  } finally {
-    submitting.value = false
+    ElMessage.error('操作失败')
   }
 }
 
 onMounted(() => {
   loadIssues()
-  loadFeedbacks()
 })
 </script>
 
 <style scoped>
-.issues-management {
-  padding: 32px 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-title {
-  margin: 0 0 4px;
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--cg-text);
-  letter-spacing: -0.02em;
-}
-
-.page-sub {
-  margin: 0 0 24px;
-  font-size: 15px;
-  color: var(--cg-text-light);
-}
-
-.card-header {
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 700;
-  color: var(--cg-text);
+  margin-bottom: 24px;
 }
 </style>

@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Location } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
@@ -94,7 +94,14 @@ const getDistance = (lat1, lng1, lat2, lng2) => {
 }
 
 onMounted(async () => {
-  await checkActiveBooking()
+  // 等待 DOM 渲染完成
+  await nextTick()
+
+  // 检查是否有进行中的订单（需要登录）
+  const token = localStorage.getItem('token')
+  if (token) {
+    await checkActiveBooking()
+  }
 
   let scootersData = []
   try {
@@ -121,10 +128,22 @@ onMounted(async () => {
   }
 
   try {
+    // 确保 DOM 完全渲染
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     const AMap = await AMapLoader.load({
       key: '27ec2a64ff4acc99ccf61c8c897a69d3',
       version: '2.0'
     })
+
+    // 确保 map-container 存在
+    const mapContainer = document.getElementById('map-container')
+    if (!mapContainer) {
+      console.error('Map container div not exist')
+      ElMessage.error('地图容器加载失败，请刷新页面重试')
+      return
+    }
 
     const map = new AMap.Map('map-container', {
       zoom: 15,

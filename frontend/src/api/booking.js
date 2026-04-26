@@ -52,3 +52,17 @@ export const returnScooter = (id) => {
         method: 'post'
     })
 }
+
+export const getMyActiveBookings = () => {
+    return request({
+        url: '/api/bookings/my/active',
+        method: 'get'
+    })
+}
+
+export const endBooking = (id) => {
+    return request({
+        url: `/api/bookings/${id}/end`,
+        method: 'post'
+    })
+}

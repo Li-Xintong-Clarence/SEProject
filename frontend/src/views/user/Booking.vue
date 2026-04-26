@@ -165,7 +165,7 @@
                 <span>¥{{ currentPrice.toFixed(2) }}</span>
               </div>
               <div class="price-row discount" v-if="hasDiscount">
-                <span>折扣 (<span v-if="profileFlags.userType !== 'none'">{{ getUserTypeLabel() }}</span><span v-if="appliedDiscountCode"> + 折扣码</span>)</span>
+                <span>折扣 ({{ getDiscountRateLabel() }}<span v-if="appliedDiscountCode"> + 折扣码</span>)</span>
                 <span>-¥{{ discountAmount.toFixed(2) }}</span>
               </div>
               <div class="price-row total">
@@ -308,6 +308,11 @@ const getUserTypeLabel = () => {
   return map[profileFlags.value.userType] || ''
 }
 
+const getDiscountRateLabel = () => {
+  const map = { student: '9折', senior: '8折' }
+  return map[profileFlags.value.userType] || ''
+}
+
 const loadPricing = async () => {
   try {
     const [plist, hlist] = await Promise.all([getPricingList(), listHireOptions()])
@@ -354,35 +359,52 @@ const onUserTypeChange = () => {
   persistFlags()
 }
 
+// 折扣率
+const DISCOUNT_RATES = {
+  student: 0.9,   // 学生 9 折
+  senior: 0.8     // 长者 8 折
+}
+
+const getDiscountRate = (userType) => {
+  return DISCOUNT_RATES[userType] ?? 1
+}
+
 const fetchDiscountPrice = async () => {
   if (!form.value.hireOption) {
     discountPrice.value = 0
     return
   }
-  // 如果没有折扣，不请求价格预览
+
+  // 如果没有折扣，直接返回原价
   if (profileFlags.value.userType === 'none' && !appliedDiscountCode.value) {
     discountPrice.value = 0
     return
   }
+
   loadingPrice.value = true
   try {
     let res
     if (appliedDiscountCode.value) {
+      // 折扣码：调用后端 API
       res = await apiApplyDiscountCode(appliedDiscountCode.value, form.value.hireOption)
       discountPrice.value = res?.price ?? res?.discountedPrice ?? res?.data?.price ?? 0
     } else if (profileFlags.value.userType !== 'none') {
-      res = await getPricePreview({
-        hireOption: form.value.hireOption,
-        discountType: profileFlags.value.userType
-      })
-      discountPrice.value = res?.price ?? res?.discountedPrice ?? res?.data?.price ?? 0
+      // 用户类型折扣：前端计算折扣
+      const basePrice = currentPrice.value
+      const rate = getDiscountRate(profileFlags.value.userType)
+      discountPrice.value = basePrice * rate
     } else {
       discountPrice.value = 0
     }
   } catch (e) {
-    // 价格预览失败不影响预订，静默处理
-    console.warn('获取折扣价格失败，使用原价', e.message)
-    discountPrice.value = 0
+    // 价格预览失败，使用估算折扣
+    if (profileFlags.value.userType !== 'none') {
+      const basePrice = currentPrice.value
+      const rate = getDiscountRate(profileFlags.value.userType)
+      discountPrice.value = basePrice * rate
+    } else {
+      discountPrice.value = 0
+    }
   } finally {
     loadingPrice.value = false
   }
