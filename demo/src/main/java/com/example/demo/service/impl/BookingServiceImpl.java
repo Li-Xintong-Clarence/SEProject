@@ -151,8 +151,11 @@ public class BookingServiceImpl implements BookingService {
             scooterService.updateStatus(booking.getScooterId(), "AVAILABLE");
         }
 
-        sendCancellationEmail(booking);
-        return bookingMapper.update(booking) > 0;
+        boolean updated = bookingMapper.update(booking) > 0;
+        if (updated) {
+            sendCancellationEmail(booking);
+        }
+        return updated;
     }
 
     /**
@@ -176,8 +179,11 @@ public class BookingServiceImpl implements BookingService {
             scooterService.updateStatus(booking.getScooterId(), "AVAILABLE");
         }
 
-        sendCompletionEmail(booking);
-        return bookingMapper.update(booking) > 0;
+        boolean updated = bookingMapper.update(booking) > 0;
+        if (updated) {
+            sendCompletionEmail(booking);
+        }
+        return updated;
     }
 
     /**
@@ -202,8 +208,11 @@ public class BookingServiceImpl implements BookingService {
             scooterService.updateStatus(booking.getScooterId(), "IN_USE");
         }
 
-        sendConfirmationEmail(booking);
-        return bookingMapper.update(booking) > 0;
+        boolean updated = bookingMapper.update(booking) > 0;
+        if (updated) {
+            sendConfirmationEmail(booking);
+        }
+        return updated;
     }
 
     /**
@@ -213,7 +222,12 @@ public class BookingServiceImpl implements BookingService {
     private void sendConfirmationEmail(Booking booking) {
         try {
             User user = userMapper.findById(booking.getUserId());
-            if (user == null || user.getEmail() == null) {
+            if (user == null) {
+                System.err.println("发送确认邮件失败：找不到用户，userId=" + booking.getUserId());
+                return;
+            }
+            if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+                System.err.println("发送确认邮件失败：用户邮箱为空，userId=" + booking.getUserId());
                 return;
             }
 
@@ -237,7 +251,8 @@ public class BookingServiceImpl implements BookingService {
                 booking.getTotalCost() != null ? booking.getTotalCost().doubleValue() : 0.0
             );
         } catch (Exception e) {
-            System.err.println("发送确认邮件失败: " + e.getMessage());
+            System.err.println("发送确认邮件异常: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -247,7 +262,12 @@ public class BookingServiceImpl implements BookingService {
     private void sendCancellationEmail(Booking booking) {
         try {
             User user = userMapper.findById(booking.getUserId());
-            if (user == null || user.getEmail() == null) {
+            if (user == null) {
+                System.err.println("发送取消邮件失败：找不到用户，userId=" + booking.getUserId());
+                return;
+            }
+            if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+                System.err.println("发送取消邮件失败：用户邮箱为空，userId=" + booking.getUserId());
                 return;
             }
 
@@ -266,7 +286,8 @@ public class BookingServiceImpl implements BookingService {
                 booking.getHireOption()
             );
         } catch (Exception e) {
-            System.err.println("发送取消邮件失败: " + e.getMessage());
+            System.err.println("发送取消邮件异常: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -276,7 +297,12 @@ public class BookingServiceImpl implements BookingService {
     private void sendCompletionEmail(Booking booking) {
         try {
             User user = userMapper.findById(booking.getUserId());
-            if (user == null || user.getEmail() == null) {
+            if (user == null) {
+                System.err.println("发送结束邮件失败：找不到用户，userId=" + booking.getUserId());
+                return;
+            }
+            if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+                System.err.println("发送结束邮件失败：用户邮箱为空，userId=" + booking.getUserId());
                 return;
             }
 
@@ -299,7 +325,8 @@ public class BookingServiceImpl implements BookingService {
                 booking.getTotalCost() != null ? booking.getTotalCost().doubleValue() : 0.0
             );
         } catch (Exception e) {
-            System.err.println("发送结束邮件失败: " + e.getMessage());
+            System.err.println("发送结束邮件异常: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

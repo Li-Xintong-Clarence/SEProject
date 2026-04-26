@@ -2,6 +2,7 @@ package com.example.demo.service.impl;
 
 import com.example.demo.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,9 @@ public class EmailServiceImpl implements EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Value("${spring.mail.username:}")
+    private String fromEmail;
+
     /**
      * 发送预订确认邮件
      * 包含：确认码、车辆编号、租赁时长、时间、总费用等信息
@@ -26,6 +30,7 @@ public class EmailServiceImpl implements EmailService {
                                         String scooterNumber, String hireOption,
                                         String startTime, String endTime, double totalCost) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
         message.setTo(toEmail);
         message.setSubject("预订确认 - Scooter Rental");
         String text = "亲爱的 " + username + "，\n\n" +
@@ -44,8 +49,8 @@ public class EmailServiceImpl implements EmailService {
         try {
             mailSender.send(message);
         } catch (Exception e) {
-            // 邮件发送失败不影响业务流程，只记录日志
             System.err.println("邮件发送失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -53,6 +58,7 @@ public class EmailServiceImpl implements EmailService {
     public void sendBookingCancellation(String toEmail, String username, String confirmationCode,
                                        String scooterNumber, String hireOption) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
         message.setTo(toEmail);
         message.setSubject("预订已取消 - Scooter Rental");
         String text = "亲爱的 " + username + "，\n\n" +
@@ -69,6 +75,7 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(message);
         } catch (Exception e) {
             System.err.println("邮件发送失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -76,6 +83,7 @@ public class EmailServiceImpl implements EmailService {
     public void sendRideCompletion(String toEmail, String username, String confirmationCode,
                                   String scooterNumber, String startTime, String endTime, double totalCost) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
         message.setTo(toEmail);
         message.setSubject("骑行结束 - Scooter Rental");
         String text = "亲爱的 " + username + "，\n\n" +
@@ -95,6 +103,7 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(message);
         } catch (Exception e) {
             System.err.println("邮件发送失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
