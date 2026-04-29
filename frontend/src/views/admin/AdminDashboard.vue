@@ -2,7 +2,7 @@
   <div class="admin-dashboard">
     <header class="top-bar">
       <div class="left">
-        <img src="/brand-logo.svg" alt="" width="44" height="44" class="logo" />
+        <img src="/brand-logo.png" alt="" width="44" height="44" class="logo" />
         <div class="title-group">
           <h1>管理后台</h1>
           <span class="subtitle">CapyGlide</span>
@@ -15,6 +15,47 @@
     </header>
 
     <el-tabs v-model="activeTab" type="border-card" class="main-tabs">
+      <!-- 快速导航 -->
+      <el-tab-pane label="概览" name="overview">
+        <div class="overview-grid">
+          <el-card class="quick-link-card" @click="activeTab = 'reports'">
+            <el-icon :size="40" color="var(--cg-navy)"><DataLine /></el-icon>
+            <h4>收入报表</h4>
+            <p>查看收入统计</p>
+          </el-card>
+          <el-card class="quick-link-card" @click="$router.push('/admin/users')">
+            <el-icon :size="40" color="var(--cg-navy)"><User /></el-icon>
+            <h4>用户管理</h4>
+            <p>管理所有用户</p>
+          </el-card>
+          <el-card class="quick-link-card" @click="$router.push('/admin/issues')">
+            <el-icon :size="40" color="var(--cg-navy)"><Warning /></el-icon>
+            <h4>问题报告</h4>
+            <p>处理故障与反馈</p>
+          </el-card>
+        </div>
+        <el-row :gutter="20" class="stats-row">
+          <el-col :xs="24" :sm="8">
+            <div class="stat-card">
+              <div class="stat-label">总收入</div>
+              <div class="stat-value primary">¥{{ totalIncome }}</div>
+            </div>
+          </el-col>
+          <el-col :xs="24" :sm="8">
+            <div class="stat-card">
+              <div class="stat-label">本周收入</div>
+              <div class="stat-value">¥{{ weeklyIncome }}</div>
+            </div>
+          </el-col>
+          <el-col :xs="24" :sm="8">
+            <div class="stat-card">
+              <div class="stat-label">今日收入</div>
+              <div class="stat-value">¥{{ todayIncome }}</div>
+            </div>
+          </el-col>
+        </el-row>
+      </el-tab-pane>
+
       <!-- 收入报表 -->
       <el-tab-pane label="收入报表" name="reports">
         <div class="pane-header">
@@ -253,10 +294,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import { DataLine, User, Warning } from '@element-plus/icons-vue'
 import {
   adminCreateBooking,
   getWeeklyIncomeReport,
@@ -274,7 +316,7 @@ import request from '@/utils/request'
 const router = useRouter()
 
 // 状态
-const activeTab = ref('reports')
+const activeTab = ref('overview')
 const adminName = ref('管理员')
 
 // 管理员信息
@@ -566,7 +608,6 @@ const handleResize = () => {
 }
 
 // Tab切换
-import { watch } from 'vue'
 watch(activeTab, async (v) => {
   if (v === 'reports') {
     await nextTick()
@@ -604,7 +645,7 @@ onUnmounted(() => {
 <style scoped>
 .admin-dashboard {
   min-height: 100vh;
-  background: var(--cg-mist);
+  background: var(--cg-bg);
   padding: 0;
 }
 
@@ -668,6 +709,36 @@ onUnmounted(() => {
   margin: 0;
   color: var(--cg-navy);
   font-size: 1.1rem;
+}
+
+/* 概览页面 */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.quick-link-card {
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.quick-link-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--cg-shadow-lg);
+}
+
+.quick-link-card h4 {
+  margin: 12px 0 4px;
+  color: var(--cg-navy);
+}
+
+.quick-link-card p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--cg-text-light);
 }
 
 /* 统计卡片 */

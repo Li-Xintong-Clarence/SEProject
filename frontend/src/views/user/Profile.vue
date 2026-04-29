@@ -48,6 +48,21 @@
         <el-descriptions-item label="手机">{{ userInfo.phone || '—' }}</el-descriptions-item>
         <el-descriptions-item label="注册时间">{{ formatTime(userInfo.createdAt) }}</el-descriptions-item>
       </el-descriptions>
+
+      <!-- 当前进行中的订单提示 -->
+      <el-alert
+        v-if="activeBooking"
+        type="warning"
+        :closable="false"
+        class="mb active-booking-alert"
+      >
+        <template #title>
+          您有正在进行的行程
+          <el-button type="warning" size="small" @click="goToTrip" style="margin-left: 12px;">
+            前往当前行程
+          </el-button>
+        </template>
+      </el-alert>
     </el-card>
 
     <!-- 功能标签页 -->
@@ -240,7 +255,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Ticket, Money, Clock, User } from '@element-plus/icons-vue'
-import { getUserBookings, cancelBooking, extendBooking, getBookingConfirmation } from '@/api/booking'
+import { getUserBookings, cancelBooking, extendBooking, getBookingConfirmation, returnScooter } from '@/api/booking'
 import { getCurrentUser, getUserStats } from '@/api/user'
 import { getMyCards, addCard, deleteCard } from '@/api/card'
 import { getMyFeedbacks, createFeedback } from '@/api/feedback'
@@ -252,6 +267,9 @@ const activeTab = ref('bookings')
 // 用户信息
 const userInfo = ref({})
 const stats = ref({})
+
+// 当前进行中的订单（用于提示）
+const activeBooking = ref(null)
 
 // 预订
 const bookingLoading = ref(false)
@@ -349,11 +367,23 @@ const loadBookings = async () => {
       scooterName: b.scooterName || b.scooterNumber || `车 #${b.scooterId}`,
       totalPrice: b.totalPrice ?? b.totalCost ?? 0
     }))
+
+    // 查找当前进行中的订单
+    activeBooking.value = bookings.value.find(b => {
+      const s = (b.status || '').toUpperCase()
+      return s === 'ACTIVE' || s === 'PAID'
+    }) || null
   } catch (e) {
     bookings.value = []
+    activeBooking.value = null
   } finally {
     bookingLoading.value = false
   }
+}
+
+// 前往当前行程
+const goToTrip = () => {
+  router.push('/trip')
 }
 
 // 加载支付卡
@@ -424,12 +454,14 @@ const submitExtend = async () => {
   if (!extendBookingId.value) return
   extendLoading.value = true
   try {
-    await extendBooking(extendBookingId.value, extendHireOption.value)
+    const res = await extendBooking(extendBookingId.value, extendHireOption.value)
     ElMessage.success('租期已延长')
     extendVisible.value = false
     await loadBookings()
   } catch (e) {
-    // 静默失败
+    // 显示真实错误信息
+    const msg = e?.response?.data?.message || e?.message || '延长失败，请稍后重试'
+    ElMessage.error(msg)
   } finally {
     extendLoading.value = false
     extendBookingId.value = null
@@ -550,88 +582,110 @@ onMounted(async () => {
 
 <style scoped>
 .profile {
-  padding: 20px;
+  padding: 32px 24px;
   max-width: 1100px;
   margin: 0 auto;
 }
 
 .page-title {
   margin: 0 0 4px;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: var(--cg-navy);
+  color: var(--cg-text);
+  letter-spacing: -0.02em;
 }
 
 .page-sub {
-  margin: 0 0 20px;
-  font-size: 0.9rem;
-  color: #6b7280;
+  margin: 0 0 24px;
+  font-size: 15px;
+  color: var(--cg-text-light);
 }
 
 /* 统计卡片 */
 .stat-row {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
   background: var(--cg-white);
-  border-radius: var(--cg-radius-md);
-  padding: 16px;
+  border-radius: var(--cg-radius-lg);
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   box-shadow: var(--cg-shadow);
-  margin-bottom: 12px;
+  border: 1px solid var(--cg-border-light);
+  transition: var(--cg-transition);
+  margin-bottom: 16px;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--cg-shadow-md);
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: var(--cg-radius-md);
-  background: var(--cg-mist);
-  color: var(--cg-navy);
+  background: var(--cg-accent-soft);
+  color: var(--cg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 24px;
 }
 
 .stat-icon.accent {
-  background: #fef3c7;
-  color: var(--cg-accent);
+  background: var(--cg-warning-bg);
+  color: var(--cg-warning);
 }
 
 .stat-value {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  color: var(--cg-navy);
+  color: var(--cg-text);
+  letter-spacing: -0.02em;
 }
 
 .stat-label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--cg-text-light);
+  font-weight: 500;
 }
 
 /* 用户卡片 */
 .user-card {
-  margin-bottom: 20px;
-  border-radius: var(--cg-radius-md);
+  margin-bottom: 24px;
+  border-radius: var(--cg-radius-lg);
 }
 
 .card-header {
-  font-weight: 600;
-  color: var(--cg-navy);
+  font-weight: 700;
+  color: var(--cg-text);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
+.active-booking-alert {
+  margin-top: 16px;
+}
+
+.active-booking-alert :deep(.el-alert__title) {
+  color: var(--cg-text);
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
 /* 标签页 */
 .profile-tabs {
   background: var(--cg-white);
-  border-radius: var(--cg-radius-md);
-  padding: 20px;
-  box-shadow: var(--cg-shadow);
+  border-radius: var(--cg-radius-xl);
+  padding: 24px;
+  box-shadow: var(--cg-shadow-md);
+  border: 1px solid var(--cg-border-light);
 }
 
 .loading {

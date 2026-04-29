@@ -5,6 +5,15 @@
       <p class="page-sub">CapyGlide · 定位附近可用滑板车，点选标记即可预订</p>
     </div>
 
+    <el-alert v-if="hasActiveBooking" type="warning" :closable="false" class="active-alert">
+      <template #title>
+        您有正在进行的行程
+        <el-button type="warning" size="small" @click="$router.push('/trip')" style="margin-left: 12px;">
+          前往当前行程
+        </el-button>
+      </template>
+    </el-alert>
+
     <div class="info-bar">
       <el-tag type="success" size="large"><el-icon><Location /></el-icon> 已定位到您的位置</el-tag>
       <span class="count-text">附近共有 <strong>{{ nearbyScooters.length }}</strong> 辆可用滑板车</span>
@@ -27,15 +36,31 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Location } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getScooters } from '@/api/scooter'
+import { getUserBookings } from '@/api/booking'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const nearbyScooters = ref([])
+const hasActiveBooking = ref(false)
+
+// 检查是否有进行中的订单
+const checkActiveBooking = async () => {
+  try {
+    const res = await getUserBookings()
+    const list = Array.isArray(res) ? res : []
+    hasActiveBooking.value = list.some(b => {
+      const s = (b.status || '').toUpperCase()
+      return s === 'ACTIVE' || s === 'PAID'
+    })
+  } catch {
+    hasActiveBooking.value = false
+  }
+}
 
 // 五个服务点 (ID18)
 const SERVICE_DEPOTS = [
@@ -69,6 +94,15 @@ const getDistance = (lat1, lng1, lat2, lng2) => {
 }
 
 onMounted(async () => {
+  // 等待 DOM 渲染完成
+  await nextTick()
+
+  // 检查是否有进行中的订单（需要登录）
+  const token = localStorage.getItem('token')
+  if (token) {
+    await checkActiveBooking()
+  }
+
   let scootersData = []
   try {
     const res = await getScooters()
@@ -83,11 +117,33 @@ onMounted(async () => {
     return
   }
 
+  // 处理地图点击跳转
+  const goToBooking = (scooterId) => {
+    if (hasActiveBooking.value) {
+      ElMessage.warning('您已有正在进行的行程，请先完成或取消当前行程')
+      router.push('/trip')
+      return
+    }
+    router.push({ path: '/booking', query: { scooterId } })
+  }
+
   try {
+    // 确保 DOM 完全渲染
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     const AMap = await AMapLoader.load({
       key: '27ec2a64ff4acc99ccf61c8c897a69d3',
       version: '2.0'
     })
+
+    // 确保 map-container 存在
+    const mapContainer = document.getElementById('map-container')
+    if (!mapContainer) {
+      console.error('Map container div not exist')
+      ElMessage.error('地图容器加载失败，请刷新页面重试')
+      return
+    }
 
     const map = new AMap.Map('map-container', {
       zoom: 15,
@@ -102,16 +158,33 @@ onMounted(async () => {
         enableHighAccuracy: true,
         timeout: 10000,
         buttonPosition: 'RB',
-        zoomToAccuracy: true
+        zoomToAccuracy: true,
+        // 默认使用高精度模式
+        GeoLocationFirst: true
       })
 
       map.addControl(geolocation)
 
       geolocation.getCurrentPosition((status, result) => {
-        if (status === 'complete') {
-          const userLat = result.position.lat
-          const userLng = result.position.lng
+        // 默认位置：成都
+        const defaultLng = 103.9305
+        const defaultLat = 30.7528
 
+        let userLng = defaultLng
+        let userLat = defaultLat
+
+        if (status === 'complete' && result && result.position) {
+          userLat = result.position.lat
+          userLng = result.position.lng
+
+          // 如果返回的位置在境外（经度不在中国范围内），使用默认位置
+          if (userLng < 73 || userLng > 135 || userLat < 15 || userLat > 54) {
+            console.warn('检测到境外定位，使用默认位置（成都）')
+            userLng = defaultLng
+            userLat = defaultLat
+          }
+
+          // 过滤可用滑板车并计算距离
           const availableScooters = scootersData
             .map(scooter => {
               const lat = scooter.latitude ?? scooter.lat
@@ -134,9 +207,7 @@ onMounted(async () => {
               icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png'
             })
 
-            marker.on('click', () => {
-              router.push({ path: '/booking', query: { scooterId: scooter.id } })
-            })
+            marker.on('click', () => goToBooking(scooter.id))
           })
 
           map.setCenter([userLng, userLat])
@@ -148,39 +219,39 @@ onMounted(async () => {
             ElMessage.success(`附近找到 ${availableScooters.length} 辆可用滑板车`)
           }
         } else {
-          ElMessage.warning('定位失败，显示默认区域')
+          ElMessage.warning('定位失败，使用默认区域（成都）')
+
+          // 使用默认位置显示滑板车
           const availableScooters = scootersData
             .map(scooter => {
               const lat = scooter.latitude ?? scooter.lat
               const lng = scooter.longitude ?? scooter.lng
               if (!lat || !lng) return null
-              return { ...scooter, lat, lng }
+              const distance = parseFloat(getDistance(userLat, userLng, lat, lng))
+              return { ...scooter, distance, lat, lng }
             })
             .filter(Boolean)
             .filter(s => String(s.status).toUpperCase() === 'AVAILABLE')
-
-          if (availableScooters.length === 0) {
-            ElMessage.warning('暂无可用滑板车')
-            return
-          }
+            .sort((a, b) => a.distance - b.distance)
 
           nearbyScooters.value = availableScooters
-
-          const first = availableScooters[0]
-          map.setCenter([first.lng, first.lat])
-          map.setZoom(14)
 
           availableScooters.forEach(scooter => {
             const marker = new AMap.Marker({
               position: [scooter.lng, scooter.lat],
               map: map,
-              title: scooter.scooterNumber,
+              title: `${scooter.scooterNumber} • ${scooter.distance}km`,
               icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png'
             })
-            marker.on('click', () => {
-              router.push({ path: '/booking', query: { scooterId: scooter.id } })
-            })
+            marker.on('click', () => goToBooking(scooter.id))
           })
+
+          map.setCenter([userLng, userLat])
+          map.setZoom(14)
+
+          if (availableScooters.length === 0) {
+            ElMessage.warning('暂无可用滑板车')
+          }
         }
       })
     })
@@ -193,50 +264,75 @@ onMounted(async () => {
 
 <style scoped>
 .map-view {
-  padding: 20px 24px 32px;
+  padding: 32px 24px;
   max-width: 1280px;
   margin: 0 auto;
   background: var(--cg-white);
-  border-radius: var(--cg-radius-lg);
-  box-shadow: var(--cg-shadow);
+  border-radius: var(--cg-radius-xl);
+  box-shadow: var(--cg-shadow-md);
+  border: 1px solid var(--cg-border-light);
 }
 
 .page-header {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .page-title {
   margin: 0 0 6px;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: var(--cg-navy);
+  color: var(--cg-text);
+  letter-spacing: -0.02em;
 }
 
 .page-sub {
   margin: 0;
-  font-size: 0.9rem;
-  color: #6b7280;
+  font-size: 15px;
+  color: var(--cg-text-light);
+}
+
+.active-alert {
+  margin-bottom: 20px;
+}
+
+.active-alert :deep(.el-alert__title) {
+  color: var(--cg-text);
+  display: flex;
+  align-items: center;
+  font-weight: 600;
 }
 
 .info-bar {
   margin: 8px 0 20px;
-  font-size: 16px;
+  font-size: 15px;
   display: flex;
   align-items: center;
   gap: 15px;
   flex-wrap: wrap;
+  color: var(--cg-text);
+}
+
+.info-bar :deep(.el-tag) {
+  background: var(--cg-gradient-navy);
+  border: none;
+  color: white;
+  font-weight: 600;
 }
 
 .count-text {
-  color: var(--cg-charcoal);
+  color: var(--cg-text-light);
+}
+
+.count-text strong {
+  color: var(--cg-primary);
 }
 
 .map-shell {
   width: 100%;
-  height: 620px;
-  border-radius: var(--cg-radius-md);
-  box-shadow: var(--cg-shadow);
+  height: 580px;
+  border-radius: var(--cg-radius-lg);
   overflow: hidden;
+  border: 1px solid var(--cg-border);
 }
 
 .legend {
@@ -262,8 +358,8 @@ onMounted(async () => {
 }
 
 .available-dot {
-  background: #c45c5c;
-  box-shadow: 0 0 0 3px rgba(196, 92, 92, 0.25);
+  background: var(--cg-accent);
+  box-shadow: 0 0 0 3px rgba(224, 123, 57, 0.25);
 }
 
 .depot-dot {
