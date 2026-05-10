@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.IssueReportMapper">
+    <resultMap id="BaseResultMap" type="com.example.demo.entity.IssueReport">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="scooter_id" property="scooterId"/>
+        <result column="description" property="description"/>
+        <result column="status" property="status"/>
+        <result column="priority" property="priority"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="resolved_at" property="resolvedAt"/>
+        <result column="admin_feedback" property="adminFeedback"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO issue_report (user_id, scooter_id, description, status, priority, created_at)
+        VALUES (#{userId}, #{scooterId}, #{description}, 'PENDING', 'NORMAL', NOW())
+    </insert>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM issue_report WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT * FROM issue_report ORDER BY created_at DESC
+    </select>
+
+    <select id="findByUserId" resultMap="BaseResultMap">
+        SELECT * FROM issue_report WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+
+    <update id="update">
+        UPDATE issue_report
+        SET status = #{status},
+            priority = #{priority},
+            resolved_at = #{resolvedAt},
+            admin_feedback = #{adminFeedback}
+        WHERE id = #{id}
+    </update>
+</mapper>
