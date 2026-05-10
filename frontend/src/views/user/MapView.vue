@@ -4,6 +4,12 @@
       <h2 class="page-title">附近车辆</h2>
       <p class="page-sub">CapyGlide · 定位附近可用滑板车，点选标记即可预订</p>
     </div>
+    
+    <div class="header-actions">
+      <el-button type="primary" @click="$router.push('/scan')">
+        <el-icon><Crop /></el-icon> 扫码租车
+      </el-button>
+    </div>
 
     <el-alert v-if="hasActiveBooking" type="warning" :closable="false" class="active-alert">
       <template #title>
@@ -15,11 +21,16 @@
     </el-alert>
 
     <div class="info-bar">
-      <el-tag type="success" size="large"><el-icon><Location /></el-icon> 已定位到您的位置</el-tag>
+      <el-tag type="success" size="large">
+        <el-icon><Location /></el-icon> {{ locationStatus }}
+      </el-tag>
       <span class="count-text">附近共有 <strong>{{ nearbyScooters.length }}</strong> 辆可用滑板车</span>
+      <el-button size="small" @click="refreshLocation" :loading="locationLoading" style="margin-left: auto;">
+        刷新定位
+      </el-button>
     </div>
 
-    <div id="map-container" class="map-shell"></div>
+    <div id="map-container" class="map-shell" style="width: 100%; height: 580px; min-height: 500px; border-radius: 12px; overflow: hidden; border: 1px solid #e4e7ed;"></div>
 
     <div class="legend">
       <div class="legend-item">
@@ -38,7 +49,7 @@
 <script setup>
 import { onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { Location } from '@element-plus/icons-vue'
+import { Location, Crop } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getScooters } from '@/api/scooter'
 import { getUserBookings } from '@/api/booking'
@@ -47,6 +58,8 @@ import { ElMessage } from 'element-plus'
 const router = useRouter()
 const nearbyScooters = ref([])
 const hasActiveBooking = ref(false)
+const locationStatus = ref('正在定位...')
+const locationLoading = ref(false)
 
 // 检查是否有进行中的订单
 const checkActiveBooking = async () => {
@@ -119,23 +132,99 @@ onMounted(async () => {
 
   // 处理地图点击跳转
   const goToBooking = (scooterId) => {
+    console.log('点击了车辆, scooterId:', scooterId)
+    
+    if (!scooterId) {
+      ElMessage.error('车辆信息不完整')
+      return
+    }
+    
     if (hasActiveBooking.value) {
-      ElMessage.warning('您已有正在进行的行程，请先完成或取消当前行程')
+      ElMessage.warning('您有进行中的行程')
       router.push('/trip')
       return
     }
-    router.push({ path: '/booking', query: { scooterId } })
+    
+    ElMessage.info('正在跳转...')
+    router.push({ path: '/booking', query: { scooterId: String(scooterId) } })
+  }
+
+  // 刷新定位
+  const refreshLocation = async () => {
+    locationLoading.value = true
+    locationStatus.value = '正在刷新定位...'
+    
+    try {
+      const AMap = await AMapLoader.load({
+        key: '27ec2a64ff4acc99ccf61c8c897a69d3',
+        version: '2.0'
+      })
+      
+      const mapContainer = document.getElementById('map-container')
+      if (!mapContainer) return
+      
+      AMap.plugin('AMap.Geolocation', () => {
+        const geolocation = new AMap.Geolocation({
+          enableHighAccuracy: true,
+          timeout: 10000,
+          GeoLocationFirst: true
+        })
+        
+        geolocation.getCurrentPosition((status, result) => {
+          locationLoading.value = false
+          
+          if (status === 'complete' && result && result.position) {
+            const userLat = result.position.lat
+            const userLng = result.position.lng
+            
+            if (userLng < 73 || userLng > 135 || userLat < 15 || userLat > 54) {
+              ElMessage.warning('定位结果在境外，已切换到默认区域（成都）')
+              locationStatus.value = '成都（默认位置）'
+            } else {
+              ElMessage.success('定位成功！')
+              locationStatus.value = '已定位到您的位置'
+              
+              // 重新计算距离
+              const availableScooters = scootersData
+                .map(scooter => {
+                  const lat = scooter.latitude ?? scooter.lat
+                  const lng = scooter.longitude ?? scooter.lng
+                  if (!lat || !lng) return null
+                  const distance = parseFloat(getDistance(userLat, userLng, lat, lng))
+                  return { ...scooter, distance, lat, lng }
+                })
+                .filter(Boolean)
+                .filter(s => String(s.status).toUpperCase() === 'AVAILABLE')
+                .sort((a, b) => a.distance - b.distance)
+              
+              nearbyScooters.value = availableScooters
+            }
+          } else {
+            ElMessage.error('定位失败，请检查定位权限')
+            locationStatus.value = '定位失败'
+          }
+        })
+      })
+    } catch (err) {
+      console.error('刷新定位失败:', err)
+      ElMessage.error('刷新定位失败')
+      locationLoading.value = false
+    }
   }
 
   try {
-    // 确保 DOM 完全渲染
+    // 确保 DOM 完全渲染 - 增加等待时间
     await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise(resolve => setTimeout(resolve, 300))
 
+    console.log('开始加载高德地图 API...')
+    
     const AMap = await AMapLoader.load({
       key: '27ec2a64ff4acc99ccf61c8c897a69d3',
       version: '2.0'
     })
+    
+    console.log('高德地图 API 加载完成')
 
     // 确保 map-container 存在
     const mapContainer = document.getElementById('map-container')
@@ -144,12 +233,24 @@ onMounted(async () => {
       ElMessage.error('地图容器加载失败，请刷新页面重试')
       return
     }
+    
+    // 再次确认容器有尺寸
+    const rect = mapContainer.getBoundingClientRect()
+    console.log('地图容器尺寸:', rect.width, 'x', rect.height)
+    
+    if (rect.width === 0 || rect.height === 0) {
+      console.warn('容器尺寸为0，等待一下...')
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
 
+    console.log('创建地图实例...')
     const map = new AMap.Map('map-container', {
       zoom: 15,
       center: [103.9305, 30.7528],
       resizeEnable: true
     })
+    
+    console.log('地图实例创建成功')
 
     addDepotMarkers(AMap, map)
 
@@ -177,11 +278,13 @@ onMounted(async () => {
           userLat = result.position.lat
           userLng = result.position.lng
 
-          // 如果返回的位置在境外（经度不在中国范围内），使用默认位置
           if (userLng < 73 || userLng > 135 || userLat < 15 || userLat > 54) {
             console.warn('检测到境外定位，使用默认位置（成都）')
             userLng = defaultLng
             userLat = defaultLat
+            locationStatus.value = '成都（默认位置）'
+          } else {
+            locationStatus.value = '已定位到您的位置'
           }
 
           // 过滤可用滑板车并计算距离
@@ -199,15 +302,62 @@ onMounted(async () => {
 
           nearbyScooters.value = availableScooters
 
-          availableScooters.forEach(scooter => {
+          availableScooters.forEach((scooter) => {
+            // 获取正确的 scooterId
+            const targetId = scooter.id ?? scooter.scooterId ?? scooter.scooterNumber ?? scooter.name
+            
+            // 创建标记
             const marker = new AMap.Marker({
               position: [scooter.lng, scooter.lat],
               map: map,
-              title: `${scooter.scooterNumber} • ${scooter.distance}km • 可用`,
-              icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png'
+              title: scooter.scooterNumber || '未知',
+              icon: new AMap.Icon({
+                size: new AMap.Size(32, 32),
+                image: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png',
+                imageSize: new AMap.Size(32, 32)
+              })
             })
 
-            marker.on('click', () => goToBooking(scooter.id))
+            // 创建信息窗体
+            const infoWindow = new AMap.InfoWindow({
+              isCustom: false,
+              content: `
+                <div style="padding: 10px; min-width: 180px;">
+                  <div style="font-weight: bold; margin-bottom: 5px;">🛴 ${scooter.scooterNumber || '未知车辆'}</div>
+                  <div style="color: #666; font-size: 12px;">距离: ${scooter.distance}km</div>
+                  <div style="color: #666; font-size: 12px;">电量: ${scooter.batteryLevel || '—'}%</div>
+                  <button 
+                    id="booking-btn-${targetId}"
+                    style="
+                      margin-top: 8px;
+                      width: 100%;
+                      padding: 6px 12px;
+                      background: #e07b39;
+                      color: white;
+                      border: none;
+                      border-radius: 4px;
+                      cursor: pointer;
+                      font-size: 13px;
+                    "
+                    onclick="window.dispatchEvent(new CustomEvent('scooter-booking', {detail: '${targetId}'}))"
+                  >
+                    立即预订
+                  </button>
+                </div>
+              `,
+              offset: new AMap.Pixel(0, -30)
+            })
+
+            // 点击标记显示信息窗体
+            marker.on('click', () => {
+              infoWindow.open(map, marker.getPosition())
+            })
+          })
+
+          // 监听自定义预订事件
+          window.addEventListener('scooter-booking', (e) => {
+            console.log('收到预订事件, id:', e.detail)
+            goToBooking(e.detail)
           })
 
           map.setCenter([userLng, userLat])
@@ -220,7 +370,8 @@ onMounted(async () => {
           }
         } else {
           ElMessage.warning('定位失败，使用默认区域（成都）')
-
+          locationStatus.value = '定位失败，使用默认位置'
+          
           // 使用默认位置显示滑板车
           const availableScooters = scootersData
             .map(scooter => {
@@ -236,14 +387,26 @@ onMounted(async () => {
 
           nearbyScooters.value = availableScooters
 
-          availableScooters.forEach(scooter => {
+          availableScooters.forEach((scooter) => {
+            // 获取正确的 scooterId
+            const targetId = scooter.id || scooter.scooterId || scooter.scooterId
+            
+            // 创建标记，使用远程红图标
             const marker = new AMap.Marker({
               position: [scooter.lng, scooter.lat],
               map: map,
               title: `${scooter.scooterNumber} • ${scooter.distance}km`,
-              icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png'
+              icon: new AMap.Icon({
+                size: new AMap.Size(32, 32),
+                image: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png',
+                imageSize: new AMap.Size(32, 32)
+              })
             })
-            marker.on('click', () => goToBooking(scooter.id))
+
+            // 使用闭包确保正确传递 scooterId
+            marker.on('click', () => {
+              goToBooking(targetId)
+            })
           })
 
           map.setCenter([userLng, userLat])
@@ -289,6 +452,16 @@ onMounted(async () => {
   margin: 0;
   font-size: 15px;
   color: var(--cg-text-light);
+}
+
+.header-actions {
+  margin-bottom: 20px;
+}
+
+.header-actions :deep(.el-button) {
+  background: var(--cg-gradient);
+  border: none;
+  font-weight: 600;
 }
 
 .active-alert {
@@ -369,5 +542,43 @@ onMounted(async () => {
 
 .unavailable-dot {
   background: #9ca3af;
+}
+
+/* 自定义地图标记样式 */
+:deep(.scooter-marker) {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+:deep(.scooter-marker:hover) {
+  transform: scale(1.1);
+}
+
+:deep(.marker-content) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+:deep(.marker-icon) {
+  font-size: 32px;
+  animation: bounce 2s infinite;
+}
+
+:deep(.marker-label) {
+  background: #e53e3e;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  margin-top: -4px;
+  white-space: nowrap;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 </style>

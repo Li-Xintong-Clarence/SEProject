@@ -41,6 +41,13 @@
         </div>
       </el-card>
     </div>
+
+    <!-- 免责声明弹窗 -->
+    <DisclaimerDialog
+      v-model="showDisclaimer"
+      @accept="handleDisclaimerAccept"
+      @decline="handleDisclaimerDecline"
+    />
   </div>
 </template>
 
@@ -49,10 +56,15 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/auth'
+import DisclaimerDialog from '@/components/DisclaimerDialog.vue'
 
 const router = useRouter()
 const formRef = ref(null)
 const loading = ref(false)
+const showDisclaimer = ref(false)
+
+// 检查是否已同意过免责条款
+const hasAgreedDisclaimer = localStorage.getItem('disclaimer_agreed') === 'true'
 
 const form = ref({
   username: '',
@@ -78,10 +90,17 @@ const handleLogin = () => {
         if (res.token && res.user) {
           localStorage.setItem('token', res.token)
           localStorage.setItem('user', JSON.stringify(res.user))
-          ElMessage.success('登录成功')
-          // 触发登录状态变更事件
-          window.dispatchEvent(new Event('login-state-change'))
-          router.push('/scooters')
+
+          // 检查是否需要显示免责条款
+          if (!hasAgreedDisclaimer) {
+            showDisclaimer.value = true
+          } else {
+            ElMessage.success('登录成功')
+            // 触发登录状态变更事件
+            window.dispatchEvent(new Event('login-state-change'))
+            const redirect = router.currentRoute.value.query.redirect || '/scooters'
+            router.push(redirect)
+          }
         } else {
           ElMessage.error('登录失败：返回数据格式不正确')
         }
@@ -92,6 +111,24 @@ const handleLogin = () => {
       }
     }
   })
+}
+
+// 用户同意免责条款
+const handleDisclaimerAccept = () => {
+  localStorage.setItem('disclaimer_agreed', 'true')
+  ElMessage.success('登录成功')
+  // 触发登录状态变更事件
+  window.dispatchEvent(new Event('login-state-change'))
+  const redirect = router.currentRoute.value.query.redirect || '/scooters'
+  router.push(redirect)
+}
+
+// 用户不同意免责条款
+const handleDisclaimerDecline = () => {
+  // 退出登录
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  ElMessage.warning('您需要同意用户协议才能使用服务')
 }
 </script>
 
