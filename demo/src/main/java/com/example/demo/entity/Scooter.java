@@ -25,6 +25,8 @@ public class Scooter {
     private Double longitude;
     /** 位置描述（如"地铁站A口"） */
     private String location;
+    /** 服务点ID（绑定到哪个服务点，NULL表示未绑定） */
+    private Long depotId;
     /** 最后维护时间 */
     private LocalDateTime lastMaintenanceDate;
 }

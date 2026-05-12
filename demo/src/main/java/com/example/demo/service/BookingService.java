@@ -5,55 +5,62 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * è®¢å•æœåŠ¡æ¥å£
- * å®šä¹‰è®¢å•ï¼ˆç§Ÿèµï¼‰ç›¸å…³çš„ä¸šåŠ¡æ“ä½œ
+ * ¶©µ¥·şÎñ½Ó¿Ú
+ * ¶¨Òå¶©µ¥£¨×âÁŞ£©Ïà¹ØµÄÒµÎñ²Ù??
  */
 public interface BookingService {
     /**
-     * æŸ¥è¯¢æ‰€æœ‰è®¢å•ï¼ˆç®¡ç†å‘˜ï¼‰
+     * ²éÑ¯ËùÓĞ¶©µ¥£¨¹ÜÀíÔ±£©
      */
     List<Booking> findAll();
     /**
-     * æŸ¥è¯¢ç”¨æˆ·çš„è®¢å•åˆ—è¡¨
+     * ²éÑ¯ÓÃ»§µÄ¶©µ¥ÁĞ??
      */
     List<Booking> findByUserId(Long userId);
     /**
-     * æ ¹æ®IDæŸ¥è¯¢è®¢å•
+     * ¸ù¾İID²éÑ¯¶©µ¥
      */
     Booking findById(Long id);
     /**
-     * åˆ›å»ºæ–°è®¢å•
+     * ´´½¨ĞÂ¶©µ¥£¨Í¨¹ı·şÎñµã£¬×Ô¶¯·ÖÅä³µÁ¾??
+     * @param userId ÓÃ»§ID
+     * @param depotId ·şÎñµãID£¨±ØÌî£©
+     * @param hireOption ×âÁŞÊ±³¤
+     */
+    Booking createByDepot(Long userId, Long depotId, String hireOption);
+    /**
+     * ´´½¨ĞÂ¶©µ¥£¨Ö¸¶¨³µÁ¾??
      */
     boolean save(Booking booking);
     /**
-     * æ›´æ–°è®¢å•ä¿¡æ¯
+     * ¸üĞÂ¶©µ¥ĞÅÏ¢
      */
     boolean update(Booking booking);
     /**
-     * åˆ é™¤è®¢å•
+     * É¾³ı¶©µ¥
      */
     boolean deleteById(Long id);
     /**
-     * å»¶é•¿ç§ŸæœŸ
-     * @param id è®¢å•ID
-     * @param hireOption å»¶é•¿çš„æ—¶é•¿é€‰é¡¹ï¼ˆ1hr, 4hr, 1day, 1weekï¼‰
+     * ÑÓ³¤×âÆÚ
+     * @param id ¶©µ¥ID
+     * @param hireOption ÑÓ³¤µÄÊ±³¤Ñ¡Ïî??hr, 4hr, 1day, 1week??
      */
     boolean extendBooking(Long id, String hireOption);
     /**
-     * å–æ¶ˆè®¢å•
+     * È¡Ïû¶©µ¥
      */
     boolean cancelBooking(Long id);
     /**
-     * æ”¯ä»˜è®¢å•
+     * Ö§¸¶¶©µ¥
      */
     boolean payBooking(Long id);
     /**
-     * è·å–ç”¨æˆ·ç»Ÿè®¡ä¿¡æ¯ï¼ˆè®¢å•æ•°ã€æ€»æ¶ˆè´¹ã€æ€»æ—¶é•¿ï¼‰
+     * »ñÈ¡ÓÃ»§Í³¼ÆĞÅÏ¢£¨¶©µ¥Êı¡¢×ÜÏû·Ñ¡¢×ÜÊ±³¤£©
      */
     Map<String, Object> getUserStats(Long userId);
     /**
-     * è¿˜è½¦ï¼ˆç»“æŸéª‘è¡Œï¼‰
-     * @param id è®¢å•ID
+     * »¹³µ£¨½áÊøÆïĞĞ£©
+     * @param id ¶©µ¥ID
      */
     boolean returnScooter(Long id);
 }

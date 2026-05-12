@@ -1,33 +1,48 @@
 package com.example.demo.service;
 
 /**
- * é‚®ä»¶æœåŠ¡æ¥å£
- * å®šä¹‰å‘é€é‚®ä»¶çš„ç›¸å…³æ“ä½œ
+ * ÓÊ¼ş·şÎñ½Ó¿Ú
+ * ¶¨Òå·¢ËÍÓÊ¼şµÄÏà¹Ø²Ù×÷
  */
 public interface EmailService {
     /**
-     * å‘é€é¢„è®¢ç¡®è®¤é‚®ä»¶
-     * @param toEmail æ”¶ä»¶äººé‚®ç®±
-     * @param username ç”¨æˆ·å
-     * @param confirmationCode é¢„è®¢ç¡®è®¤ç 
-     * @param scooterNumber ç”µåŠ¨è½¦ç¼–å·
-     * @param hireOption ç§Ÿèµé€‰é¡¹
-     * @param startTime å¼€å§‹æ—¶é—´
-     * @param endTime ç»“æŸæ—¶é—´
-     * @param totalCost æ€»è´¹ç”¨
+     * ·¢ËÍÔ¤¶©È·ÈÏÓÊ??
+     * @param toEmail ÊÕ¼şÈËÓÊ??
+     * @param username ÓÃ»§??
+     * @param confirmationCode Ô¤¶©È·ÈÏ??
+     * @param scooterNumber µç¶¯³µ±à??
+     * @param hireOption ×âÁŞÑ¡Ïî
+     * @param startTime ¿ªÊ¼Ê±??
+     * @param endTime ½áÊøÊ±¼ä
+     * @param totalCost ×Ü·Ñ??
      */
     void sendBookingConfirmation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption, String startTime, String endTime, double totalCost);
 
     /**
-     * å‘é€è®¢å•å–æ¶ˆé‚®ä»¶
+     * ·¢ËÍ¶©µ¥È¡ÏûÓÊ??
      */
     void sendBookingCancellation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption);
 
     /**
-     * å‘é€ç»“æŸéª‘è¡Œé‚®ä»¶
+     * ·¢ËÍ½áÊøÆïĞĞÓÊ??
      */
     void sendRideCompletion(String toEmail, String username, String confirmationCode,
                            String scooterNumber, String startTime, String endTime, double totalCost);
+
+    /**
+     * ·¢ËÍ×Ô¶¯»¹³µÍ¨ÖªÓÊ¼ş
+     * @param toEmail ÊÕ¼şÈËÓÊ??
+     * @param username ÓÃ»§??
+     * @param confirmationCode Ô¤¶©È·ÈÏ??
+     * @param scooterNumber µç¶¯³µ±à??
+     * @param startTime ¿ªÊ¼Ê±??
+     * @param endTime ½áÊøÊ±¼ä
+     * @param depotName »¹³µ·şÎñµãÃû??
+     * @param totalCost ×Ü·Ñ??
+     */
+    void sendAutoReturnNotification(String toEmail, String username, String confirmationCode,
+                                    String scooterNumber, String startTime, String endTime,
+                                    String depotName, double totalCost);
 }

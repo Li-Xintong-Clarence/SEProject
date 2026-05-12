@@ -4,6 +4,8 @@ import com.example.demo.entity.IssueReport;
 import com.example.demo.mapper.IssueReportMapper;
 import com.example.demo.service.IssueReportService;
 import com.example.demo.vo.IssueReportRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -15,6 +17,8 @@ import java.util.List;
 @Service
 public class IssueReportServiceImpl implements IssueReportService {
 
+    private static final Logger log = LoggerFactory.getLogger(IssueReportServiceImpl.class);
+
     @Autowired
     private IssueReportMapper issueReportMapper;
 
@@ -24,13 +28,25 @@ public class IssueReportServiceImpl implements IssueReportService {
      */
     @Override
     public IssueReport create(Long userId, IssueReportRequest request) {
+        log.info("Creating issue report for userId: {}, scooterId: {}, description: {}",
+                userId, request.getScooterId(), request.getDescription());
         IssueReport report = new IssueReport();
         report.setUserId(userId);
         report.setScooterId(request.getScooterId());
         report.setDescription(request.getDescription());
         report.setStatus("PENDING");
         report.setPriority("NORMAL");
+        report.setCreatedAt(java.time.LocalDateTime.now());
         issueReportMapper.insert(report);
+
+        log.info("Issue report inserted, generated ID: {}", report.getId());
+
+        // 重新查询获取完整对象
+        if (report.getId() != null) {
+            IssueReport result = issueReportMapper.findById(report.getId());
+            log.info("Fetched complete issue report: {}", result);
+            return result;
+        }
         return report;
     }
 

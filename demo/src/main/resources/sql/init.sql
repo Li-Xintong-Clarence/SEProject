@@ -24,6 +24,30 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================
+-- 服务点表 (depot) — 存储租车/还车服务点位置
+-- =============================================
+CREATE TABLE IF NOT EXISTS `depot` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `depot_number` VARCHAR(50) NOT NULL UNIQUE,
+    `name` VARCHAR(100) NOT NULL,
+    `latitude` DECIMAL(10, 6),
+    `longitude` DECIMAL(10, 6),
+    `address` VARCHAR(200),
+    `capacity` INT DEFAULT 10,
+    `status` VARCHAR(20) DEFAULT 'ACTIVE',
+    INDEX idx_depot_number (`depot_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 插入服务点测试数据
+INSERT INTO `depot` (`depot_number`, `name`, `latitude`, `longitude`, `address`, `capacity`) VALUES
+('D001', '服务点 A（地铁站A口）', 30.746, 103.922, '地铁1号线科学城站A口', 10),
+('D002', '服务点 B（商业中心）', 30.754, 103.936, '天府新区商业中心', 15),
+('D003', '服务点 C（公园入口）', 30.758, 103.915, '兴隆湖公园南入口', 8),
+('D004', '服务点 D（办公楼）', 30.739, 103.944, '天府软件园G区', 12),
+('D005', '服务点 E（学校门口）', 30.765, 103.928, '四川大学锦江学院', 10)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- =============================================
 -- 电动车表 (scooters)
 -- =============================================
 CREATE TABLE IF NOT EXISTS `scooters` (
@@ -34,9 +58,11 @@ CREATE TABLE IF NOT EXISTS `scooters` (
     `latitude` DOUBLE,
     `longitude` DOUBLE,
     `location` VARCHAR(255),
+    `depot_id` BIGINT COMMENT '所属服务点ID',
     `last_maintenance_date` DATETIME,
     INDEX idx_status (`status`),
-    INDEX idx_scooter_number (`scooter_number`)
+    INDEX idx_scooter_number (`scooter_number`),
+    INDEX idx_depot_id (`depot_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================
@@ -53,6 +79,8 @@ CREATE TABLE IF NOT EXISTS `booking` (
     `status` VARCHAR(20) DEFAULT 'PENDING' COMMENT 'PENDING, PAID, ACTIVE, COMPLETED, CANCELLED',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `confirmation_code` VARCHAR(50) UNIQUE COMMENT '预订确认码',
+    `start_depot_id` BIGINT COMMENT '取车服务点ID',
+    `end_depot_id` BIGINT COMMENT '还车服务点ID',
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),
     FOREIGN KEY (`scooter_id`) REFERENCES `scooters`(`id`),
     INDEX idx_user_id (`user_id`),
@@ -121,10 +149,10 @@ CREATE TABLE IF NOT EXISTS `hire_option` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `hire_option` (`code`, `label`, `duration_minutes`, `price`, `display_order`) VALUES
-('1HR', '1 hour', 60, 5.00, 1),
-('4HR', '4 hours', 240, 15.00, 2),
-('1DAY', '1 day', 1440, 25.00, 3),
-('1WEEK', '1 week', 10080, 80.00, 4)
+('1hr', '1 hour', 60, 5.00, 1),
+('4hr', '4 hours', 240, 15.00, 2),
+('1day', '1 day', 1440, 25.00, 3),
+('1week', '1 week', 10080, 80.00, 4)
 ON DUPLICATE KEY UPDATE label = VALUES(label);
 
 -- =============================================
@@ -345,3 +373,10 @@ INSERT INTO `scooters` (`scooter_number`, `status`, `battery_level`, `latitude`,
 ('SC171', 'AVAILABLE', 91.00, 34.7680, 113.6350, '郑州丹尼斯大卫城'),
 ('SC172', 'AVAILABLE', 86.00, 34.7550, 113.6220, '郑州德化街')
 ON DUPLICATE KEY UPDATE status = VALUES(status), battery_level = VALUES(battery_level), latitude = VALUES(latitude), longitude = VALUES(longitude), location = VALUES(location);
+
+-- 更新滑板车绑定到服务点
+UPDATE `scooters` SET `depot_id` = 1 WHERE `scooter_number` IN ('SC001', 'SC002', 'SC003', 'SC004', 'SC005');
+UPDATE `scooters` SET `depot_id` = 2 WHERE `scooter_number` IN ('SC006', 'SC007', 'SC008', 'SC009', 'SC010');
+UPDATE `scooters` SET `depot_id` = 3 WHERE `scooter_number` IN ('SC011', 'SC012', 'SC013', 'SC014', 'SC015');
+UPDATE `scooters` SET `depot_id` = 4 WHERE `scooter_number` IN ('SC016', 'SC017', 'SC018', 'SC019', 'SC020');
+UPDATE `scooters` SET `depot_id` = 5 WHERE `scooter_number` IN ('SC021', 'SC022', 'SC023', 'SC024', 'SC025', 'SC026', 'SC027', 'SC028', 'SC029', 'SC030');

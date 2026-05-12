@@ -2,7 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.common.Result;
 import com.example.demo.entity.Booking;
+import com.example.demo.entity.Scooter;
 import com.example.demo.service.BookingService;
+import com.example.demo.service.ScooterService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -11,9 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * è®¢å•æ§åˆ¶å™¨
- * å¤„ç†ç§Ÿèµè®¢å•çš„åˆ›å»ºã€æŸ¥è¯¢ã€æ”¯ä»˜ã€å–æ¶ˆã€å»¶æœŸç­‰æ“ä½œ
- * è·¯å¾„: /api/bookings/*
+ * ¶©µ¥¿ØÖÆ??
+ * ´¦Àí×âÁŞ¶©µ¥µÄ´´½¨¡¢²éÑ¯¡¢Ö§¸¶¡¢È¡Ïû¡¢ÑÓÆÚµÈ²Ù×÷
+ * Â·¾¶: /api/bookings/*
  */
 @RestController
 @RequestMapping("/api/bookings")
@@ -23,129 +25,208 @@ public class BookingController {
     @Autowired
     private BookingService bookingService;
 
+    @Autowired
+    private ScooterService scooterService;
+
     /**
-     * åˆ›å»ºæ–°è®¢å•ï¼ˆç§Ÿè½¦ï¼‰
-     * POST /api/bookings
-     * å‚æ•°: scooterId, hireOption, startTime ç­‰
+     * ´´½¨ĞÂ¶©µ¥£¨Í¨¹ı·şÎñµã×â³µ£¬×Ô¶¯·ÖÅä³µÁ¾??
+     * POST /api/bookings/depot
+     * ²ÎÊı: depotId, hireOption
      */
-    @PostMapping
-    public Result<Booking> create(@RequestBody Booking booking, HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute("userId");
-        booking.setUserId(userId);
-        if (bookingService.save(booking)) {
+    @PostMapping(""depot"")
+    public Result<Booking> createByDepot(@RequestBody Map<String, String> params, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(""userId"");
+
+        // Ò»ÈËÒ»³µÏŞÖÆ£º¼ì²éÓÃ»§ÊÇ·ñÓĞ½øĞĞÖĞµÄ¶©µ¥
+        List<Booking> activeBookings = bookingService.findByUserId(userId);
+        for (Booking b : activeBookings) {
+            if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
+                return Result.error(""ÄúÓĞÕıÔÚ½øĞĞÖĞµÄĞĞ³Ì£¬ÇëÏÈÍê³É»òÈ¡ÏûºóÔÙ´´½¨ĞÂ¶©??"");
+            }
+        }
+
+        Long depotId = Long.parseLong(params.get(""depotId""));
+        String hireOption = params.get(""hireOption"");
+
+        Booking booking = bookingService.createByDepot(userId, depotId, hireOption);
+        if (booking != null) {
             return Result.success(booking);
         }
-        return Result.error("Failed to create booking");
+        return Result.error(""¸Ã·şÎñµãÔİÎŞ¿ÉÓÃ³µÁ¾"");
     }
 
     /**
-     * è·å–å½“å‰ç”¨æˆ·çš„è®¢å•åˆ—è¡¨
+     * ´´½¨ĞÂ¶©µ¥£¨Ö¸¶¨³µÁ¾ID??
+     * POST /api/bookings
+     * ²ÎÊı: scooterId, hireOption, startTime ??
+     */
+    @PostMapping
+    public Result<Booking> create(@RequestBody Booking booking, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(""userId"");
+        booking.setUserId(userId);
+
+        // Ò»ÈËÒ»³µÏŞÖÆ£º¼ì²éÓÃ»§ÊÇ·ñÓĞ½øĞĞÖĞµÄ¶©µ¥
+        List<Booking> activeBookings = bookingService.findByUserId(userId);
+        for (Booking b : activeBookings) {
+            if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
+                return Result.error(""ÄúÓĞÕıÔÚ½øĞĞÖĞµÄĞĞ³Ì£¨¶©µ¥ºÅ:"" + b.getId() + ""£©£¬ÇëÏÈÍê³É»òÈ¡ÏûºóÔÙ´´½¨ĞÂ¶©µ¥"");
+            }
+        }
+
+        // ¼ì²é±ØÒª²Î??
+        if (booking.getScooterId() == null) {
+            return Result.error(""»¬°å³µID²»ÄÜÎª¿Õ"");
+        }
+        if (booking.getHireOption() == null || booking.getHireOption().isEmpty()) {
+            return Result.error(""ÇëÑ¡Ôñ×âÁŞÊ±³¤"");
+        }
+
+        // Èç¹ûÃ»ÓĞÖ¸¶¨ startDepotId£¬×Ô¶¯´Ó»¬°å³µ»ñ??
+        if (booking.getStartDepotId() == null) {
+            Scooter scooter = scooterService.findById(booking.getScooterId());
+            if (scooter != null && scooter.getDepotId() != null) {
+                booking.setStartDepotId(scooter.getDepotId());
+            }
+        }
+
+        boolean saved = bookingService.save(booking);
+        if (saved) {
+            return Result.success(booking);
+        }
+        return Result.error(""´´½¨¶©µ¥Ê§°Ü£¬ÇëÉÔºóÖØÊÔ"");
+    }
+
+    /**
+     * »ñÈ¡µ±Ç°ÓÃ»§µÄ¶©µ¥ÁĞ??
      * GET /api/bookings
      */
     @GetMapping
     public Result<List<Booking>> findMyBookings(HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute("userId");
+        Long userId = (Long) request.getAttribute(""userId"");
         return Result.success(bookingService.findByUserId(userId));
     }
 
     /**
-     * è·å–å½“å‰è¿›è¡Œä¸­çš„éª‘è¡Œ
+     * »ñÈ¡µ±Ç°½øĞĞÖĞµÄÆïĞĞ
      * GET /api/bookings/current
-     * ç”¨äºæ£€æŸ¥ç”¨æˆ·æ˜¯å¦æœ‰è¿›è¡Œä¸­çš„éª‘è¡Œï¼ˆä¸€äººä¸€è½¦ï¼‰
+     * ÓÃÓÚ¼ì²éÓÃ»§ÊÇ·ñÓĞ½øĞĞÖĞµÄÆïĞĞ£¨Ò»ÈËÒ»³µ£©
+     * ·µ»ØËùÓĞÎ´½áÊøµÄ¶©µ¥£¨PENDING¡¢PAID¡¢ACTIVE??
      */
-    @GetMapping("/current")
+    @GetMapping(""/current"")
     public Result<Booking> getCurrentRide(HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute("userId");
+        Long userId = (Long) request.getAttribute(""userId"");
         List<Booking> bookings = bookingService.findByUserId(userId);
         for (Booking b : bookings) {
-            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
+            if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
                 return Result.success(b);
             }
         }
-        return Result.error("No active ride");
+        return Result.error(""No active ride"");
     }
 
     /**
-     * æ ¹æ®IDè·å–è®¢å•è¯¦æƒ…
+     * »ñÈ¡µ±Ç°ÓÃ»§Î´Íê³ÉµÄ»î¶¯¶©µ¥
+     * GET /api/bookings/my/active
+     * ·µ»ØÎ´½áÊøµÄËùÓĞ¶©µ¥£¨PENDING¡¢PAID¡¢ACTIVE??
+     */
+    @GetMapping(""/my/active"")
+    public Result<Booking> getMyActiveBooking(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(""userId"");
+        List<Booking> bookings = bookingService.findByUserId(userId);
+        // ·µ»ØµÚÒ»¸öÎ´½áÊøµÄ¶©??
+        for (Booking b : bookings) {
+            String status = b.getStatus();
+            // PENDING, PAID, ACTIVE ¶¼ÊÇÎ´½áÊøµÄ×´??
+            if (!""COMPLETED"".equals(status) && !""CANCELLED"".equals(status)) {
+                return Result.success(b);
+            }
+        }
+        return Result.error(""No active booking"");
+    }
+
+    /**
+     * ¸ù¾İID»ñÈ¡¶©µ¥ÏêÇé
      * GET /api/bookings/{id}
      */
-    @GetMapping("/{id}")
+    @GetMapping(""/{id}"")
     public Result<Booking> findById(@PathVariable Long id) {
         Booking booking = bookingService.findById(id);
         if (booking != null) {
             return Result.success(booking);
         }
-        return Result.error("Booking not found");
+        return Result.error(""Booking not found"");
     }
 
     /**
-     * å»¶é•¿ç§ŸæœŸ
+     * ÑÓ³¤×âÆÚ
      * PUT /api/bookings/{id}/extend?hireOption=1day
-     * å‚æ•°: hireOption - å»¶é•¿çš„æ—¶é•¿é€‰é¡¹
+     * ²ÎÊı: hireOption - ÑÓ³¤µÄÊ±³¤Ñ¡Ïî
      */
-    @PutMapping("/{id}/extend")
-    public Result<String> extend(@PathVariable Long id, @RequestParam String hireOption) {
+    @PutMapping(""/{id}/extend"")
+    public Result<Booking> extend(@PathVariable Long id, @RequestParam String hireOption) {
         if (bookingService.extendBooking(id, hireOption)) {
-            return Result.success("Booking extended successfully");
+            // ·µ»Ø¸üĞÂºóµÄ¶©µ¥ĞÅÏ¢
+            Booking updatedBooking = bookingService.findById(id);
+            return Result.success(updatedBooking);
         }
-        return Result.error("Failed to extend booking");
+        return Result.error(""Failed to extend booking"");
     }
 
     /**
-     * å–æ¶ˆè®¢å•
+     * È¡Ïû¶©µ¥
      * POST /api/bookings/{id}/cancel
      */
-    @PostMapping("/{id}/cancel")
+    @PostMapping(""/{id}/cancel"")
     public Result<String> cancel(@PathVariable Long id) {
         if (bookingService.cancelBooking(id)) {
-            return Result.success("Booking cancelled successfully");
+            return Result.success(""Booking cancelled successfully"");
         }
-        return Result.error("Failed to cancel booking");
+        return Result.error(""Failed to cancel booking"");
     }
 
     /**
-     * è¿˜è½¦ï¼ˆç»“æŸéª‘è¡Œï¼‰
+     * »¹³µ£¨½áÊøÆïĞĞ£©
      * POST /api/bookings/{id}/return
      */
-    @PostMapping("/{id}/return")
+    @PostMapping(""/{id}/return"")
     public Result<String> returnScooter(@PathVariable Long id) {
         if (bookingService.returnScooter(id)) {
-            return Result.success("Scooter returned successfully");
+            return Result.success(""Scooter returned successfully"");
         }
-        return Result.error("Failed to return scooter");
+        return Result.error(""Failed to return scooter"");
     }
 
     /**
-     * æ”¯ä»˜è®¢å•
+     * Ö§¸¶¶©µ¥
      * POST /api/bookings/{id}/pay
-     * å‚æ•°: cardLast4, amount, paymentMethod (å¯é€‰)
+     * ²ÎÊı: cardLast4, amount, paymentMethod (¿É??
      */
-    @PostMapping("/{id}/pay")
+    @PostMapping(""/{id}/pay"")
     public Result<String> pay(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> paymentData) {
         if (bookingService.payBooking(id)) {
-            return Result.success("Payment successful");
+            return Result.success(""Payment successful"");
         }
-        return Result.error("Payment failed");
+        return Result.error(""Payment failed"");
     }
 
     /**
-     * è·å–è®¢å•ç¡®è®¤ä¿¡æ¯ï¼ˆç”Ÿæˆç¡®è®¤ç ç­‰ï¼‰
+     * »ñÈ¡¶©µ¥È·ÈÏĞÅÏ¢£¨Éú³ÉÈ·ÈÏÂëµÈ£©
      * GET /api/bookings/{id}/confirmation
      */
-    @GetMapping("/{id}/confirmation")
+    @GetMapping(""/{id}/confirmation"")
     public Result<Map<String, Object>> getConfirmation(@PathVariable Long id) {
         Booking booking = bookingService.findById(id);
         if (booking == null) {
-            return Result.error("Booking not found");
+            return Result.error(""Booking not found"");
         }
         Map<String, Object> confirmation = new HashMap<>();
-        confirmation.put("confirmationCode", booking.getConfirmationCode());
-        confirmation.put("scooterId", booking.getScooterId());
-        confirmation.put("hireOption", booking.getHireOption());
-        confirmation.put("startTime", booking.getStartTime());
-        confirmation.put("endTime", booking.getEndTime());
-        confirmation.put("totalCost", booking.getTotalCost());
-        confirmation.put("status", booking.getStatus());
+        confirmation.put(""confirmationCode"", booking.getConfirmationCode());
+        confirmation.put(""scooterId"", booking.getScooterId());
+        confirmation.put(""hireOption"", booking.getHireOption());
+        confirmation.put(""startTime"", booking.getStartTime());
+        confirmation.put(""endTime"", booking.getEndTime());
+        confirmation.put(""totalCost"", booking.getTotalCost());
+        confirmation.put(""status"", booking.getStatus());
         return Result.success(confirmation);
     }
 }

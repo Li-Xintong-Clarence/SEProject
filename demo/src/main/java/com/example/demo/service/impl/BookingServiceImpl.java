@@ -12,6 +12,8 @@ import com.example.demo.service.BookingService;
 import com.example.demo.service.DiscountService;
 import com.example.demo.service.EmailService;
 import com.example.demo.service.ScooterService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,12 +25,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * è®¢å•æœåŠ¡å®ç°ç±»
- * å®ç°è®¢å•ï¼ˆç§Ÿèµï¼‰ç›¸å…³çš„å…·ä½“ä¸šåŠ¡é€»è¾‘
- * åŒ…æ‹¬åˆ›å»ºè®¢å•ã€æ”¯ä»˜ã€å–æ¶ˆã€å»¶æœŸã€ç»Ÿè®¡ç­‰åŠŸèƒ½
+ * ¶©µ¥·şÎñÊµÏÖ??
+ * ÊµÏÖ¶©µ¥£¨×âÁŞ£©Ïà¹ØµÄ¾ßÌåÒµÎñÂß¼­
+ * °üÀ¨´´½¨¶©µ¥¡¢Ö§¸¶¡¢È¡Ïû¡¢ÑÓÆÚ¡¢Í³¼ÆµÈ¹¦ÄÜ
  */
 @Service
 public class BookingServiceImpl implements BookingService {
+
+    private static final Logger logger = LoggerFactory.getLogger(BookingServiceImpl.class);
 
     @Autowired
     private BookingMapper bookingMapper;
@@ -67,36 +71,107 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * åˆ›å»ºæ–°è®¢å•
-     * 1. æ£€æŸ¥ç”¨æˆ·æ˜¯å¦æœ‰è¿›è¡Œä¸­çš„è®¢å•ï¼ˆä¸€äººä¸€è½¦é™åˆ¶ï¼‰
-     * 2. æ ¹æ®hireOptionè·å–ä»·æ ¼
-     * 3. è®¾ç½®è®¢å•çŠ¶æ€ä¸ºPENDING
-     * 4. ç”Ÿæˆç¡®è®¤ç 
+     * Í¨¹ı·şÎñµã´´½¨¶©µ¥£¨×Ô¶¯·ÖÅä³µÁ¾??
+     * 1. ¼ì²éÓÃ»§ÊÇ·ñÓĞ½øĞĞÖĞµÄ¶©µ¥
+     * 2. ¼ì²é·şÎñµãÊÇ·ñÓĞ¿ÉÓÃ³µ??
+     * 3. ·ÖÅäµÚÒ»Á¾¿ÉÓÃ³µ??
+     * 4. ´´½¨¶©µ¥
+     */
+    @Override
+    @Transactional
+    public Booking createByDepot(Long userId, Long depotId, String hireOption) {
+        // ¼ì²éÓÃ»§ÊÇ·ñÓĞ½øĞĞÖĞµÄ¶©µ¥
+        List<Booking> activeBookings = bookingMapper.findByUserId(userId);
+        for (Booking b : activeBookings) {
+            if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
+                return null;
+            }
+        }
+
+        // ²éÕÒ¸Ã·şÎñµãµÄ¿ÉÓÃ³µ??
+        Scooter scooter = scooterService.findFirstAvailableByDepotId(depotId);
+        if (scooter == null) {
+            return null; // Ã»ÓĞ¿ÉÓÃ³µÁ¾
+        }
+
+        // ´´½¨¶©µ¥
+        Booking booking = new Booking();
+        booking.setUserId(userId);
+        booking.setScooterId(scooter.getId());
+        booking.setStartDepotId(depotId);
+        booking.setHireOption(hireOption);
+        booking.setStatus(""PENDING"");
+        booking.setCreatedAt(LocalDateTime.now());
+        booking.setConfirmationCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+
+        // ¼ÆËã¼Û¸ñ
+        Pricing pricing = pricingMapper.findById(getPricingIdByOption(hireOption));
+        if (pricing != null) {
+            User bookingUser = userMapper.findById(userId);
+            BigDecimal originalPrice = pricing.getPrice();
+            double finalPrice = discountService.calculateDiscountedPrice(originalPrice.doubleValue(),
+                    bookingUser != null ? bookingUser.getUserType() : ""NORMAL"");
+            booking.setTotalCost(BigDecimal.valueOf(finalPrice));
+        }
+
+        if (bookingMapper.insert(booking) > 0) {
+            return booking;
+        }
+        return null;
+    }
+
+    /**
+     * ´´½¨ĞÂ¶©µ¥£¨Ö¸¶¨³µÁ¾??
+     * 1. ¼ì²éÓÃ»§ÊÇ·ñÓĞ½øĞĞÖĞµÄ¶©µ¥£¨Ò»ÈËÒ»³µÏŞÖÆ£©
+     * 2. ¸ù¾İhireOption»ñÈ¡¼Û¸ñ
+     * 3. ÉèÖÃ¶©µ¥×´Ì¬ÎªPENDING
+     * 4. Éú³ÉÈ·ÈÏ??
      */
     @Override
     public boolean save(Booking booking) {
-        // ä¸€äººä¸€è½¦é™åˆ¶ï¼šæ£€æŸ¥ç”¨æˆ·æ˜¯å¦æœ‰è¿›è¡Œä¸­çš„è®¢å•
+        logger.info(""=== BookingService.save() ¿ª??===""");
+        logger.info(""ÓÃ»§ID: {}, »¬°å³µID: {}, ×âÁŞÑ¡Ïî: {}"",
+                    booking.getUserId(), booking.getScooterId(), booking.getHireOption());
+
+        // Ò»ÈËÒ»³µÏŞÖÆ£º¼ì²éÓÃ»§ÊÇ·ñÓĞ½øĞĞÖĞµÄ¶©µ¥
         List<Booking> activeBookings = bookingMapper.findByUserId(booking.getUserId());
+        logger.info(""¸ÃÓÃ»§ÒÑÓĞ¶©µ¥Êı: {}"", activeBookings.size());
         for (Booking b : activeBookings) {
-            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
-                return false; // ç”¨æˆ·å·²æœ‰è¿›è¡Œä¸­çš„è®¢å•
+            if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
+                logger.warn(""ÓÃ»§ÒÑÓĞ½øĞĞÖĞµÄ¶©µ¥£¬¶©µ¥ID: {}, ×´?? {}"", b.getId(), b.getStatus());
+                return false; // ÓÃ»§ÒÑÓĞ½øĞĞÖĞµÄ¶©µ¥
             }
         }
 
         Pricing pricing = pricingMapper.findById(getPricingIdByOption(booking.getHireOption()));
+        logger.info(""»ñÈ¡µ½µÄ¼Û¸ñĞÅÏ¢: {}"", pricing);
+
         if (pricing != null) {
-            // è·å–ç”¨æˆ·ä¿¡æ¯ç”¨äºæŠ˜æ‰£è®¡ç®—
+            // »ñÈ¡ÓÃ»§ĞÅÏ¢ÓÃÓÚÕÛ¿Û¼ÆËã
             User bookingUser = userMapper.findById(booking.getUserId());
             BigDecimal originalPrice = pricing.getPrice();
-            // è®¡ç®—æŠ˜åä»·æ ¼
+            // ¼ÆËãÕÛºó¼Û¸ñ
             double finalPrice = discountService.calculateDiscountedPrice(originalPrice.doubleValue(),
-                    bookingUser != null ? bookingUser.getUserType() : "NORMAL");
+                    bookingUser != null ? bookingUser.getUserType() : ""NORMAL"");
             booking.setTotalCost(BigDecimal.valueOf(finalPrice));
+            logger.info(""¼ÆËãºó¼Û?? {} -> {}"", originalPrice, finalPrice);
         }
-        booking.setStatus("PENDING");
+        booking.setStatus(""PENDING"");
         booking.setCreatedAt(LocalDateTime.now());
         booking.setConfirmationCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        return bookingMapper.insert(booking) > 0;
+
+        logger.info(""×¼±¸²åÈë¶©µ¥: userId={}, scooterId={}, status={}, totalCost={}"",
+                    booking.getUserId(), booking.getScooterId(), booking.getStatus(), booking.getTotalCost());
+
+        int result = bookingMapper.insert(booking);
+        logger.info(""²åÈë½á¹û: {}, ĞÂ¶©µ¥ID: {}"", result, booking.getId());
+
+        if (result > 0) {
+            logger.info(""=== BookingService.save() ³É¹¦ ==="");
+        } else {
+            logger.error(""=== BookingService.save() Ê§°Ü£¬insert·µ»Ø0 ==="");
+        }
+        return result > 0;
     }
 
     @Override
@@ -110,17 +185,19 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * å»¶é•¿ç§ŸæœŸ
-     * 1. æŸ¥æ‰¾è®¢å•ï¼Œæ£€æŸ¥çŠ¶æ€å¿…é¡»æ˜¯ACTIVE
-     * 2. è®¡ç®—æ–°çš„ç»“æŸæ—¶é—´
-     * 3. å¢åŠ ç›¸åº”è´¹ç”¨
+     * ÑÓ³¤×âÆÚ
+     * 1. ²éÕÒ¶©µ¥£¬¼ì²é×´Ì¬±ØĞëÊÇACTIVE
+     * 2. ¼ÆËãĞÂµÄ½áÊøÊ±¼ä
+     * 3. Ôö¼ÓÏàÓ¦·ÑÓÃ
      */
     @Override
     public boolean extendBooking(Long id, String hireOption) {
         Booking booking = bookingMapper.findById(id);
-        if (booking == null || !"ACTIVE".equals(booking.getStatus())) {
+        // ÔÊĞí PAID ??ACTIVE ×´Ì¬µÄ¶©µ¥ÑÓ³¤
+        if (booking == null || (!""ACTIVE"".equals(booking.getStatus()) && !""PAID"".equals(booking.getStatus()))) {
             return false;
         }
+
         LocalDateTime newEndTime = calculateEndTime(booking.getEndTime(), hireOption);
         booking.setEndTime(newEndTime);
 
@@ -128,27 +205,28 @@ public class BookingServiceImpl implements BookingService {
         if (pricing != null) {
             booking.setTotalCost(booking.getTotalCost().add(pricing.getPrice()));
         }
+
         return bookingMapper.update(booking) > 0;
     }
 
     /**
-     * å–æ¶ˆè®¢å•
-     * 1. æ£€æŸ¥è®¢å•çŠ¶æ€ï¼ˆä¸èƒ½æ˜¯å·²å®Œæˆæˆ–å·²å–æ¶ˆï¼‰
-     * 2. æ›´æ–°çŠ¶æ€ä¸ºCANCELLED
-     * 3. é‡Šæ”¾è½¦è¾†ï¼ˆçŠ¶æ€æ”¹å›AVAILABLEï¼‰
-     * 4. å‘é€å–æ¶ˆé‚®ä»¶
+     * È¡Ïû¶©µ¥
+     * 1. ¼ì²é¶©µ¥×´Ì¬£¨²»ÄÜÊÇÒÑÍê³É»òÒÑÈ¡Ïû??
+     * 2. ¸üĞÂ×´Ì¬ÎªCANCELLED
+     * 3. ÊÍ·Å³µÁ¾£¨×´Ì¬¸Ä»ØAVAILABLE??
+     * 4. ·¢ËÍÈ¡ÏûÓÊ??
      */
     @Override
     @Transactional
     public boolean cancelBooking(Long id) {
         Booking booking = bookingMapper.findById(id);
-        if (booking == null || "COMPLETED".equals(booking.getStatus()) || "CANCELLED".equals(booking.getStatus())) {
+        if (booking == null || ""COMPLETED"".equals(booking.getStatus()) || ""CANCELLED"".equals(booking.getStatus())) {
             return false;
         }
-        booking.setStatus("CANCELLED");
+        booking.setStatus(""CANCELLED"");
 
         if (booking.getScooterId() != null) {
-            scooterService.updateStatus(booking.getScooterId(), "AVAILABLE");
+            scooterService.updateStatus(booking.getScooterId(), ""AVAILABLE"");
         }
 
         boolean updated = bookingMapper.update(booking) > 0;
@@ -159,24 +237,24 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * è¿˜è½¦ï¼ˆç»“æŸéª‘è¡Œï¼‰
-     * 1. æ£€æŸ¥è®¢å•çŠ¶æ€å¿…é¡»æ˜¯PAIDæˆ–ACTIVE
-     * 2. æ›´æ–°çŠ¶æ€ä¸ºCOMPLETED
-     * 3. é‡Šæ”¾è½¦è¾†ï¼ˆçŠ¶æ€æ”¹å›AVAILABLEï¼‰
-     * 4. å‘é€ç»“æŸé‚®ä»¶
+     * »¹³µ£¨½áÊøÆïĞĞ£©
+     * 1. ¼ì²é¶©µ¥×´Ì¬±ØĞëÊÇPAID»òACTIVE
+     * 2. ¸üĞÂ×´Ì¬ÎªCOMPLETED
+     * 3. ÊÍ·Å³µÁ¾£¨×´Ì¬¸Ä»ØAVAILABLE??
+     * 4. ·¢ËÍ½áÊøÓÊ??
      */
     @Override
     @Transactional
     public boolean returnScooter(Long id) {
         Booking booking = bookingMapper.findById(id);
-        if (booking == null || !("PAID".equals(booking.getStatus()) || "ACTIVE".equals(booking.getStatus()))) {
+        if (booking == null || !(""PAID"".equals(booking.getStatus()) || ""ACTIVE"".equals(booking.getStatus()))) {
             return false;
         }
-        booking.setStatus("COMPLETED");
+        booking.setStatus(""COMPLETED"");
         booking.setEndTime(LocalDateTime.now());
 
         if (booking.getScooterId() != null) {
-            scooterService.updateStatus(booking.getScooterId(), "AVAILABLE");
+            scooterService.updateStatus(booking.getScooterId(), ""AVAILABLE"");
         }
 
         boolean updated = bookingMapper.update(booking) > 0;
@@ -187,25 +265,25 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * æ”¯ä»˜è®¢å•
-     * 1. æ£€æŸ¥è®¢å•çŠ¶æ€å¿…é¡»æ˜¯PENDING
-     * 2. æ›´æ–°çŠ¶æ€ä¸ºPAIDï¼Œè®¾ç½®å¼€å§‹å’Œç»“æŸæ—¶é—´
-     * 3. æ›´æ–°è½¦è¾†çŠ¶æ€ä¸ºIN_USEï¼ˆä½¿ç”¨ä¸­ï¼‰
-     * 4. å‘é€ç¡®è®¤é‚®ä»¶
+     * Ö§¸¶¶©µ¥
+     * 1. ¼ì²é¶©µ¥×´Ì¬±ØĞëÊÇPENDING
+     * 2. ¸üĞÂ×´Ì¬ÎªPAID£¬ÉèÖÃ¿ªÊ¼ºÍ½áÊøÊ±¼ä
+     * 3. ¸üĞÂ³µÁ¾×´Ì¬ÎªIN_USE£¨Ê¹ÓÃÖĞ??
+     * 4. ·¢ËÍÈ·ÈÏÓÊ??
      */
     @Override
     @Transactional
     public boolean payBooking(Long id) {
         Booking booking = bookingMapper.findById(id);
-        if (booking == null || !"PENDING".equals(booking.getStatus())) {
+        if (booking == null || !""PENDING"".equals(booking.getStatus())) {
             return false;
         }
-        booking.setStatus("PAID");
+        booking.setStatus(""PAID"");
         booking.setStartTime(LocalDateTime.now());
         booking.setEndTime(calculateEndTime(booking.getStartTime(), booking.getHireOption()));
 
         if (booking.getScooterId() != null) {
-            scooterService.updateStatus(booking.getScooterId(), "IN_USE");
+            scooterService.updateStatus(booking.getScooterId(), ""IN_USE"");
         }
 
         boolean updated = bookingMapper.update(booking) > 0;
@@ -216,18 +294,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * å‘é€é¢„è®¢ç¡®è®¤é‚®ä»¶
-     * åŒ…å«ï¼šç¡®è®¤ç ã€è½¦è¾†ç¼–å·ã€ç§Ÿèµé€‰é¡¹ã€æ—¶é—´ã€æ€»è´¹ç”¨
+     * ·¢ËÍÔ¤¶©È·ÈÏÓÊ??
+     * °üº¬£ºÈ·ÈÏÂë¡¢³µÁ¾±àºÅ¡¢×âÁŞÑ¡Ïî¡¢Ê±¼ä¡¢×Ü·Ñ??
      */
     private void sendConfirmationEmail(Booking booking) {
         try {
             User user = userMapper.findById(booking.getUserId());
             if (user == null) {
-                System.err.println("å‘é€ç¡®è®¤é‚®ä»¶å¤±è´¥ï¼šæ‰¾ä¸åˆ°ç”¨æˆ·ï¼ŒuserId=" + booking.getUserId());
+                System.err.println(""·¢ËÍÈ·ÈÏÓÊ¼şÊ§°Ü£ºÕÒ²»µ½ÓÃ»§£¬userId="" + booking.getUserId());
                 return;
             }
             if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-                System.err.println("å‘é€ç¡®è®¤é‚®ä»¶å¤±è´¥ï¼šç”¨æˆ·é‚®ç®±ä¸ºç©ºï¼ŒuserId=" + booking.getUserId());
+                System.err.println(""·¢ËÍÈ·ÈÏÓÊ¼şÊ§°Ü£ºÓÃ»§ÓÊÏäÎª¿Õ£¬userId="" + booking.getUserId());
                 return;
             }
 
@@ -236,9 +314,9 @@ public class BookingServiceImpl implements BookingService {
                 scooter = scooterMapper.findById(booking.getScooterId());
             }
 
-            String scooterNumber = scooter != null ? scooter.getScooterNumber() : "N/A";
-            String startTime = booking.getStartTime() != null ? booking.getStartTime().toString() : "N/A";
-            String endTime = booking.getEndTime() != null ? booking.getEndTime().toString() : "N/A";
+            String scooterNumber = scooter != null ? scooter.getScooterNumber() : ""N/A"";
+            String startTime = booking.getStartTime() != null ? booking.getStartTime().toString() : ""N/A"";
+            String endTime = booking.getEndTime() != null ? booking.getEndTime().toString() : ""N/A"";
 
             emailService.sendBookingConfirmation(
                 user.getEmail(),
@@ -251,23 +329,23 @@ public class BookingServiceImpl implements BookingService {
                 booking.getTotalCost() != null ? booking.getTotalCost().doubleValue() : 0.0
             );
         } catch (Exception e) {
-            System.err.println("å‘é€ç¡®è®¤é‚®ä»¶å¼‚å¸¸: " + e.getMessage());
+            System.err.println(""·¢ËÍÈ·ÈÏÓÊ¼şÒì?? "" + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * å‘é€å–æ¶ˆé¢„è®¢é‚®ä»¶
+     * ·¢ËÍÈ¡ÏûÔ¤¶©ÓÊ??
      */
     private void sendCancellationEmail(Booking booking) {
         try {
             User user = userMapper.findById(booking.getUserId());
             if (user == null) {
-                System.err.println("å‘é€å–æ¶ˆé‚®ä»¶å¤±è´¥ï¼šæ‰¾ä¸åˆ°ç”¨æˆ·ï¼ŒuserId=" + booking.getUserId());
+                System.err.println(""·¢ËÍÈ¡ÏûÓÊ¼şÊ§°Ü£ºÕÒ²»µ½ÓÃ»§£¬userId="" + booking.getUserId());
                 return;
             }
             if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-                System.err.println("å‘é€å–æ¶ˆé‚®ä»¶å¤±è´¥ï¼šç”¨æˆ·é‚®ç®±ä¸ºç©ºï¼ŒuserId=" + booking.getUserId());
+                System.err.println(""·¢ËÍÈ¡ÏûÓÊ¼şÊ§°Ü£ºÓÃ»§ÓÊÏäÎª¿Õ£¬userId="" + booking.getUserId());
                 return;
             }
 
@@ -276,7 +354,7 @@ public class BookingServiceImpl implements BookingService {
                 scooter = scooterMapper.findById(booking.getScooterId());
             }
 
-            String scooterNumber = scooter != null ? scooter.getScooterNumber() : "N/A";
+            String scooterNumber = scooter != null ? scooter.getScooterNumber() : ""N/A"";
 
             emailService.sendBookingCancellation(
                 user.getEmail(),
@@ -286,23 +364,23 @@ public class BookingServiceImpl implements BookingService {
                 booking.getHireOption()
             );
         } catch (Exception e) {
-            System.err.println("å‘é€å–æ¶ˆé‚®ä»¶å¼‚å¸¸: " + e.getMessage());
+            System.err.println(""·¢ËÍÈ¡ÏûÓÊ¼şÒì?? "" + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * å‘é€ç»“æŸéª‘è¡Œé‚®ä»¶
+     * ·¢ËÍ½áÊøÆïĞĞÓÊ??
      */
     private void sendCompletionEmail(Booking booking) {
         try {
             User user = userMapper.findById(booking.getUserId());
             if (user == null) {
-                System.err.println("å‘é€ç»“æŸé‚®ä»¶å¤±è´¥ï¼šæ‰¾ä¸åˆ°ç”¨æˆ·ï¼ŒuserId=" + booking.getUserId());
+                System.err.println(""·¢ËÍ½áÊøÓÊ¼şÊ§°Ü£ºÕÒ²»µ½ÓÃ»§£¬userId="" + booking.getUserId());
                 return;
             }
             if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-                System.err.println("å‘é€ç»“æŸé‚®ä»¶å¤±è´¥ï¼šç”¨æˆ·é‚®ç®±ä¸ºç©ºï¼ŒuserId=" + booking.getUserId());
+                System.err.println(""·¢ËÍ½áÊøÓÊ¼şÊ§°Ü£ºÓÃ»§ÓÊÏäÎª¿Õ£¬userId="" + booking.getUserId());
                 return;
             }
 
@@ -311,9 +389,9 @@ public class BookingServiceImpl implements BookingService {
                 scooter = scooterMapper.findById(booking.getScooterId());
             }
 
-            String scooterNumber = scooter != null ? scooter.getScooterNumber() : "N/A";
-            String startTime = booking.getStartTime() != null ? booking.getStartTime().toString() : "N/A";
-            String endTime = booking.getEndTime() != null ? booking.getEndTime().toString() : "N/A";
+            String scooterNumber = scooter != null ? scooter.getScooterNumber() : ""N/A"";
+            String startTime = booking.getStartTime() != null ? booking.getStartTime().toString() : ""N/A"";
+            String endTime = booking.getEndTime() != null ? booking.getEndTime().toString() : ""N/A"";
 
             emailService.sendRideCompletion(
                 user.getEmail(),
@@ -325,42 +403,42 @@ public class BookingServiceImpl implements BookingService {
                 booking.getTotalCost() != null ? booking.getTotalCost().doubleValue() : 0.0
             );
         } catch (Exception e) {
-            System.err.println("å‘é€ç»“æŸé‚®ä»¶å¼‚å¸¸: " + e.getMessage());
+            System.err.println(""·¢ËÍ½áÊøÓÊ¼şÒì?? "" + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * æ ¹æ®ç§Ÿèµé€‰é¡¹è·å–ä»·æ ¼ID
+     * ¸ù¾İ×âÁŞÑ¡Ïî»ñÈ¡¼Û¸ñID
      * 1hr -> 1, 4hr -> 2, 1day -> 3, 1week -> 4
      */
     private Long getPricingIdByOption(String option) {
         return switch (option) {
-            case "1hr" -> 1L;
-            case "4hr" -> 2L;
-            case "1day" -> 3L;
-            case "1week" -> 4L;
+            case ""1hr"" -> 1L;
+            case ""4hr"" -> 2L;
+            case ""1day"" -> 3L;
+            case ""1week"" -> 4L;
             default -> 1L;
         };
     }
 
     /**
-     * è®¡ç®—ç»“æŸæ—¶é—´
-     * æ ¹æ®ç§Ÿèµé€‰é¡¹è®¡ç®—ç§ŸæœŸç»“æŸæ—¶é—´
+     * ¼ÆËã½áÊøÊ±¼ä
+     * ¸ù¾İ×âÁŞÑ¡Ïî¼ÆËã×âÆÚ½áÊøÊ±¼ä
      */
     private LocalDateTime calculateEndTime(LocalDateTime startTime, String hireOption) {
         return switch (hireOption) {
-            case "1hr" -> startTime.plusHours(1);
-            case "4hr" -> startTime.plusHours(4);
-            case "1day" -> startTime.plusDays(1);
-            case "1week" -> startTime.plusWeeks(1);
+            case ""1hr"" -> startTime.plusHours(1);
+            case ""4hr"" -> startTime.plusHours(4);
+            case ""1day"" -> startTime.plusDays(1);
+            case ""1week"" -> startTime.plusWeeks(1);
             default -> startTime.plusHours(1);
         };
     }
 
     /**
-     * è·å–ç”¨æˆ·ç»Ÿè®¡ä¿¡æ¯
-     * è¿”å›ï¼šè®¢å•æ€»æ•°ã€æ€»æ¶ˆè´¹é‡‘é¢ã€æ€»ç§Ÿèµæ—¶é•¿
+     * »ñÈ¡ÓÃ»§Í³¼ÆĞÅÏ¢
+     * ·µ»Ø£º¶©µ¥×ÜÊı¡¢×ÜÏû·Ñ½ğ¶î¡¢×Ü×âÁŞÊ±??
      */
     @Override
     public Map<String, Object> getUserStats(Long userId) {
@@ -370,21 +448,21 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> userBookings = bookingMapper.findByUserId(userId);
         double totalDuration = 0;
         for (Booking b : userBookings) {
-            if ("PAID".equals(b.getStatus()) || "COMPLETED".equals(b.getStatus())) {
+            if (""PAID"".equals(b.getStatus()) || ""COMPLETED"".equals(b.getStatus())) {
                 totalDuration += switch (b.getHireOption()) {
-                    case "1hr" -> 1;
-                    case "4hr" -> 4;
-                    case "1day" -> 24;
-                    case "1week" -> 168;
+                    case ""1hr"" -> 1;
+                    case ""4hr"" -> 4;
+                    case ""1day"" -> 24;
+                    case ""1week"" -> 168;
                     default -> 1;
                 };
             }
         }
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalBookings", totalBookings);
-        stats.put("totalDuration", totalDuration);
-        stats.put("totalCost", totalCost);
+        stats.put(""totalBookings"", totalBookings);
+        stats.put(""totalDuration"", totalDuration);
+        stats.put(""totalCost"", totalCost);
         return stats;
     }
 }

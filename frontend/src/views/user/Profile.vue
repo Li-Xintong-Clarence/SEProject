@@ -240,7 +240,7 @@
     <el-dialog v-model="confirmVisible" title="预订确认信息" width="520px">
       <el-descriptions v-if="confirmation" :column="1" border>
         <el-descriptions-item label="确认码">{{ confirmation.confirmationCode }}</el-descriptions-item>
-        <el-descriptions-item label="租期">{{ confirmation.hireOption }}</el-descriptions-item>
+        <el-descriptions-item label="租期">{{ formatDuration(confirmation) }}</el-descriptions-item>
         <el-descriptions-item label="开始时间">{{ formatTime(confirmation.startTime) }}</el-descriptions-item>
         <el-descriptions-item label="结束时间">{{ formatTime(confirmation.endTime) }}</el-descriptions-item>
         <el-descriptions-item label="总费用">¥{{ confirmation.totalCost }}</el-descriptions-item>
@@ -304,6 +304,35 @@ const confirmation = ref(null)
 
 // 工具函数
 const formatMoney = (v) => (v == null || v === '' ? '0.00' : Number(v).toFixed(2))
+
+// 将分钟数转换为可读文本
+const formatMinutesToText = (minutes) => {
+  if (!minutes) return '未知'
+  if (minutes < 60) return `${minutes}分钟`
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours < 24) {
+    return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`
+  }
+  const days = Math.floor(hours / 24)
+  const remainHours = hours % 24
+  return remainHours > 0 ? `${days}天${remainHours}小时` : `${days}天`
+}
+
+// 根据开始和结束时间计算租期显示
+const formatDuration = (confirmation) => {
+  if (confirmation.startTime && confirmation.endTime) {
+    const start = new Date(confirmation.startTime).getTime()
+    const end = new Date(confirmation.endTime).getTime()
+    const minutes = Math.round((end - start) / 60000)
+    if (minutes > 0) {
+      return formatMinutesToText(minutes)
+    }
+  }
+  // 回退到套餐选项
+  const map = { '1hr': '1小时', '4hr': '4小时', '1day': '1天', '1week': '1周' }
+  return map[confirmation.hireOption] || confirmation.hireOption || '未知'
+}
 
 const formatTime = (time) => {
   if (!time) return '—'
@@ -371,7 +400,7 @@ const loadBookings = async () => {
     // 查找当前进行中的订单
     activeBooking.value = bookings.value.find(b => {
       const s = (b.status || '').toUpperCase()
-      return s === 'ACTIVE' || s === 'PAID'
+      return s === 'ACTIVE' || s === 'PAID' || s === 'PENDING'
     }) || null
   } catch (e) {
     bookings.value = []
@@ -423,12 +452,38 @@ const handleCancel = (id) => {
       // 乐观更新本地状态
       const booking = bookings.value.find(b => b.id === id)
       if (booking) booking.status = 'CANCELLED'
+
+      // 检查是否是当前进行中的订单，如果是则清理 localStorage
+      const activeTripStr = localStorage.getItem('activeTrip')
+      if (activeTripStr) {
+        try {
+          const activeTrip = JSON.parse(activeTripStr)
+          if (activeTrip.id === id) {
+            localStorage.removeItem('activeTrip')
+          }
+        } catch (e) {
+          localStorage.removeItem('activeTrip')
+        }
+      }
     } catch (e) {
       // 后端可能返回成功但格式不标准
       if (e.message?.includes('成功') || e.message?.includes('cancel')) {
         ElMessage.success('已取消')
         const booking = bookings.value.find(b => b.id === id)
         if (booking) booking.status = 'CANCELLED'
+
+        // 同样清理 localStorage
+        const activeTripStr = localStorage.getItem('activeTrip')
+        if (activeTripStr) {
+          try {
+            const activeTrip = JSON.parse(activeTripStr)
+            if (activeTrip.id === id) {
+              localStorage.removeItem('activeTrip')
+            }
+          } catch (err) {
+            localStorage.removeItem('activeTrip')
+          }
+        }
       }
     } finally {
       cancellingId.value = null
@@ -471,7 +526,12 @@ const submitExtend = async () => {
 // 查看确认信息
 const viewConfirmation = async (id) => {
   try {
-    confirmation.value = await getBookingConfirmation(id)
+    let confirmationData = await getBookingConfirmation(id)
+    // 统一处理响应格式（兼容 { code: 200, data: {...} } 或直接返回对象）
+    if (confirmationData && confirmationData.code === 200 && confirmationData.data) {
+      confirmationData = confirmationData.data
+    }
+    confirmation.value = confirmationData
     confirmVisible.value = true
   } catch (e) {
     ElMessage.error('获取确认信息失败')
