@@ -15,10 +15,12 @@ CREATE TABLE IF NOT EXISTS `users` (
     `email` VARCHAR(100),
     `phone` VARCHAR(20),
     `role` VARCHAR(20) DEFAULT 'CUSTOMER',
+    `user_type` VARCHAR(20) DEFAULT 'NORMAL' COMMENT '用户类型：NORMAL=普通用户，STUDENT=学生，SENIOR=长者',
     `registration_date` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `is_active` BOOLEAN DEFAULT TRUE,
     INDEX idx_username (`username`),
-    INDEX idx_role (`role`)
+    INDEX idx_role (`role`),
+    INDEX idx_user_type (`user_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================

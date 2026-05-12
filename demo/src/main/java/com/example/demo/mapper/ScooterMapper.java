@@ -12,6 +12,9 @@ public interface ScooterMapper {
     @Select("SELECT * FROM scooters WHERE id = #{id}")
     Scooter findById(Long id);
 
+    @Select("SELECT * FROM scooters WHERE scooter_number = #{scooterNumber}")
+    Scooter findByScooterNumber(String scooterNumber);
+
     @Select("SELECT * FROM scooters WHERE status = 'AVAILABLE'")
     List<Scooter> findAvailable();
 

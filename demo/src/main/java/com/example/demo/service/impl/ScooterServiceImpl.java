@@ -28,6 +28,11 @@ public class ScooterServiceImpl implements ScooterService {
     }
 
     @Override
+    public Scooter findByScooterNumber(String scooterNumber) {
+        return scooterMapper.findByScooterNumber(scooterNumber);
+    }
+
+    @Override
     public List<Scooter> findAvailable() {
         return scooterMapper.findAvailable();
     }

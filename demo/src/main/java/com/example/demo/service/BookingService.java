@@ -5,66 +5,62 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 订单服务接口
- * 定义订单（租赁）相关的业务操作
+ * ��������ӿ�
+ * ���嶩�������ޣ���ص�ҵ���??
  */
 public interface BookingService {
     /**
-     * 查询所有订单（管理员）
+     * ��ѯ���ж���������Ա��
      */
     List<Booking> findAll();
     /**
-     * 查询用户的订单列表
+     * ��ѯ�û��Ķ�����??
      */
     List<Booking> findByUserId(Long userId);
     /**
-     * 根据ID查询订单
+     * ����ID��ѯ����
      */
     Booking findById(Long id);
     /**
-     * 创建新订单（通过服务点，自动分配车辆）
-     * @param userId 用户ID
-     * @param depotId 服务点ID（必填）
-     * @param hireOption 租赁时长
+     * �����¶�����ͨ������㣬�Զ����䳵��??
+     * @param userId �û�ID
+     * @param depotId �����ID�����
+     * @param hireOption ����ʱ��
      */
     Booking createByDepot(Long userId, Long depotId, String hireOption);
     /**
-     * 创建新订单（指定车辆）
+     * �����¶�����ָ������??
      */
     boolean save(Booking booking);
     /**
-     * 更新订单信息
+     * ���¶�����Ϣ
      */
     boolean update(Booking booking);
     /**
-     * 删除订单
+     * ɾ������
      */
     boolean deleteById(Long id);
     /**
-     * 延长租期
-     * @param id 订单ID
-     * @param hireOption 延长的时长选项（1hr, 4hr, 1day, 1week）
+     * �ӳ�����
+     * @param id ����ID
+     * @param hireOption �ӳ���ʱ��ѡ��??hr, 4hr, 1day, 1week??
      */
     boolean extendBooking(Long id, String hireOption);
     /**
-     * 取消订单
+     * ȡ������
      */
     boolean cancelBooking(Long id);
     /**
-     * 支付订单
+     * ֧������
      */
     boolean payBooking(Long id);
     /**
-     * 获取用户统计信息（订单数、总消费、总时长）
+     * ��ȡ�û�ͳ����Ϣ���������������ѡ���ʱ����
      */
     Map<String, Object> getUserStats(Long userId);
-<<<<<<< Updated upstream
-=======
     /**
-     * 还车（结束骑行）- 必须指定还车服务点
-     * @param id 订单ID
-     * @param endDepotId 还车服务点ID
+     * �������������У�
+     * @param id ����ID
      */
-    boolean returnScooter(Long id, Long endDepotId);
->>>>>>> Stashed changes
+    boolean returnScooter(Long id);
 }

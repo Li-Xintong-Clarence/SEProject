@@ -1,61 +1,52 @@
-# 服务器配置
+# ��������??
 server:
   port: 8081
   address: 0.0.0.0
 
-# Spring 配置
+# Spring ����
 spring:
   application:
     name: scooter-rental-system
-  # 数据库配置（应用与 MySQL 同机部署时用 127.0.0.1；公网 IP 连不上本机仅监听 localhost 的 MySQL）
+  # ���ݿ����ã�Ӧ��??MySQL ͬ������ʱ�� 127.0.0.1����??IP �����ϱ��������� localhost ??MySQL??
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/scooter_rental?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: sep2user
     password: Sep2Pass2026!
-<<<<<<< Updated upstream
-  # 邮件配置（开发环境可填占位；生产环境请配置真实 SMTP）
-=======
-    hikari:
-      # 连接池配置，防止连接超时问题
-      minimum-idle: 5
-      maximum-pool-size: 20
-      idle-timeout: 300000
-      max-lifetime: 1800000
-      connection-timeout: 30000
-      keepalive-time: 60000
-  # SQL 初始化配置（已改用 DatabaseInitializer 自动初始化）
-  # sql:
-  #   init:
-  #     mode: always
-  #     schema-locations: classpath:schema.sql
-  # 邮件配置
->>>>>>> Stashed changes
+  # �ʼ�����
   mail:
-    host: smtp.example.com
+    host: smtp.qq.com
     port: 587
-    username: your-email@example.com
-    password: your-password
+    username: 1755269020@qq.com
+    password: mbivsmkzywudbfcc
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+    hikari:
+      # ���ӳ����ã���ֹ���ӳ�ʱ����
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      keepalive-time: 60000
 
-# MyBatis 配置
+# MyBatis ����
 mybatis:
-  # Mapper XML 文件位置
+  # Mapper XML �ļ�λ��
   mapper-locations: classpath:mapper/*.xml
-  # 实体类别名包
+  # ʵ���������
   type-aliases-package: com.example.demo.entity
-  # 开启驼峰命名映射
+  # �����շ�����ӳ??
   configuration:
     map-underscore-to-camel-case: true
-  # 打印 SQL 日志（开发时使用）
+  # ��ӡ SQL ��־������ʱʹ��??
   log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-# 日志配置
+# ��־����
 logging:
   level:
     com.example.demo: debug

@@ -1,51 +1,48 @@
 package com.example.demo.service;
 
 /**
- * 邮件服务接口
- * 定义发送邮件的相关操作
+ * �ʼ�����ӿ�
+ * ���巢���ʼ�����ز���
  */
 public interface EmailService {
     /**
-     * 发送预订确认邮件
-     * @param toEmail 收件人邮箱
-     * @param username 用户名
-     * @param confirmationCode 预订确认码
-     * @param scooterNumber 电动车编号
-     * @param hireOption 租赁选项
-     * @param startTime 开始时间
-     * @param endTime 结束时间
-     * @param totalCost 总费用
+     * ����Ԥ��ȷ����??
+     * @param toEmail �ռ�����??
+     * @param username �û�??
+     * @param confirmationCode Ԥ��ȷ��??
+     * @param scooterNumber �綯����??
+     * @param hireOption ����ѡ��
+     * @param startTime ��ʼʱ??
+     * @param endTime ����ʱ��
+     * @param totalCost �ܷ�??
      */
     void sendBookingConfirmation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption, String startTime, String endTime, double totalCost);
-<<<<<<< Updated upstream
-=======
 
     /**
-     * 发送订单取消邮件
+     * ���Ͷ���ȡ����??
      */
     void sendBookingCancellation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption);
 
     /**
-     * 发送结束骑行邮件
+     * ���ͽ���������??
      */
     void sendRideCompletion(String toEmail, String username, String confirmationCode,
                            String scooterNumber, String startTime, String endTime, double totalCost);
 
     /**
-     * 发送自动还车通知邮件
-     * @param toEmail 收件人邮箱
-     * @param username 用户名
-     * @param confirmationCode 预订确认码
-     * @param scooterNumber 电动车编号
-     * @param startTime 开始时间
-     * @param endTime 结束时间
-     * @param depotName 还车服务点名称
-     * @param totalCost 总费用
+     * �����Զ�����֪ͨ�ʼ�
+     * @param toEmail �ռ�����??
+     * @param username �û�??
+     * @param confirmationCode Ԥ��ȷ��??
+     * @param scooterNumber �綯����??
+     * @param startTime ��ʼʱ??
+     * @param endTime ����ʱ��
+     * @param depotName �����������??
+     * @param totalCost �ܷ�??
      */
     void sendAutoReturnNotification(String toEmail, String username, String confirmationCode,
                                     String scooterNumber, String startTime, String endTime,
                                     String depotName, double totalCost);
->>>>>>> Stashed changes
 }
