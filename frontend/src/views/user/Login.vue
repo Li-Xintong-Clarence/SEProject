@@ -165,23 +165,15 @@ const handleLogin = () => {
         if (res.token && res.user) {
           localStorage.setItem('token', res.token)
           localStorage.setItem('user', JSON.stringify(res.user))
-<<<<<<< Updated upstream
-
           // 检查是否需要显示免责条款
           if (!hasAgreedDisclaimer) {
             showDisclaimer.value = true
           } else {
             ElMessage.success('登录成功')
-            // 触发登录状态变更事件
             window.dispatchEvent(new Event('login-state-change'))
             const redirect = router.currentRoute.value.query.redirect || '/scooters'
             router.push(redirect)
           }
-=======
-          ElMessage.success('登录成功')
-          window.dispatchEvent(new Event('login-state-change'))
-          router.push('/scooters')
->>>>>>> Stashed changes
         } else {
           ElMessage.error('登录失败：返回数据格式不正确')
         }

@@ -17,15 +17,12 @@ const routes = [
     component: () => import('../views/user/MapView.vue')
   },
   {
-<<<<<<< Updated upstream
     path: '/scan',
     name: 'Scan',
     meta: { requiresAuth: true },
     component: () => import('../views/user/ScanView.vue')
   },
   {
-=======
->>>>>>> Stashed changes
     path: '/scooters/list',
     name: 'ScooterList',
     meta: { requiresAuth: true },
@@ -76,7 +73,6 @@ const router = createRouter({
   routes
 })
 
-<<<<<<< Updated upstream
 // 路由守卫 - 检查登录状态和权限
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
@@ -88,18 +84,12 @@ router.beforeEach((to, from, next) => {
   }
 
   // 检查管理员权限
-=======
-// 路由守卫 - 检查用户认证
-router.beforeEach((to, from) => {
-  // 管理员页面检查
->>>>>>> Stashed changes
   if (to.meta.requiresAdmin) {
     if (!token || !user || user.role !== 'ADMIN') {
-      return { path: '/admin/login', query: { redirect: to.fullPath } }
+      return next({ path: '/admin/login', query: { redirect: to.fullPath } })
     }
   }
 
-<<<<<<< Updated upstream
   // 检查用户登录状态
   if (to.meta.requiresAuth) {
     if (!token || !user) {
@@ -108,18 +98,6 @@ router.beforeEach((to, from) => {
   }
 
   next()
-=======
-  // 需要登录的页面检查
-  if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('token')
-    const userStr = localStorage.getItem('user')
-    if (!token || !userStr) {
-      return { path: '/login', query: { redirect: to.fullPath } }
-    }
-  }
-
-  return true
->>>>>>> Stashed changes
 })
 
 export default router
