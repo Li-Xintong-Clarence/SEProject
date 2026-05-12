@@ -22,7 +22,14 @@ public interface BookingService {
      */
     Booking findById(Long id);
     /**
-     * 创建新订单
+     * 创建新订单（通过服务点，自动分配车辆）
+     * @param userId 用户ID
+     * @param depotId 服务点ID（必填）
+     * @param hireOption 租赁时长
+     */
+    Booking createByDepot(Long userId, Long depotId, String hireOption);
+    /**
+     * 创建新订单（指定车辆）
      */
     boolean save(Booking booking);
     /**
@@ -51,4 +58,13 @@ public interface BookingService {
      * 获取用户统计信息（订单数、总消费、总时长）
      */
     Map<String, Object> getUserStats(Long userId);
+<<<<<<< Updated upstream
+=======
+    /**
+     * 还车（结束骑行）- 必须指定还车服务点
+     * @param id 订单ID
+     * @param endDepotId 还车服务点ID
+     */
+    boolean returnScooter(Long id, Long endDepotId);
+>>>>>>> Stashed changes
 }

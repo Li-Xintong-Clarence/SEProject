@@ -1,6 +1,14 @@
 // src/api/booking.js
 import request from '@/utils/request'
 
+export const createBookingByDepot = (depotId, hireOption) => {
+    return request({
+        url: '/api/bookings/depot',
+        method: 'post',
+        data: { depotId, hireOption }
+    })
+}
+
 export const createBooking = (data) => {
     return request({
         url: '/api/bookings',
@@ -34,8 +42,8 @@ export const payBooking = (id, paymentData) => {
 export const extendBooking = (id, hireOption) => {
     return request({
         url: `/api/bookings/${id}/extend`,
-        method: 'post',
-        data: { hireOption }
+        method: 'put',
+        params: { hireOption }
     })
 }
 
@@ -46,16 +54,17 @@ export const getBookingConfirmation = (id) => {
     })
 }
 
-export const returnScooter = (id) => {
+export const returnScooter = (id, endDepotId) => {
     return request({
         url: `/api/bookings/${id}/return`,
-        method: 'post'
+        method: 'post',
+        data: { endDepotId }
     })
 }
 
 export const getMyActiveBookings = () => {
     return request({
-        url: '/api/bookings/my/active',
+        url: '/api/bookings/current',
         method: 'get'
     })
 }

@@ -18,4 +18,34 @@ public interface EmailService {
      */
     void sendBookingConfirmation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption, String startTime, String endTime, double totalCost);
+<<<<<<< Updated upstream
+=======
+
+    /**
+     * 发送订单取消邮件
+     */
+    void sendBookingCancellation(String toEmail, String username, String confirmationCode,
+                                 String scooterNumber, String hireOption);
+
+    /**
+     * 发送结束骑行邮件
+     */
+    void sendRideCompletion(String toEmail, String username, String confirmationCode,
+                           String scooterNumber, String startTime, String endTime, double totalCost);
+
+    /**
+     * 发送自动还车通知邮件
+     * @param toEmail 收件人邮箱
+     * @param username 用户名
+     * @param confirmationCode 预订确认码
+     * @param scooterNumber 电动车编号
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param depotName 还车服务点名称
+     * @param totalCost 总费用
+     */
+    void sendAutoReturnNotification(String toEmail, String username, String confirmationCode,
+                                    String scooterNumber, String startTime, String endTime,
+                                    String depotName, double totalCost);
+>>>>>>> Stashed changes
 }

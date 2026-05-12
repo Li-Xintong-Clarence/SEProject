@@ -48,4 +48,37 @@ public class EmailServiceImpl implements EmailService {
             System.err.println("邮件发送失败: " + e.getMessage());
         }
     }
+
+    @Override
+    public void sendAutoReturnNotification(String toEmail, String username, String confirmationCode,
+                                          String scooterNumber, String startTime, String endTime,
+                                          String depotName, double totalCost) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("【自动还车通知】您的租车已自动归还 - Scooter Rental");
+        String text = "亲爱的 " + username + "，\n\n" +
+            "【重要通知】您的电动车租赁已超时，系统已自动为您完成还车。\n\n" +
+            "订单信息：\n" +
+            "━━━━━━━━━━━━━━━━━━━━\n" +
+            "确认码: " + confirmationCode + "\n" +
+            "车辆编号: " + scooterNumber + "\n" +
+            "开始时间: " + startTime + "\n" +
+            "结束时间: " + endTime + "\n" +
+            "还车地点: " + depotName + "\n" +
+            "总费用: £" + String.format("%.2f", totalCost) + "\n" +
+            "━━━━━━━━━━━━━━━━━━━━\n\n" +
+            "请确认车辆已安全停放在服务点区域。\n\n" +
+            "如有疑问或需要帮助，请联系客服。\n\n" +
+            "感谢您的理解与支持！\n" +
+            "CapyGlide 团队";
+        message.setText(text);
+
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("自动还车通知邮件发送失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }

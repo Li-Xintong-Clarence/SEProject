@@ -63,7 +63,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Location } from '@element-plus/icons-vue'
 import { getScooters } from '@/api/scooter'
-import { getUserBookings } from '@/api/booking'
+import { getMyActiveBookings } from '@/api/booking'
 import { ElMessage } from 'element-plus'
 import MapView from './MapView.vue'
 
@@ -97,15 +97,13 @@ const handleBook = (scooterId) => {
   router.push({ path: '/booking', query: { scooterId } })
 }
 
-// 检查是否有进行中的订单
+// 统一检查进行中订单的方法
 const checkActiveBooking = async () => {
   try {
-    const res = await getUserBookings()
-    const list = Array.isArray(res) ? res : []
-    hasActiveBooking.value = list.some(b => {
-      const s = (b.status || '').toUpperCase()
-      return s === 'ACTIVE' || s === 'PAID'
-    })
+    const res = await getMyActiveBookings()
+    // 兼容多种响应格式：{ code: 200, data: {...} } 或直接返回对象
+    const booking = res?.data || res
+    hasActiveBooking.value = !!(booking && booking.id)
   } catch {
     hasActiveBooking.value = false
   }

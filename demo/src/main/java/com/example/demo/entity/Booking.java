@@ -31,4 +31,8 @@ public class Booking {
     private LocalDateTime createdAt;
     /** 预订确认码（8位随机字符串） */
     private String confirmationCode;
+    /** 取车服务点ID */
+    private Long startDepotId;
+    /** 还车服务点ID */
+    private Long endDepotId;
 }

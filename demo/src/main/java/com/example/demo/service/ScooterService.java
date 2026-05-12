@@ -11,8 +11,12 @@ public interface ScooterService {
     List<Scooter> findAll();
     Scooter findById(Long id);
     List<Scooter> findAvailable();
+    List<Scooter> findByDepotId(Long depotId);
+    List<Scooter> findAvailableByDepotId(Long depotId);
     boolean save(Scooter scooter);
     boolean update(Scooter scooter);
     boolean deleteById(Long id);
     boolean updateStatus(Long id, String status);
+    boolean updateStatusAndDepot(Long id, String status, Long depotId);
+    Scooter findFirstAvailableByDepotId(Long depotId);
 }

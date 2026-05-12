@@ -15,6 +15,7 @@ public interface UserService {
     User findByUsername(String username);
     boolean save(User user);
     boolean update(User user);
+    boolean updateStatus(Long id, boolean isActive);
     boolean deleteById(Long id);
     User register(RegisterRequest request);
     User login(LoginRequest request);

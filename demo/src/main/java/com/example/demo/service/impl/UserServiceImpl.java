@@ -56,6 +56,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public boolean updateStatus(Long id, boolean isActive) {
+        return userMapper.updateStatus(id, isActive) > 0;
+    }
+
+    @Override
     public boolean deleteById(Long id) {
         return userMapper.deleteById(id) > 0;
     }

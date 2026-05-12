@@ -2,7 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.common.Result;
 import com.example.demo.entity.Booking;
+import com.example.demo.entity.Scooter;
 import com.example.demo.service.BookingService;
+import com.example.demo.service.ScooterService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,8 +25,38 @@ public class BookingController {
     @Autowired
     private BookingService bookingService;
 
+    @Autowired
+    private ScooterService scooterService;
+
     /**
-     * 创建新订单（租车）
+     * 创建新订单（通过服务点租车，自动分配车辆）
+     * POST /api/bookings/depot
+     * 参数: depotId, hireOption
+     */
+    @PostMapping("/depot")
+    public Result<Booking> createByDepot(@RequestBody Map<String, String> params, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+
+        // 一人一车限制：检查用户是否有进行中的订单
+        List<Booking> activeBookings = bookingService.findByUserId(userId);
+        for (Booking b : activeBookings) {
+            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
+                return Result.error("您有正在进行中的行程，请先完成或取消后再创建新订单");
+            }
+        }
+
+        Long depotId = Long.parseLong(params.get("depotId"));
+        String hireOption = params.get("hireOption");
+
+        Booking booking = bookingService.createByDepot(userId, depotId, hireOption);
+        if (booking != null) {
+            return Result.success(booking);
+        }
+        return Result.error("该服务点暂无可用车辆");
+    }
+
+    /**
+     * 创建新订单（指定车辆ID）
      * POST /api/bookings
      * 参数: scooterId, hireOption, startTime 等
      */
@@ -32,10 +64,36 @@ public class BookingController {
     public Result<Booking> create(@RequestBody Booking booking, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         booking.setUserId(userId);
-        if (bookingService.save(booking)) {
+
+        // 一人一车限制：检查用户是否有进行中的订单
+        List<Booking> activeBookings = bookingService.findByUserId(userId);
+        for (Booking b : activeBookings) {
+            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
+                return Result.error("您有正在进行中的行程（订单号:" + b.getId() + "），请先完成或取消后再创建新订单");
+            }
+        }
+
+        // 检查必要参数
+        if (booking.getScooterId() == null) {
+            return Result.error("滑板车ID不能为空");
+        }
+        if (booking.getHireOption() == null || booking.getHireOption().isEmpty()) {
+            return Result.error("请选择租赁时长");
+        }
+
+        // 如果没有指定 startDepotId，自动从滑板车获取
+        if (booking.getStartDepotId() == null) {
+            Scooter scooter = scooterService.findById(booking.getScooterId());
+            if (scooter != null && scooter.getDepotId() != null) {
+                booking.setStartDepotId(scooter.getDepotId());
+            }
+        }
+
+        boolean saved = bookingService.save(booking);
+        if (saved) {
             return Result.success(booking);
         }
-        return Result.error("Failed to create booking");
+        return Result.error("创建订单失败，请稍后重试");
     }
 
     /**
@@ -49,6 +107,49 @@ public class BookingController {
     }
 
     /**
+<<<<<<< Updated upstream
+=======
+     * 获取当前进行中的骑行
+     * GET /api/bookings/current
+     * 用于检查用户是否有进行中的骑行（一人一车）
+     * 返回所有未结束的订单（PENDING、PAID、ACTIVE）
+     */
+    @GetMapping("/current")
+    public Result<Booking> getCurrentRide(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        List<Booking> bookings = bookingService.findByUserId(userId);
+        // 返回第一个未结束的订单
+        for (Booking b : bookings) {
+            String status = b.getStatus();
+            if (!"COMPLETED".equals(status) && !"CANCELLED".equals(status)) {
+                return Result.success(b);
+            }
+        }
+        return Result.error("No active ride");
+    }
+
+    /**
+     * 获取当前用户未完成的活动订单
+     * GET /api/bookings/my/active
+     * 返回未结束的所有订单（PENDING、PAID、ACTIVE）
+     */
+    @GetMapping("/my/active")
+    public Result<Booking> getMyActiveBooking(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        List<Booking> bookings = bookingService.findByUserId(userId);
+        // 返回第一个未结束的订单
+        for (Booking b : bookings) {
+            String status = b.getStatus();
+            // PENDING, PAID, ACTIVE 都是未结束的状态
+            if (!"COMPLETED".equals(status) && !"CANCELLED".equals(status)) {
+                return Result.success(b);
+            }
+        }
+        return Result.error("No active booking");
+    }
+
+    /**
+>>>>>>> Stashed changes
      * 根据ID获取订单详情
      * GET /api/bookings/{id}
      */
@@ -67,9 +168,11 @@ public class BookingController {
      * 参数: hireOption - 延长的时长选项
      */
     @PutMapping("/{id}/extend")
-    public Result<String> extend(@PathVariable Long id, @RequestParam String hireOption) {
+    public Result<Booking> extend(@PathVariable Long id, @RequestParam String hireOption) {
         if (bookingService.extendBooking(id, hireOption)) {
-            return Result.success("Booking extended successfully");
+            // 返回更新后的订单信息
+            Booking updatedBooking = bookingService.findById(id);
+            return Result.success(updatedBooking);
         }
         return Result.error("Failed to extend booking");
     }
@@ -87,6 +190,26 @@ public class BookingController {
     }
 
     /**
+<<<<<<< Updated upstream
+=======
+     * 还车（结束骑行）- 必须选择还车服务点
+     * POST /api/bookings/{id}/return
+     * 参数: endDepotId (必填)
+     */
+    @PostMapping("/{id}/return")
+    public Result<String> returnScooter(@PathVariable Long id, @RequestBody Map<String, Long> body) {
+        Long endDepotId = body.get("endDepotId");
+        if (endDepotId == null) {
+            return Result.error("endDepotId is required");
+        }
+        if (bookingService.returnScooter(id, endDepotId)) {
+            return Result.success("Scooter returned successfully");
+        }
+        return Result.error("Failed to return scooter");
+    }
+
+    /**
+>>>>>>> Stashed changes
      * 支付订单
      * POST /api/bookings/{id}/pay
      * 参数: cardLast4, amount, paymentMethod (可选)
