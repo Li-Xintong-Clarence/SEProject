@@ -1,19 +1,19 @@
-# ·şÎñÆ÷Åä??
+# ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½??
 server:
   port: 8081
   address: 0.0.0.0
 
-# Spring ÅäÖÃ
+# Spring ï¿½ï¿½ï¿½ï¿½
 spring:
   application:
     name: scooter-rental-system
-  # Êı¾İ¿âÅäÖÃ£¨Ó¦ÓÃ??MySQL Í¬»ú²¿ÊğÊ±ÓÃ 127.0.0.1£»¹«??IP Á¬²»ÉÏ±¾»ú½ö¼àÌı localhost ??MySQL??
+  # ï¿½ï¿½ï¿½İ¿ï¿½ï¿½ï¿½ï¿½Ã£ï¿½Ó¦ï¿½ï¿½??MySQL Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ 127.0.0.1ï¿½ï¿½ï¿½ï¿½??IP ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ localhost ??MySQL??
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/scooter_rental?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: sep2user
     password: Sep2Pass2026!
-  # ÓÊ¼şÅäÖÃ
+  # ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
   mail:
     host: smtp.qq.com
     port: 587
@@ -26,7 +26,7 @@ spring:
           starttls:
             enable: true
     hikari:
-      # Á¬½Ó³ØÅäÖÃ£¬·ÀÖ¹Á¬½Ó³¬Ê±ÎÊÌâ
+      # ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½Ó³ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
       minimum-idle: 5
       maximum-pool-size: 20
       idle-timeout: 300000
@@ -34,19 +34,19 @@ spring:
       connection-timeout: 30000
       keepalive-time: 60000
 
-# MyBatis ÅäÖÃ
+# MyBatis ï¿½ï¿½ï¿½ï¿½
 mybatis:
-  # Mapper XML ÎÄ¼şÎ»ÖÃ
+  # Mapper XML ï¿½Ä¼ï¿½Î»ï¿½ï¿½
   mapper-locations: classpath:mapper/*.xml
-  # ÊµÌåÀà±ğÃû°ü
+  # Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   type-aliases-package: com.example.demo.entity
-  # ¿ªÆôÍÕ·åÃüÃûÓ³??
+  # ï¿½ï¿½ï¿½ï¿½ï¿½Õ·ï¿½ï¿½ï¿½ï¿½ï¿½Ó³??
   configuration:
     map-underscore-to-camel-case: true
-  # ´òÓ¡ SQL ÈÕÖ¾£¨¿ª·¢Ê±Ê¹ÓÃ??
+  # ï¿½ï¿½Ó¡ SQL ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±Ê¹ï¿½ï¿½??
   log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-# ÈÕÖ¾ÅäÖÃ
+# ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½
 logging:
   level:
     com.example.demo: debug

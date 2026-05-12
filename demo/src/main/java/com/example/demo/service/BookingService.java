@@ -5,62 +5,62 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ¶©µ¥·þÎñ½Ó¿Ú
- * ¶¨Òå¶©µ¥£¨×âÁÞ£©Ïà¹ØµÄÒµÎñ²Ù??
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¿ï¿½
+ * ï¿½ï¿½ï¿½å¶©ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½Øµï¿½Òµï¿½ï¿½ï¿½??
  */
 public interface BookingService {
     /**
-     * ²éÑ¯ËùÓÐ¶©µ¥£¨¹ÜÀíÔ±£©
+     * ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½
      */
     List<Booking> findAll();
     /**
-     * ²éÑ¯ÓÃ»§µÄ¶©µ¥ÁÐ??
+     * ï¿½ï¿½Ñ¯ï¿½Ã»ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ï¿½??
      */
     List<Booking> findByUserId(Long userId);
     /**
-     * ¸ù¾ÝID²éÑ¯¶©µ¥
+     * ï¿½ï¿½ï¿½ï¿½IDï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½ï¿½
      */
     Booking findById(Long id);
     /**
-     * ´´½¨ÐÂ¶©µ¥£¨Í¨¹ý·þÎñµã£¬×Ô¶¯·ÖÅä³µÁ¾??
-     * @param userId ÓÃ»§ID
-     * @param depotId ·þÎñµãID£¨±ØÌî£©
-     * @param hireOption ×âÁÞÊ±³¤
+     * ï¿½ï¿½ï¿½ï¿½ï¿½Â¶ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã£¬ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ä³µï¿½ï¿½??
+     * @param userId ï¿½Ã»ï¿½ID
+     * @param depotId ï¿½ï¿½ï¿½ï¿½ï¿½IDï¿½ï¿½ï¿½ï¿½ï¿½î£©
+     * @param hireOption ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
      */
     Booking createByDepot(Long userId, Long depotId, String hireOption);
     /**
-     * ´´½¨ÐÂ¶©µ¥£¨Ö¸¶¨³µÁ¾??
+     * ï¿½ï¿½ï¿½ï¿½ï¿½Â¶ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½??
      */
     boolean save(Booking booking);
     /**
-     * ¸üÐÂ¶©µ¥ÐÅÏ¢
+     * ï¿½ï¿½ï¿½Â¶ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
      */
     boolean update(Booking booking);
     /**
-     * É¾³ý¶©µ¥
+     * É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
      */
     boolean deleteById(Long id);
     /**
-     * ÑÓ³¤×âÆÚ
-     * @param id ¶©µ¥ID
-     * @param hireOption ÑÓ³¤µÄÊ±³¤Ñ¡Ïî??hr, 4hr, 1day, 1week??
+     * ï¿½Ó³ï¿½ï¿½ï¿½ï¿½ï¿½
+     * @param id ï¿½ï¿½ï¿½ï¿½ID
+     * @param hireOption ï¿½Ó³ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ñ¡ï¿½ï¿½??hr, 4hr, 1day, 1week??
      */
     boolean extendBooking(Long id, String hireOption);
     /**
-     * È¡Ïû¶©µ¥
+     * È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
      */
     boolean cancelBooking(Long id);
     /**
-     * Ö§¸¶¶©µ¥
+     * Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
      */
     boolean payBooking(Long id);
     /**
-     * »ñÈ¡ÓÃ»§Í³¼ÆÐÅÏ¢£¨¶©µ¥Êý¡¢×ÜÏû·Ñ¡¢×ÜÊ±³¤£©
+     * ï¿½ï¿½È¡ï¿½Ã»ï¿½Í³ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
      */
     Map<String, Object> getUserStats(Long userId);
     /**
-     * »¹³µ£¨½áÊøÆïÐÐ£©
-     * @param id ¶©µ¥ID
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½
+     * @param id ï¿½ï¿½ï¿½ï¿½ID
      */
     boolean returnScooter(Long id);
 }

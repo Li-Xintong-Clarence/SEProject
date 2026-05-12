@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * ¶©µ¥·þÎñÊµÏÖ??
- * ÊµÏÖ¶©µ¥£¨×âÁÞ£©Ïà¹ØµÄ¾ßÌåÒµÎñÂß¼­
- * °üÀ¨´´½¨¶©µ¥¡¢Ö§¸¶¡¢È¡Ïû¡¢ÑÓÆÚ¡¢Í³¼ÆµÈ¹¦ÄÜ
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½??
+ * Êµï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½ØµÄ¾ï¿½ï¿½ï¿½Òµï¿½ï¿½ï¿½ß¼ï¿½
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¡ï¿½Í³ï¿½ÆµÈ¹ï¿½ï¿½ï¿½
  */
 @Service
 public class BookingServiceImpl implements BookingService {
@@ -71,16 +71,16 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * Í¨¹ý·þÎñµã´´½¨¶©µ¥£¨×Ô¶¯·ÖÅä³µÁ¾??
-     * 1. ¼ì²éÓÃ»§ÊÇ·ñÓÐ½øÐÐÖÐµÄ¶©µ¥
-     * 2. ¼ì²é·þÎñµãÊÇ·ñÓÐ¿ÉÓÃ³µ??
-     * 3. ·ÖÅäµÚÒ»Á¾¿ÉÓÃ³µ??
-     * 4. ´´½¨¶©µ¥
+     * Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã´´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ä³µï¿½ï¿½??
+     * 1. ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ç·ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ï¿½ÐµÄ¶ï¿½ï¿½ï¿½
+     * 2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½Ð¿ï¿½ï¿½Ã³ï¿½??
+     * 3. ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ã³ï¿½??
+     * 4. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
      */
     @Override
     @Transactional
     public Booking createByDepot(Long userId, Long depotId, String hireOption) {
-        // ¼ì²éÓÃ»§ÊÇ·ñÓÐ½øÐÐÖÐµÄ¶©µ¥
+        // ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ç·ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ï¿½ÐµÄ¶ï¿½ï¿½ï¿½
         List<Booking> activeBookings = bookingMapper.findByUserId(userId);
         for (Booking b : activeBookings) {
             if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
@@ -88,13 +88,13 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        // ²éÕÒ¸Ã·þÎñµãµÄ¿ÉÓÃ³µ??
+        // ï¿½ï¿½ï¿½Ò¸Ã·ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Ã³ï¿½??
         Scooter scooter = scooterService.findFirstAvailableByDepotId(depotId);
         if (scooter == null) {
-            return null; // Ã»ÓÐ¿ÉÓÃ³µÁ¾
+            return null; // Ã»ï¿½Ð¿ï¿½ï¿½Ã³ï¿½ï¿½ï¿½
         }
 
-        // ´´½¨¶©µ¥
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         Booking booking = new Booking();
         booking.setUserId(userId);
         booking.setScooterId(scooter.getId());
@@ -104,7 +104,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setCreatedAt(LocalDateTime.now());
         booking.setConfirmationCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 
-        // ¼ÆËã¼Û¸ñ
+        // ï¿½ï¿½ï¿½ï¿½Û¸ï¿½
         Pricing pricing = pricingMapper.findById(getPricingIdByOption(hireOption));
         if (pricing != null) {
             User bookingUser = userMapper.findById(userId);
@@ -121,55 +121,55 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * ´´½¨ÐÂ¶©µ¥£¨Ö¸¶¨³µÁ¾??
-     * 1. ¼ì²éÓÃ»§ÊÇ·ñÓÐ½øÐÐÖÐµÄ¶©µ¥£¨Ò»ÈËÒ»³µÏÞÖÆ£©
-     * 2. ¸ù¾ÝhireOption»ñÈ¡¼Û¸ñ
-     * 3. ÉèÖÃ¶©µ¥×´Ì¬ÎªPENDING
-     * 4. Éú³ÉÈ·ÈÏ??
+     * ï¿½ï¿½ï¿½ï¿½ï¿½Â¶ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½??
+     * 1. ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ç·ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ï¿½ÐµÄ¶ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½
+     * 2. ï¿½ï¿½ï¿½ï¿½hireOptionï¿½ï¿½È¡ï¿½Û¸ï¿½
+     * 3. ï¿½ï¿½ï¿½Ã¶ï¿½ï¿½ï¿½×´Ì¬ÎªPENDING
+     * 4. ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½??
      */
     @Override
     public boolean save(Booking booking) {
-        logger.info(""=== BookingService.save() ¿ª??===""");
-        logger.info(""ÓÃ»§ID: {}, »¬°å³µID: {}, ×âÁÞÑ¡Ïî: {}"",
+        logger.info(""=== BookingService.save() ï¿½ï¿½??===""");
+        logger.info(""ï¿½Ã»ï¿½ID: {}, ï¿½ï¿½ï¿½å³µID: {}, ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½: {}"",
                     booking.getUserId(), booking.getScooterId(), booking.getHireOption());
 
-        // Ò»ÈËÒ»³µÏÞÖÆ£º¼ì²éÓÃ»§ÊÇ·ñÓÐ½øÐÐÖÐµÄ¶©µ¥
+        // Ò»ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ç·ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ï¿½ÐµÄ¶ï¿½ï¿½ï¿½
         List<Booking> activeBookings = bookingMapper.findByUserId(booking.getUserId());
-        logger.info(""¸ÃÓÃ»§ÒÑÓÐ¶©µ¥Êý: {}"", activeBookings.size());
+        logger.info(""ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½: {}"", activeBookings.size());
         for (Booking b : activeBookings) {
             if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
-                logger.warn(""ÓÃ»§ÒÑÓÐ½øÐÐÖÐµÄ¶©µ¥£¬¶©µ¥ID: {}, ×´?? {}"", b.getId(), b.getStatus());
-                return false; // ÓÃ»§ÒÑÓÐ½øÐÐÖÐµÄ¶©µ¥
+                logger.warn(""ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ï¿½ÐµÄ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ID: {}, ×´?? {}"", b.getId(), b.getStatus());
+                return false; // ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ï¿½ÐµÄ¶ï¿½ï¿½ï¿½
             }
         }
 
         Pricing pricing = pricingMapper.findById(getPricingIdByOption(booking.getHireOption()));
-        logger.info(""»ñÈ¡µ½µÄ¼Û¸ñÐÅÏ¢: {}"", pricing);
+        logger.info(""ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ä¼Û¸ï¿½ï¿½ï¿½Ï¢: {}"", pricing);
 
         if (pricing != null) {
-            // »ñÈ¡ÓÃ»§ÐÅÏ¢ÓÃÓÚÕÛ¿Û¼ÆËã
+            // ï¿½ï¿½È¡ï¿½Ã»ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½Û¿Û¼ï¿½ï¿½ï¿½
             User bookingUser = userMapper.findById(booking.getUserId());
             BigDecimal originalPrice = pricing.getPrice();
-            // ¼ÆËãÕÛºó¼Û¸ñ
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Ûºï¿½Û¸ï¿½
             double finalPrice = discountService.calculateDiscountedPrice(originalPrice.doubleValue(),
                     bookingUser != null ? bookingUser.getUserType() : ""NORMAL"");
             booking.setTotalCost(BigDecimal.valueOf(finalPrice));
-            logger.info(""¼ÆËãºó¼Û?? {} -> {}"", originalPrice, finalPrice);
+            logger.info(""ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½?? {} -> {}"", originalPrice, finalPrice);
         }
         booking.setStatus(""PENDING"");
         booking.setCreatedAt(LocalDateTime.now());
         booking.setConfirmationCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 
-        logger.info(""×¼±¸²åÈë¶©µ¥: userId={}, scooterId={}, status={}, totalCost={}"",
+        logger.info(""×¼ï¿½ï¿½ï¿½ï¿½ï¿½ë¶©ï¿½ï¿½: userId={}, scooterId={}, status={}, totalCost={}"",
                     booking.getUserId(), booking.getScooterId(), booking.getStatus(), booking.getTotalCost());
 
         int result = bookingMapper.insert(booking);
-        logger.info(""²åÈë½á¹û: {}, ÐÂ¶©µ¥ID: {}"", result, booking.getId());
+        logger.info(""ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: {}, ï¿½Â¶ï¿½ï¿½ï¿½ID: {}"", result, booking.getId());
 
         if (result > 0) {
-            logger.info(""=== BookingService.save() ³É¹¦ ==="");
+            logger.info(""=== BookingService.save() ï¿½É¹ï¿½ ==="");
         } else {
-            logger.error(""=== BookingService.save() Ê§°Ü£¬insert·µ»Ø0 ==="");
+            logger.error(""=== BookingService.save() Ê§ï¿½Ü£ï¿½insertï¿½ï¿½ï¿½ï¿½0 ==="");
         }
         return result > 0;
     }
@@ -185,15 +185,15 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * ÑÓ³¤×âÆÚ
-     * 1. ²éÕÒ¶©µ¥£¬¼ì²é×´Ì¬±ØÐëÊÇACTIVE
-     * 2. ¼ÆËãÐÂµÄ½áÊøÊ±¼ä
-     * 3. Ôö¼ÓÏàÓ¦·ÑÓÃ
+     * ï¿½Ó³ï¿½ï¿½ï¿½ï¿½ï¿½
+     * 1. ï¿½ï¿½ï¿½Ò¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ACTIVE
+     * 2. ï¿½ï¿½ï¿½ï¿½ï¿½ÂµÄ½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+     * 3. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½
      */
     @Override
     public boolean extendBooking(Long id, String hireOption) {
         Booking booking = bookingMapper.findById(id);
-        // ÔÊÐí PAID ??ACTIVE ×´Ì¬µÄ¶©µ¥ÑÓ³¤
+        // ï¿½ï¿½ï¿½ï¿½ PAID ??ACTIVE ×´Ì¬ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½Ó³ï¿½
         if (booking == null || (!""ACTIVE"".equals(booking.getStatus()) && !""PAID"".equals(booking.getStatus()))) {
             return false;
         }
@@ -210,11 +210,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * È¡Ïû¶©µ¥
-     * 1. ¼ì²é¶©µ¥×´Ì¬£¨²»ÄÜÊÇÒÑÍê³É»òÒÑÈ¡Ïû??
-     * 2. ¸üÐÂ×´Ì¬ÎªCANCELLED
-     * 3. ÊÍ·Å³µÁ¾£¨×´Ì¬¸Ä»ØAVAILABLE??
-     * 4. ·¢ËÍÈ¡ÏûÓÊ??
+     * È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     * 1. ï¿½ï¿½é¶©ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É»ï¿½ï¿½ï¿½È¡ï¿½ï¿½??
+     * 2. ï¿½ï¿½ï¿½ï¿½×´Ì¬ÎªCANCELLED
+     * 3. ï¿½Í·Å³ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½Ä»ï¿½AVAILABLE??
+     * 4. ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½??
      */
     @Override
     @Transactional
@@ -237,11 +237,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * »¹³µ£¨½áÊøÆïÐÐ£©
-     * 1. ¼ì²é¶©µ¥×´Ì¬±ØÐëÊÇPAID»òACTIVE
-     * 2. ¸üÐÂ×´Ì¬ÎªCOMPLETED
-     * 3. ÊÍ·Å³µÁ¾£¨×´Ì¬¸Ä»ØAVAILABLE??
-     * 4. ·¢ËÍ½áÊøÓÊ??
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½
+     * 1. ï¿½ï¿½é¶©ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½PAIDï¿½ï¿½ACTIVE
+     * 2. ï¿½ï¿½ï¿½ï¿½×´Ì¬ÎªCOMPLETED
+     * 3. ï¿½Í·Å³ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½Ä»ï¿½AVAILABLE??
+     * 4. ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½ï¿½ï¿½??
      */
     @Override
     @Transactional
@@ -265,11 +265,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * Ö§¸¶¶©µ¥
-     * 1. ¼ì²é¶©µ¥×´Ì¬±ØÐëÊÇPENDING
-     * 2. ¸üÐÂ×´Ì¬ÎªPAID£¬ÉèÖÃ¿ªÊ¼ºÍ½áÊøÊ±¼ä
-     * 3. ¸üÐÂ³µÁ¾×´Ì¬ÎªIN_USE£¨Ê¹ÓÃÖÐ??
-     * 4. ·¢ËÍÈ·ÈÏÓÊ??
+     * Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     * 1. ï¿½ï¿½é¶©ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½PENDING
+     * 2. ï¿½ï¿½ï¿½ï¿½×´Ì¬ÎªPAIDï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½Ê¼ï¿½Í½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+     * 3. ï¿½ï¿½ï¿½Â³ï¿½ï¿½ï¿½×´Ì¬ÎªIN_USEï¿½ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½??
+     * 4. ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½??
      */
     @Override
     @Transactional
@@ -294,18 +294,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * ·¢ËÍÔ¤¶©È·ÈÏÓÊ??
-     * °üº¬£ºÈ·ÈÏÂë¡¢³µÁ¾±àºÅ¡¢×âÁÞÑ¡Ïî¡¢Ê±¼ä¡¢×Ü·Ñ??
+     * ï¿½ï¿½ï¿½ï¿½Ô¤ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½??
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ë¡¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å¡ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½î¡¢Ê±ï¿½ä¡¢ï¿½Ü·ï¿½??
      */
     private void sendConfirmationEmail(Booking booking) {
         try {
             User user = userMapper.findById(booking.getUserId());
             if (user == null) {
-                System.err.println(""·¢ËÍÈ·ÈÏÓÊ¼þÊ§°Ü£ºÕÒ²»µ½ÓÃ»§£¬userId="" + booking.getUserId());
+                System.err.println(""ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½Ê¼ï¿½Ê§ï¿½Ü£ï¿½ï¿½Ò²ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½userId="" + booking.getUserId());
                 return;
             }
             if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-                System.err.println(""·¢ËÍÈ·ÈÏÓÊ¼þÊ§°Ü£ºÓÃ»§ÓÊÏäÎª¿Õ£¬userId="" + booking.getUserId());
+                System.err.println(""ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½Ê¼ï¿½Ê§ï¿½Ü£ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Õ£ï¿½userId="" + booking.getUserId());
                 return;
             }
 
@@ -329,23 +329,23 @@ public class BookingServiceImpl implements BookingService {
                 booking.getTotalCost() != null ? booking.getTotalCost().doubleValue() : 0.0
             );
         } catch (Exception e) {
-            System.err.println(""·¢ËÍÈ·ÈÏÓÊ¼þÒì?? "" + e.getMessage());
+            System.err.println(""ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½?? "" + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * ·¢ËÍÈ¡ÏûÔ¤¶©ÓÊ??
+     * ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½??
      */
     private void sendCancellationEmail(Booking booking) {
         try {
             User user = userMapper.findById(booking.getUserId());
             if (user == null) {
-                System.err.println(""·¢ËÍÈ¡ÏûÓÊ¼þÊ§°Ü£ºÕÒ²»µ½ÓÃ»§£¬userId="" + booking.getUserId());
+                System.err.println(""ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ê¼ï¿½Ê§ï¿½Ü£ï¿½ï¿½Ò²ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½userId="" + booking.getUserId());
                 return;
             }
             if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-                System.err.println(""·¢ËÍÈ¡ÏûÓÊ¼þÊ§°Ü£ºÓÃ»§ÓÊÏäÎª¿Õ£¬userId="" + booking.getUserId());
+                System.err.println(""ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ê¼ï¿½Ê§ï¿½Ü£ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Õ£ï¿½userId="" + booking.getUserId());
                 return;
             }
 
@@ -364,23 +364,23 @@ public class BookingServiceImpl implements BookingService {
                 booking.getHireOption()
             );
         } catch (Exception e) {
-            System.err.println(""·¢ËÍÈ¡ÏûÓÊ¼þÒì?? "" + e.getMessage());
+            System.err.println(""ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½?? "" + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * ·¢ËÍ½áÊøÆïÐÐÓÊ??
+     * ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½??
      */
     private void sendCompletionEmail(Booking booking) {
         try {
             User user = userMapper.findById(booking.getUserId());
             if (user == null) {
-                System.err.println(""·¢ËÍ½áÊøÓÊ¼þÊ§°Ü£ºÕÒ²»µ½ÓÃ»§£¬userId="" + booking.getUserId());
+                System.err.println(""ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½Ê§ï¿½Ü£ï¿½ï¿½Ò²ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½userId="" + booking.getUserId());
                 return;
             }
             if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-                System.err.println(""·¢ËÍ½áÊøÓÊ¼þÊ§°Ü£ºÓÃ»§ÓÊÏäÎª¿Õ£¬userId="" + booking.getUserId());
+                System.err.println(""ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½Ê§ï¿½Ü£ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Õ£ï¿½userId="" + booking.getUserId());
                 return;
             }
 
@@ -403,13 +403,13 @@ public class BookingServiceImpl implements BookingService {
                 booking.getTotalCost() != null ? booking.getTotalCost().doubleValue() : 0.0
             );
         } catch (Exception e) {
-            System.err.println(""·¢ËÍ½áÊøÓÊ¼þÒì?? "" + e.getMessage());
+            System.err.println(""ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½?? "" + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * ¸ù¾Ý×âÁÞÑ¡Ïî»ñÈ¡¼Û¸ñID
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½È¡ï¿½Û¸ï¿½ID
      * 1hr -> 1, 4hr -> 2, 1day -> 3, 1week -> 4
      */
     private Long getPricingIdByOption(String option) {
@@ -423,8 +423,8 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * ¼ÆËã½áÊøÊ±¼ä
-     * ¸ù¾Ý×âÁÞÑ¡Ïî¼ÆËã×âÆÚ½áÊøÊ±¼ä
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
      */
     private LocalDateTime calculateEndTime(LocalDateTime startTime, String hireOption) {
         return switch (hireOption) {
@@ -437,8 +437,8 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * »ñÈ¡ÓÃ»§Í³¼ÆÐÅÏ¢
-     * ·µ»Ø£º¶©µ¥×ÜÊý¡¢×ÜÏû·Ñ½ð¶î¡¢×Ü×âÁÞÊ±??
+     * ï¿½ï¿½È¡ï¿½Ã»ï¿½Í³ï¿½ï¿½ï¿½ï¿½Ï¢
+     * ï¿½ï¿½ï¿½Ø£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ½ï¿½î¡¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±??
      */
     @Override
     public Map<String, Object> getUserStats(Long userId) {

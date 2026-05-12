@@ -1,46 +1,46 @@
 package com.example.demo.service;
 
 /**
- * ÓÊ¼þ·þÎñ½Ó¿Ú
- * ¶¨Òå·¢ËÍÓÊ¼þµÄÏà¹Ø²Ù×÷
+ * ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½Ó¿ï¿½
+ * ï¿½ï¿½ï¿½å·¢ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½
  */
 public interface EmailService {
     /**
-     * ·¢ËÍÔ¤¶©È·ÈÏÓÊ??
-     * @param toEmail ÊÕ¼þÈËÓÊ??
-     * @param username ÓÃ»§??
-     * @param confirmationCode Ô¤¶©È·ÈÏ??
-     * @param scooterNumber µç¶¯³µ±à??
-     * @param hireOption ×âÁÞÑ¡Ïî
-     * @param startTime ¿ªÊ¼Ê±??
-     * @param endTime ½áÊøÊ±¼ä
-     * @param totalCost ×Ü·Ñ??
+     * ï¿½ï¿½ï¿½ï¿½Ô¤ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½??
+     * @param toEmail ï¿½Õ¼ï¿½ï¿½ï¿½ï¿½ï¿½??
+     * @param username ï¿½Ã»ï¿½??
+     * @param confirmationCode Ô¤ï¿½ï¿½È·ï¿½ï¿½??
+     * @param scooterNumber ï¿½ç¶¯ï¿½ï¿½ï¿½ï¿½??
+     * @param hireOption ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½
+     * @param startTime ï¿½ï¿½Ê¼Ê±??
+     * @param endTime ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+     * @param totalCost ï¿½Ü·ï¿½??
      */
     void sendBookingConfirmation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption, String startTime, String endTime, double totalCost);
 
     /**
-     * ·¢ËÍ¶©µ¥È¡ÏûÓÊ??
+     * ï¿½ï¿½ï¿½Í¶ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½??
      */
     void sendBookingCancellation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption);
 
     /**
-     * ·¢ËÍ½áÊøÆïÐÐÓÊ??
+     * ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½??
      */
     void sendRideCompletion(String toEmail, String username, String confirmationCode,
                            String scooterNumber, String startTime, String endTime, double totalCost);
 
     /**
-     * ·¢ËÍ×Ô¶¯»¹³µÍ¨ÖªÓÊ¼þ
-     * @param toEmail ÊÕ¼þÈËÓÊ??
-     * @param username ÓÃ»§??
-     * @param confirmationCode Ô¤¶©È·ÈÏ??
-     * @param scooterNumber µç¶¯³µ±à??
-     * @param startTime ¿ªÊ¼Ê±??
-     * @param endTime ½áÊøÊ±¼ä
-     * @param depotName »¹³µ·þÎñµãÃû??
-     * @param totalCost ×Ü·Ñ??
+     * ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½Í¨Öªï¿½Ê¼ï¿½
+     * @param toEmail ï¿½Õ¼ï¿½ï¿½ï¿½ï¿½ï¿½??
+     * @param username ï¿½Ã»ï¿½??
+     * @param confirmationCode Ô¤ï¿½ï¿½È·ï¿½ï¿½??
+     * @param scooterNumber ï¿½ç¶¯ï¿½ï¿½ï¿½ï¿½??
+     * @param startTime ï¿½ï¿½Ê¼Ê±??
+     * @param endTime ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+     * @param depotName ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½??
+     * @param totalCost ï¿½Ü·ï¿½??
      */
     void sendAutoReturnNotification(String toEmail, String username, String confirmationCode,
                                     String scooterNumber, String startTime, String endTime,
