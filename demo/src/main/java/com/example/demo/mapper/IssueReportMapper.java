@@ -39,6 +39,13 @@ public interface IssueReportMapper {
     List<IssueReport> findByUserId(@Param("userId") Long userId);
 
     /**
+     * 按优先级查询问题报告（管理员功能 - ID14）
+     * @param priority 优先级：HIGH, NORMAL, LOW
+     * @return 问题报告列表
+     */
+    List<IssueReport> findByPriority(@Param("priority") String priority);
+
+    /**
      * 更新问题报告
      * @param report 问题报告对象
      * @return 影响的行数

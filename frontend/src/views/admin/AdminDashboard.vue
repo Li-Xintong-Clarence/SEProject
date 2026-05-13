@@ -1,5 +1,124 @@
 <template>
   <div class="admin-container">
+    <!-- 移动端顶部栏 -->
+    <header class="mobile-header">
+      <el-button class="mobile-menu-btn" @click="mobileMenuVisible = true">
+        <el-icon size="24"><Menu /></el-icon>
+      </el-button>
+      <div class="mobile-title">
+        <span class="brand-name">CapyGlide</span>
+        <span class="brand-tag">管理后台</span>
+      </div>
+      <el-avatar :size="32" class="mobile-avatar">{{ adminName?.charAt(0) || 'A' }}</el-avatar>
+    </header>
+
+    <!-- 移动端抽屉菜单 -->
+    <el-drawer v-model="mobileMenuVisible" direction="ltr" size="280px" :with-header="false" class="mobile-drawer">
+      <div class="drawer-content">
+        <div class="drawer-header">
+          <div class="drawer-logo">
+            <div class="logo-icon">
+              <svg viewBox="0 0 64 64" fill="none">
+                <circle cx="14" cy="50" r="10" stroke="currentColor" stroke-width="2.5"/>
+                <circle cx="50" cy="50" r="10" stroke="currentColor" stroke-width="2.5"/>
+                <path d="M14 50L24 30H40L50 50" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M24 30L30 20H38" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <rect x="28" y="18" width="12" height="4" rx="1" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="logo-text">
+              <span class="brand-name">CapyGlide</span>
+              <span class="brand-tag">管理后台</span>
+            </div>
+          </div>
+        </div>
+
+        <nav class="drawer-nav">
+          <div class="nav-section">
+            <span class="nav-label">数据中心</span>
+            <a class="nav-item" :class="{ active: activeTab === 'overview' }" @click="switchTab('overview'); mobileMenuVisible = false">
+              <el-icon><DataLine /></el-icon>
+              <span>运营概览</span>
+            </a>
+            <a class="nav-item" :class="{ active: activeTab === 'reports' }" @click="switchTab('reports'); mobileMenuVisible = false">
+              <el-icon><TrendCharts /></el-icon>
+              <span>收入报表</span>
+            </a>
+            <a class="nav-item" :class="{ active: activeTab === 'userAnalysis' }" @click="switchTab('userAnalysis'); mobileMenuVisible = false">
+              <el-icon><User /></el-icon>
+              <span>用户分析</span>
+            </a>
+            <a class="nav-item" :class="{ active: activeTab === 'orderAnalysis' }" @click="switchTab('orderAnalysis'); mobileMenuVisible = false">
+              <el-icon><Tickets /></el-icon>
+              <span>订单分析</span>
+            </a>
+          </div>
+
+          <div class="nav-section">
+            <span class="nav-label">用户与车辆</span>
+            <a class="nav-item" :class="{ active: activeTab === 'users' }" @click="switchTab('users'); mobileMenuVisible = false">
+              <el-icon><User /></el-icon>
+              <span>用户管理</span>
+            </a>
+            <a class="nav-item" :class="{ active: activeTab === 'scooters' }" @click="switchTab('scooters'); mobileMenuVisible = false">
+              <el-icon><Van /></el-icon>
+              <span>车辆管理</span>
+            </a>
+            <a class="nav-item" :class="{ active: activeTab === 'map' }" @click="switchTab('map'); mobileMenuVisible = false">
+              <el-icon><MapLocation /></el-icon>
+              <span>车辆地图</span>
+            </a>
+            <a class="nav-item" :class="{ active: activeTab === 'depot' }" @click="switchTab('depot'); mobileMenuVisible = false">
+              <el-icon><LocationFilled /></el-icon>
+              <span>服务点管理</span>
+            </a>
+          </div>
+
+          <div class="nav-section">
+            <span class="nav-label">运营支持</span>
+            <a class="nav-item" :class="{ active: activeTab === 'booking' }" @click="switchTab('booking'); mobileMenuVisible = false">
+              <el-icon><Tickets /></el-icon>
+              <span>代客预订</span>
+            </a>
+            <a class="nav-item" :class="{ active: activeTab === 'pricing' }" @click="switchTab('pricing'); mobileMenuVisible = false">
+              <el-icon><Money /></el-icon>
+              <span>价格配置</span>
+            </a>
+            <a class="nav-item" :class="{ active: activeTab === 'discount' }" @click="switchTab('discount'); mobileMenuVisible = false">
+              <el-icon><Sell /></el-icon>
+              <span>折扣管理</span>
+            </a>
+          </div>
+
+          <div class="nav-section">
+            <span class="nav-label">问题处理</span>
+            <a class="nav-item" :class="{ active: activeTab === 'issues' }" @click="switchTab('issues'); mobileMenuVisible = false">
+              <el-icon><Warning /></el-icon>
+              <span>故障工单</span>
+              <span v-if="pendingIssues > 0" class="badge">{{ pendingIssues }}</span>
+            </a>
+            <a class="nav-item" :class="{ active: activeTab === 'feedback' }" @click="switchTab('feedback'); mobileMenuVisible = false">
+              <el-icon><ChatDotRound /></el-icon>
+              <span>用户反馈</span>
+            </a>
+          </div>
+        </nav>
+
+        <div class="drawer-footer">
+          <div class="admin-info">
+            <el-avatar :size="36" class="admin-avatar">{{ adminName?.charAt(0) || 'A' }}</el-avatar>
+            <div class="admin-detail">
+              <span class="admin-name">{{ adminName }}</span>
+              <span class="admin-role">系统管理员</span>
+            </div>
+          </div>
+          <el-button type="danger" plain size="small" @click="logout" class="logout-btn">
+            <el-icon><SwitchButton /></el-icon>
+          </el-button>
+        </div>
+      </div>
+    </el-drawer>
+
     <!-- 侧边栏 -->
     <aside class="sidebar">
       <div class="sidebar-header">
@@ -23,19 +142,19 @@
       <nav class="sidebar-nav">
         <div class="nav-section">
           <span class="nav-label">数据中心</span>
-          <a class="nav-item" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">
+          <a class="nav-item" :class="{ active: activeTab === 'overview' }" @click="switchTab('overview')">
             <el-icon><DataLine /></el-icon>
             <span>运营概览</span>
           </a>
-          <a class="nav-item" :class="{ active: activeTab === 'reports' }" @click="activeTab = 'reports'">
+          <a class="nav-item" :class="{ active: activeTab === 'reports' }" @click="switchTab('reports')">
             <el-icon><TrendCharts /></el-icon>
             <span>收入报表</span>
           </a>
-          <a class="nav-item" :class="{ active: activeTab === 'userAnalysis' }" @click="activeTab = 'userAnalysis'">
+          <a class="nav-item" :class="{ active: activeTab === 'userAnalysis' }" @click="switchTab('userAnalysis')">
             <el-icon><User /></el-icon>
             <span>用户分析</span>
           </a>
-          <a class="nav-item" :class="{ active: activeTab === 'orderAnalysis' }" @click="activeTab = 'orderAnalysis'">
+          <a class="nav-item" :class="{ active: activeTab === 'orderAnalysis' }" @click="switchTab('orderAnalysis')">
             <el-icon><Tickets /></el-icon>
             <span>订单分析</span>
           </a>
@@ -439,11 +558,34 @@
               <h3>员工代客预订</h3>
             </div>
             <el-form :model="staffForm" label-width="100px" class="staff-form">
-              <el-form-item label="选择用户" required>
+              <!-- ID7: 预订类型切换 -->
+              <el-form-item label="预订类型">
+                <el-radio-group v-model="staffForm.bookingType" @change="onBookingTypeChange">
+                  <el-radio value="REGISTERED">已注册用户</el-radio>
+                  <el-radio value="GUEST">未注册用户</el-radio>
+                </el-radio-group>
+              </el-form-item>
+
+              <!-- 已注册用户：选择用户 -->
+              <el-form-item v-if="staffForm.bookingType === 'REGISTERED'" label="选择用户" required>
                 <el-select v-model="staffForm.userId" filterable placeholder="搜索并选择用户" style="width: 100%">
                   <el-option v-for="u in users" :key="u.id" :label="`${u.username} (${u.email || '无邮箱'})`" :value="u.id" />
                 </el-select>
               </el-form-item>
+
+              <!-- 未注册用户：填写信息 -->
+              <template v-if="staffForm.bookingType === 'GUEST'">
+                <el-form-item label="姓名" required>
+                  <el-input v-model="staffForm.guestName" placeholder="请输入访客姓名" />
+                </el-form-item>
+                <el-form-item label="电话" required>
+                  <el-input v-model="staffForm.guestPhone" placeholder="请输入联系电话" />
+                </el-form-item>
+                <el-form-item label="邮箱">
+                  <el-input v-model="staffForm.guestEmail" placeholder="请输入邮箱（可选）" />
+                </el-form-item>
+              </template>
+
               <el-form-item label="选择车辆" required>
                 <el-select v-model="staffForm.scooterId" filterable placeholder="选择可用车辆" style="width: 100%">
                   <el-option v-for="s in availableScooters" :key="s.id" :label="`${s.scooterNumber} - ${getStatusText(s.status)}`" :value="s.id" />
@@ -618,17 +760,35 @@
               <span class="mini-value">{{ resolvedIssues }}</span>
               <span class="mini-label">已解决</span>
             </div>
+            <!-- ID14: 高优先级工单统计 -->
+            <div class="stat-mini high-priority">
+              <span class="mini-value">{{ highPriorityIssues }}</span>
+              <span class="mini-label">高优先级</span>
+            </div>
           </div>
           <div class="content-card">
             <div class="card-header">
               <h3>车辆故障报告</h3>
               <div class="header-actions">
+                <!-- ID14: 优先级筛选 -->
+                <el-select v-model="issuePriorityFilter" placeholder="全部优先级" clearable style="width: 140px; margin-right: 8px;">
+                  <el-option label="全部" value="" />
+                  <el-option label="高优先级" value="HIGH" />
+                  <el-option label="中优先级" value="MEDIUM" />
+                  <el-option label="普通" value="NORMAL" />
+                  <el-option label="低优先级" value="LOW" />
+                </el-select>
                 <el-button @click="refreshData">
                   <el-icon><Refresh /></el-icon>刷新
                 </el-button>
               </div>
             </div>
-            <el-table :data="issueReports" stripe v-loading="loading">
+            <!-- ID14: 高优先级问题快速查看 -->
+            <div v-if="highPriorityIssues > 0" class="high-priority-alert">
+              <el-icon><Warning /></el-icon>
+              <span>当前有 <strong>{{ highPriorityIssues }}</strong> 个高优先级工单需要紧急处理</span>
+            </div>
+            <el-table :data="filteredIssueReports" stripe v-loading="loading">
               <el-table-column prop="id" label="ID" width="70" />
               <el-table-column prop="scooterId" label="车辆ID" width="100" />
               <el-table-column prop="description" label="描述" min-width="220" show-overflow-tooltip />
@@ -776,13 +936,15 @@
       <el-form v-if="processRow" :model="processForm" label-width="100px">
         <el-form-item label="处理状态">
           <el-select v-model="processForm.status" style="width: 100%">
-            <el-option label="待处理 (OPEN)" value="OPEN" />
+            <el-option v-if="processRow.scooterId != null" label="待处理 (PENDING)" value="PENDING" />
+            <el-option v-else label="待处理 (OPEN)" value="OPEN" />
             <el-option label="处理中 (IN_PROGRESS)" value="IN_PROGRESS" />
             <el-option label="已解决 (RESOLVED)" value="RESOLVED" />
           </el-select>
         </el-form-item>
         <el-form-item label="优先级">
           <el-select v-model="processForm.priority" style="width: 100%">
+            <el-option v-if="processRow.scooterId != null" label="普通 (NORMAL)" value="NORMAL" />
             <el-option label="低 (LOW)" value="LOW" />
             <el-option label="中 (MEDIUM)" value="MEDIUM" />
             <el-option label="高 (HIGH)" value="HIGH" />
@@ -805,10 +967,11 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import AMapLoader from '@amap/amap-jsapi-loader'
 import {
   DataLine, TrendCharts, User, Van, LocationFilled, Tickets, Money, Sell,
   Warning, ChatDotRound, SwitchButton, Refresh, HomeFilled, Top,
-  Calendar, Clock, Search, MapLocation, Tools, UserFilled, CircleCheck, Coin
+  Calendar, Clock, Search, MapLocation, Tools, UserFilled, CircleCheck, Coin, Menu
 } from '@element-plus/icons-vue'
 import {
   adminCreateBooking,
@@ -832,6 +995,7 @@ import { getScooters, updateScooterStatus } from '@/api/scooter'
 import { listHireOptions, updateHireOption } from '@/api/hireOptions'
 import { getDepots } from '@/api/depot'
 import { listDiscounts } from '@/api/discount'
+import { updateIssueReport } from '@/api/issues'
 import request from '@/utils/request'
 
 const router = useRouter()
@@ -841,6 +1005,7 @@ const activeTab = ref('overview')
 const loading = ref(false)
 const adminName = ref('管理员')
 const userSearch = ref('')
+const mobileMenuVisible = ref(false)
 
 // 数据
 const users = ref([])
@@ -884,13 +1049,37 @@ let chartPeakHours = null
 
 // 地图
 let adminMap = null
+let AMapInstance = null
+let scooterMarkers = []
+const DEFAULT_LNG = 116.397428
+const DEFAULT_LAT = 39.90923
 
 // 用户排名
 const topActiveUsers = ref([])
 
-// 代客预订
-const staffForm = ref({ userId: null, scooterId: null, hireOption: '1hr', startTime: new Date() })
+// ID7: 代客预订（支持已注册和未注册用户）
+const staffForm = ref({
+  userId: null,
+  scooterId: null,
+  hireOption: '1hr',
+  startTime: new Date(),
+  bookingType: 'REGISTERED',  // REGISTERED / GUEST
+  guestName: '',
+  guestPhone: '',
+  guestEmail: ''
+})
 const staffLoading = ref(false)
+
+// ID7: 预订类型切换时清空相关字段
+const onBookingTypeChange = () => {
+  if (staffForm.value.bookingType === 'REGISTERED') {
+    staffForm.value.guestName = ''
+    staffForm.value.guestPhone = ''
+    staffForm.value.guestEmail = ''
+  } else {
+    staffForm.value.userId = null
+  }
+}
 
 // 处理反馈
 const processVisible = ref(false)
@@ -898,15 +1087,28 @@ const processRow = ref(null)
 const processForm = ref({ status: 'OPEN', priority: 'LOW', adminResponse: '' })
 const processLoading = ref(false)
 
+// ID14: 故障工单优先级筛选
+const issuePriorityFilter = ref('')
+
 // 统计数据计算
 const availableCount = computed(() => scooters.value.filter(s => s.status === 'AVAILABLE').length)
 const inUseCount = computed(() => scooters.value.filter(s => s.status === 'IN_USE').length)
 const maintenanceCount = computed(() => scooters.value.filter(s => s.status === 'MAINTENANCE').length)
 
-const pendingIssues = computed(() => issueReports.value.filter(i => i.status === 'OPEN').length)
-const openIssues = computed(() => issueReports.value.filter(i => i.status === 'OPEN').length)
+// IssueReports 使用 PENDING, Feedback 使用 OPEN
+const pendingIssues = computed(() => issueReports.value.filter(i => i.status === 'PENDING').length)
+const openIssues = computed(() => issueReports.value.filter(i => i.status === 'PENDING').length)
 const inProgressIssues = computed(() => issueReports.value.filter(i => i.status === 'IN_PROGRESS').length)
 const resolvedIssues = computed(() => issueReports.value.filter(i => i.status === 'RESOLVED').length)
+
+// ID14: 高优先级工单数量
+const highPriorityIssues = computed(() => issueReports.value.filter(i => i.priority === 'HIGH').length)
+
+// ID14: 根据优先级筛选工单
+const filteredIssueReports = computed(() => {
+  if (!issuePriorityFilter.value) return issueReports.value
+  return issueReports.value.filter(i => i.priority === issuePriorityFilter.value)
+})
 
 const filteredUsers = computed(() => {
   if (!userSearch.value) return users.value
@@ -958,12 +1160,16 @@ const getDepotName = (id) => {
 }
 
 const getPriorityType = (priority) => {
-  const map = { HIGH: 'danger', MEDIUM: 'warning', LOW: 'info' }
+  // feedback 使用 LOW, MEDIUM, HIGH
+  // issue_report 使用 LOW, NORMAL, HIGH
+  const map = { HIGH: 'danger', MEDIUM: 'warning', LOW: 'info', NORMAL: 'info' }
   return map[priority] || 'info'
 }
 
 const getIssueStatusType = (status) => {
-  const map = { OPEN: 'warning', IN_PROGRESS: 'primary', RESOLVED: 'success' }
+  // issue_report 使用 PENDING, IN_PROGRESS, RESOLVED
+  // feedback 使用 OPEN, IN_PROGRESS, RESOLVED
+  const map = { PENDING: 'warning', OPEN: 'warning', IN_PROGRESS: 'primary', RESOLVED: 'success' }
   return map[status] || 'info'
 }
 
@@ -971,7 +1177,12 @@ const getIssueStatusType = (status) => {
 const switchTab = async (tab) => {
   activeTab.value = tab
   await nextTick()
-  if (tab === 'reports') renderReportCharts()
+  if (tab === 'overview') {
+    // 运营概览页面刷新图表
+    if (chartOption) chartOption.resize()
+    if (chartDaily) chartDaily.resize()
+    renderReportCharts()
+  } else if (tab === 'reports') renderReportCharts()
   else if (tab === 'userAnalysis') renderUserAnalysisCharts()
   else if (tab === 'orderAnalysis') renderOrderAnalysisCharts()
   else if (tab === 'map') initAdminMap()
@@ -992,6 +1203,10 @@ const refreshData = async () => {
       // loadDiscounts(), // TODO: 后端接口修复后再启用
       loadReports()
     ])
+    // 刷新地图标记
+    if (activeTab.value === 'map') {
+      updateAdminScooterMarkers()
+    }
   } finally {
     loading.value = false
   }
@@ -1037,15 +1252,22 @@ const loadHireOptions = async () => {
 const loadFeedbacks = async () => {
   try {
     const res = await getAllFeedbacks()
+    console.log('Feedbacks response:', res)
     feedbacks.value = Array.isArray(res) ? res : []
-  } catch (e) { console.error(e) }
+  } catch (e) {
+    console.error('Failed to load feedbacks:', e)
+    feedbacks.value = []
+  }
 }
 
 const loadIssues = async () => {
   try {
     const res = await request({ url: '/api/issues', method: 'get' })
     issueReports.value = Array.isArray(res) ? res : []
-  } catch (e) { console.error(e) }
+  } catch (e) {
+    console.error('Failed to load issues:', e)
+    issueReports.value = []
+  }
 }
 
 const loadDiscounts = async () => {
@@ -1114,44 +1336,73 @@ const loadReports = async () => {
   }
 }
 
-// 渲染图表
+// 渲染收入报表图表
 const renderReportCharts = () => {
-  getWeeklyIncomeReport().then(weekly => {
-    getDailyIncomeReport().then(daily => {
+  nextTick(() => {
+    Promise.all([getWeeklyIncomeReport(), getDailyIncomeReport()]).then(([weekly, daily]) => {
       const byOpt = weekly?.incomeByHireOption || {}
       const dailyMap = daily?.dailyIncome || {}
+
+      // 各租期收入分布
+      const optKeys = Object.keys(byOpt)
+      const optVals = Object.values(byOpt)
+      const hasOptData = optKeys.length > 0 && optVals.some(v => Number(v) > 0)
 
       ;[chartByOptionRef.value, chartByOptionRef2.value].forEach(ref => {
         if (ref) {
           const chart = echarts.getInstanceByDom(ref) || echarts.init(ref)
-          chart.setOption({
-            color: ['#1e3a5f', '#3b5998', '#6b9ac4', '#94a3b8'],
-            tooltip: { trigger: 'axis' },
-            xAxis: { type: 'category', data: Object.keys(byOpt), axisLabel: { rotate: 30 } },
-            yAxis: { type: 'value', name: '金额 (¥)' },
-            series: [{ type: 'bar', data: Object.values(byOpt), itemStyle: { borderRadius: [4, 4, 0, 0] } }]
-          })
+          if (hasOptData) {
+            chart.setOption({
+              color: ['#1e3a5f', '#3b5998', '#6b9ac4', '#94a3b8'],
+              tooltip: { trigger: 'axis' },
+              xAxis: { type: 'category', data: optKeys, axisLabel: { rotate: 30 } },
+              yAxis: { type: 'value', name: '金额 (¥)' },
+              series: [{ type: 'bar', data: optVals, itemStyle: { borderRadius: [4, 4, 0, 0] } }]
+            })
+          } else {
+            chart.setOption({
+              title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#94a3b8', fontSize: 14 } },
+              xAxis: { type: 'category', data: [] },
+              yAxis: { type: 'value', name: '金额 (¥)' },
+              series: [{ type: 'bar', data: [] }]
+            })
+          }
         }
       })
+
+      // 每日收入趋势
+      const days = Object.keys(dailyMap).sort()
+      const dailyVals = days.map(d => dailyMap[d])
+      const hasDailyData = days.length > 0 && dailyVals.some(v => Number(v) > 0)
 
       ;[chartDailyRef.value, chartDailyRef2.value].forEach(ref => {
         if (ref) {
           const chart = echarts.getInstanceByDom(ref) || echarts.init(ref)
-          const days = Object.keys(dailyMap).sort()
-          chart.setOption({
-            color: ['#6b9ac4'],
-            tooltip: { trigger: 'axis' },
-            xAxis: { type: 'category', data: days, axisLabel: { rotate: 30 } },
-            yAxis: { type: 'value', name: '金额 (¥)' },
-            series: [{
-              type: 'line',
-              smooth: true,
-              areaStyle: { opacity: 0.3 },
-              data: days.map(d => dailyMap[d])
-            }]
-          })
+          if (hasDailyData) {
+            chart.setOption({
+              color: ['#6b9ac4'],
+              tooltip: { trigger: 'axis' },
+              xAxis: { type: 'category', data: days, axisLabel: { rotate: 30 } },
+              yAxis: { type: 'value', name: '金额 (¥)' },
+              series: [{
+                type: 'line',
+                smooth: true,
+                areaStyle: { opacity: 0.3 },
+                data: dailyVals
+              }]
+            })
+          } else {
+            chart.setOption({
+              title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#94a3b8', fontSize: 14 } },
+              xAxis: { type: 'category', data: [] },
+              yAxis: { type: 'value', name: '金额 (¥)' },
+              series: [{ type: 'line', smooth: true, areaStyle: { opacity: 0.3 }, data: [] }]
+            })
+          }
         }
       })
+    }).catch(err => {
+      console.error('加载报表数据失败:', err)
     })
   })
 }
@@ -1254,35 +1505,129 @@ const renderOrderAnalysisCharts = () => {
   })
 }
 
-// 初始化管理地图
-const initAdminMap = () => {
-  nextTick(() => {
+// 初始化管理地图（使用高德地图）
+const initAdminMap = async () => {
+  nextTick(async () => {
     const mapEl = document.getElementById('adminMap')
     if (!mapEl) return
 
-    // 简单地图实现（实际项目可集成高德/百度地图）
-    const defaultCenter = [116.397428, 39.90923] // 北京
-    const defaultZoom = 13
+    try {
+      console.log('开始加载高德地图 API...')
+      const AMap = await AMapLoader.load({
+        key: '27ec2a64ff4acc99ccf61c8c897a69d3',
+        version: '2.0'
+      })
+      console.log('高德地图 API 加载完成')
 
-    // 使用简单的 SVG 模拟地图效果
-    mapEl.innerHTML = `
-      <div class="simple-map">
-        <div class="map-placeholder">
-          <el-icon size="48"><MapLocation /></el-icon>
-          <p>车辆分布地图</p>
-          <p class="map-hint">共 ${scooters.value.length} 辆车</p>
-          <div class="map-markers">
-            ${scooters.value.slice(0, 20).map((s, i) => {
-              const x = 10 + (i % 5) * 18
-              const y = 15 + Math.floor(i / 5) * 20
-              const color = s.status === 'AVAILABLE' ? '#2d8a4e' : s.status === 'IN_USE' ? '#c4880c' : '#94a3b8'
-              return `<div class="marker" style="left: ${x}%; top: ${y}%; background: ${color};" title="${s.scooterNumber}"></div>`
-            }).join('')}
+      // 如果已有地图实例，先销毁
+      if (adminMap) {
+        adminMap.destroy()
+      }
+
+      adminMap = new AMap.Map('adminMap', {
+        zoom: 13,
+        center: [DEFAULT_LNG, DEFAULT_LAT],
+        resizeEnable: true
+      })
+
+      AMapInstance = AMap
+      scooterMarkers = []
+
+      // 添加车辆标记
+      updateAdminScooterMarkers()
+
+    } catch (err) {
+      console.error('管理地图加载失败', err)
+      // 降级：显示占位图
+      mapEl.innerHTML = `
+        <div class="simple-map">
+          <div class="map-placeholder">
+            <el-icon size="48"><MapLocation /></el-icon>
+            <p>车辆分布地图</p>
+            <p class="map-hint">共 ${scooters.value.length} 辆车</p>
           </div>
         </div>
-      </div>
-    `
+      `
+    }
   })
+}
+
+// 更新管理端车辆标记
+const updateAdminScooterMarkers = () => {
+  if (!adminMap || !AMapInstance) return
+
+  // 清除旧标记
+  scooterMarkers.forEach(m => adminMap.remove(m))
+  scooterMarkers = []
+
+  const statusColors = {
+    'AVAILABLE': '#2d8a4e',
+    'IN_USE': '#c4880c',
+    'MAINTENANCE': '#94a3b8',
+    'RETIRED': '#dc2626'
+  }
+
+  const statusLabels = {
+    'AVAILABLE': '可用',
+    'IN_USE': '使用中',
+    'MAINTENANCE': '维护中',
+    'RETIRED': '退役'
+  }
+
+  // 遍历所有车辆，添加标记
+  scooters.value.forEach(scooter => {
+    // 如果有经纬度，使用真实位置
+    let lng = scooter.longitude || scooter.lng || DEFAULT_LNG
+    let lat = scooter.latitude || scooter.lat || DEFAULT_LAT
+
+    // 确保经纬度在合理范围内（中国）
+    if (lng < 73 || lng > 135 || lat < 15 || lat > 54) {
+      // 如果坐标不合理，使用服务点位置或默认位置
+      const depot = depots.value.find(d => d.id === scooter.depotId)
+      if (depot) {
+        lng = depot.longitude || depot.lng || DEFAULT_LNG
+        lat = depot.latitude || depot.lat || DEFAULT_LAT
+      }
+    }
+
+    const color = statusColors[scooter.status] || '#94a3b8'
+    const label = statusLabels[scooter.status] || '未知'
+    const statusText = label
+
+    const marker = new AMap.Marker({
+      position: [lng, lat],
+      title: `${scooter.scooterNumber} - ${statusText}`,
+      offset: new AMap.Pixel(-16, -32),
+      content: `
+        <div style="
+          background: ${color};
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          white-space: nowrap;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        ">
+          ${scooter.scooterNumber}
+        </div>
+      `
+    })
+
+    marker.on('click', () => {
+      ElMessage({
+        message: `车牌: ${scooter.scooterNumber} | 状态: ${statusText} | 位置: ${scooter.location || '未知'}`,
+        type: 'info'
+      })
+    })
+
+    adminMap.add(marker)
+    scooterMarkers.push(marker)
+  })
+
+  // 如果有车辆，自动调整视野
+  if (scooters.value.length > 0) {
+    adminMap.setFitView()
+  }
 }
 
 // 用户状态切换
@@ -1303,9 +1648,26 @@ const setStatus = async (id, status) => {
   } catch (e) { console.error(e) }
 }
 
-// 代客预订
+// ID7: 代客预订（支持已注册和未注册用户）
 const submitStaffBooking = async () => {
-  if (!staffForm.value.userId || !staffForm.value.scooterId || !staffForm.value.startTime) {
+  // ID7: 根据预订类型验证
+  if (staffForm.value.bookingType === 'REGISTERED') {
+    if (!staffForm.value.userId) {
+      ElMessage.warning('请选择用户')
+      return
+    }
+  } else {
+    // Guest 预订验证
+    if (!staffForm.value.guestName?.trim()) {
+      ElMessage.warning('请输入访客姓名')
+      return
+    }
+    if (!staffForm.value.guestPhone?.trim()) {
+      ElMessage.warning('请输入联系电话')
+      return
+    }
+  }
+  if (!staffForm.value.scooterId || !staffForm.value.startTime) {
     ElMessage.warning('请填写完整信息')
     return
   }
@@ -1315,11 +1677,28 @@ const submitStaffBooking = async () => {
       userId: staffForm.value.userId,
       scooterId: staffForm.value.scooterId,
       hireOption: staffForm.value.hireOption,
-      startTime: staffForm.value.startTime.toISOString()
+      startTime: staffForm.value.startTime.toISOString(),
+      // ID7: 未注册用户字段
+      bookingType: staffForm.value.bookingType,
+      guestName: staffForm.value.guestName,
+      guestPhone: staffForm.value.guestPhone,
+      guestEmail: staffForm.value.guestEmail
     })
     ElMessage.success('代客订单创建成功')
-    staffForm.value = { userId: null, scooterId: null, hireOption: '1hr', startTime: new Date() }
-  } catch (e) { console.error(e) } finally {
+    staffForm.value = {
+      userId: null,
+      scooterId: null,
+      hireOption: '1hr',
+      startTime: new Date(),
+      bookingType: 'REGISTERED',
+      guestName: '',
+      guestPhone: '',
+      guestEmail: ''
+    }
+  } catch (e) {
+    console.error('Failed to create booking:', e)
+    ElMessage.error(e?.response?.data?.message || e?.message || '创建订单失败，请稍后重试')
+  } finally {
     staffLoading.value = false
   }
 }
@@ -1342,7 +1721,15 @@ const saveHireOption = async (row) => {
 // 处理反馈
 const openProcess = (row) => {
   processRow.value = row
-  processForm.value = { status: row.status || 'OPEN', priority: row.priority || 'LOW', adminResponse: row.adminResponse || '' }
+  // 根据记录类型设置默认值
+  const isIssue = row.scooterId != null && row.scooterId !== ''
+  const defaultStatus = isIssue ? (row.status || 'PENDING') : (row.status || 'OPEN')
+  const defaultPriority = isIssue ? (row.priority || 'NORMAL') : (row.priority || 'LOW')
+  processForm.value = {
+    status: defaultStatus,
+    priority: defaultPriority,
+    adminResponse: row.adminResponse || row.adminFeedback || ''
+  }
   processVisible.value = true
 }
 
@@ -1350,11 +1737,27 @@ const submitProcess = async () => {
   if (!processRow.value) return
   processLoading.value = true
   try {
-    await processFeedback(processRow.value.id, { ...processForm.value })
+    // 判断是故障工单还是用户反馈
+    // issue_report 有 scooterId 字段，feedback 没有
+    const isIssue = processRow.value.scooterId != null && processRow.value.scooterId !== ''
+    if (isIssue) {
+      // 故障工单使用 adminFeedback 字段
+      await updateIssueReport(processRow.value.id, {
+        status: processForm.value.status,
+        priority: processForm.value.priority,
+        adminFeedback: processForm.value.adminResponse
+      })
+    } else {
+      // 用户反馈使用 adminResponse 字段
+      await processFeedback(processRow.value.id, { ...processForm.value })
+    }
     ElMessage.success('处理结果已保存')
     processVisible.value = false
-    await loadFeedbacks()
-  } catch (e) { console.error(e) } finally {
+    await Promise.all([loadFeedbacks(), loadIssues()])
+  } catch (e) {
+    console.error('Failed to process:', e)
+    ElMessage.error('处理失败，请稍后重试')
+  } finally {
     processLoading.value = false
   }
 }
@@ -1388,7 +1791,18 @@ onMounted(async () => {
 onUnmounted(() => {
   chartOption?.dispose()
   chartDaily?.dispose()
+  if (adminMap) {
+    adminMap.destroy()
+    adminMap = null
+  }
 })
+
+// 监听车辆数据变化，自动更新地图标记
+watch(scooters, () => {
+  if (activeTab.value === 'map' && adminMap) {
+    nextTick(() => updateAdminScooterMarkers())
+  }
+}, { deep: true })
 </script>
 
 <style scoped>
@@ -1686,6 +2100,9 @@ onUnmounted(() => {
 .stat-mini.open::before { background: #c4880c; }
 .stat-mini.progress::before { background: #3b5998; }
 .stat-mini.resolved::before { background: #2d8a4e; }
+/* ID14: 高优先级样式 */
+.stat-mini.high-priority::before { background: #d14545; }
+.stat-mini.high-priority .mini-value { color: #d14545; }
 
 .mini-value {
   font-size: 28px;
@@ -2107,6 +2524,29 @@ onUnmounted(() => {
 .stock-badge.warning { background: #fef7e6; color: #c4880c; }
 .stock-badge.danger { background: #fde8e8; color: #d14545; }
 
+/* ID14: 高优先级警示框 */
+.high-priority-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #fde8e8 0%, #fef2f2 100%);
+  border: 1px solid #f5c6c6;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  color: #d14545;
+  font-size: 14px;
+}
+
+.high-priority-alert .el-icon {
+  font-size: 18px;
+}
+
+.high-priority-alert strong {
+  color: #d14545;
+  font-weight: 700;
+}
+
 /* 弹窗 */
 .process-dialog :deep(.el-dialog__header) {
   border-bottom: 1px solid #e8eef5;
@@ -2123,5 +2563,434 @@ onUnmounted(() => {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .actions-grid { grid-template-columns: repeat(2, 1fr); }
   .overview-row, .chart-row { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================
+   移动端响应式设计
+   ============================================ */
+
+/* 平板及以下 - 隐藏侧边栏，显示移动端顶部栏 */
+@media (max-width: 900px) {
+  .admin-container {
+    padding-top: 60px;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .mobile-header {
+    display: flex;
+  }
+
+  .main-area {
+    margin-left: 0;
+    padding: 16px;
+  }
+
+  .content-wrapper {
+    padding: 0;
+  }
+
+  /* 表格横向滚动 */
+  .content-card .el-table {
+    overflow-x: auto;
+  }
+
+  .content-card .el-table__body-wrapper {
+    overflow-x: auto;
+  }
+
+  /* 表格横向滚动容器 */
+  .tab-content .el-table {
+    display: block;
+    overflow-x: scroll;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 小型统计卡片网格 - 移动端自适应 */
+  .stats-grid.mini {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-mini {
+    padding: 12px 16px;
+  }
+
+  .mini-value {
+    font-size: 24px;
+  }
+
+  /* 头部操作按钮响应式 */
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .header-actions .el-input {
+    width: 100% !important;
+  }
+
+  .header-actions .el-select {
+    width: 100% !important;
+  }
+
+  .header-actions .el-button {
+    width: 100%;
+  }
+}
+
+/* 移动端顶部栏 */
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: white;
+  border-bottom: 1px solid #d6e0eb;
+  padding: 0 16px;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.mobile-header .mobile-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mobile-header .brand-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e3a5f;
+}
+
+.mobile-header .brand-tag {
+  font-size: 10px;
+  color: #5a7a9a;
+}
+
+.mobile-header .mobile-avatar {
+  background: linear-gradient(135deg, #1e3a5f 0%, #3b5998 100%);
+  color: white;
+  font-weight: 700;
+}
+
+.mobile-menu-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f4f8;
+  border: 1px solid #d6e0eb;
+  border-radius: 8px;
+  color: #1e3a5f;
+}
+
+/* 移动端抽屉样式 */
+.mobile-drawer :deep(.el-drawer__body) {
+  padding: 0;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.drawer-header {
+  padding: 20px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #3b5998 100%);
+}
+
+.drawer-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-logo .logo-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawer-logo .logo-icon svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+.drawer-logo .logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-logo .brand-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: white;
+}
+
+.drawer-logo .brand-tag {
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+}
+
+.drawer-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.drawer-nav .nav-section {
+  margin-bottom: 16px;
+}
+
+.drawer-nav .nav-label {
+  padding: 0 12px;
+  margin-bottom: 6px;
+}
+
+.drawer-nav .nav-item {
+  padding: 12px;
+  font-size: 14px;
+}
+
+.drawer-nav .badge {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.drawer-footer {
+  padding: 16px;
+  border-top: 1px solid #e8eef5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-footer .admin-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.drawer-footer .admin-avatar {
+  background: linear-gradient(135deg, #1e3a5f 0%, #3b5998 100%);
+  color: white;
+}
+
+.drawer-footer .admin-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e3a5f;
+}
+
+.drawer-footer .admin-role {
+  font-size: 11px;
+  color: #5a7a9a;
+}
+
+/* 手机小屏幕 - 更多调整 */
+@media (max-width: 600px) {
+  .admin-container {
+    padding-top: 56px;
+  }
+
+  .mobile-header {
+    height: 56px;
+    padding: 0 12px;
+  }
+
+  .main-area {
+    padding: 12px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid.mini {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  /* 表格响应式 */
+  .content-card {
+    padding: 16px;
+  }
+
+  .el-table {
+    font-size: 12px;
+  }
+
+  .el-table .cell {
+    padding: 8px 4px;
+  }
+
+  /* 操作按钮在小屏上堆叠 */
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-buttons .el-button {
+    width: 100%;
+    margin: 2px 0;
+  }
+
+  /* 弹窗响应式 */
+  .process-dialog {
+    width: 95% !important;
+    max-width: 95%;
+  }
+
+  .process-dialog .el-dialog__body {
+    padding: 16px;
+  }
+
+  /* 表单响应式 */
+  .staff-form {
+    max-width: 100%;
+  }
+
+  .staff-form .el-form-item {
+    margin-bottom: 16px;
+  }
+
+  /* 图表响应式 */
+  .chart {
+    height: 220px;
+  }
+
+  /* 运营指标响应式 */
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* 快捷操作响应式 */
+  .action-card {
+    padding: 16px;
+  }
+
+  /* 排名列表响应式 */
+  .user-ranking {
+    max-height: 200px;
+  }
+
+  /* 预警列表响应式 */
+  .alert-list {
+    max-height: 200px;
+  }
+
+  /* 地图响应式 */
+  .admin-map {
+    height: 300px;
+  }
+
+  /* 价格配置表格 */
+  .el-input-number {
+    width: 80px !important;
+  }
+}
+
+/* 超小屏幕 */
+@media (max-width: 380px) {
+  .mobile-header .brand-name {
+    font-size: 12px;
+  }
+
+  .mobile-menu-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stats-grid.mini {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-value {
+    font-size: 20px;
+  }
+
+  /* 弹窗进一步适配 */
+  .process-dialog {
+    width: 100% !important;
+    max-width: 100%;
+    margin: 0 !important;
+  }
+
+  .process-dialog .el-dialog {
+    width: 100% !important;
+    max-width: 100%;
+    margin: 0 !important;
+    border-radius: 16px 16px 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+/* 平板横屏适配 */
+@media (min-width: 601px) and (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-grid.mini {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .el-input-number {
+    width: 100px !important;
+  }
+}
+
+/* 表格单元格内容折行 */
+.el-table .cell {
+  word-break: break-word;
+}
+
+/* 固定列在移动端隐藏部分操作 */
+@media (max-width: 768px) {
+  .el-table__fixed {
+    display: none;
+  }
+
+  .el-table__fixed-right {
+    display: none;
+  }
 }
 </style>

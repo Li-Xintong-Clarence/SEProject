@@ -6,6 +6,8 @@ import com.example.demo.entity.Scooter;
 import com.example.demo.service.BookingService;
 import com.example.demo.service.ScooterService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
@@ -13,14 +15,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ��������??
- * �������޶����Ĵ�������ѯ��֧����ȡ�������ڵȲ���
- * ·��: /api/bookings/*
+ * Booking Controller
+ * Handles booking-related operations: creation, queries, payment, cancellation, extension, etc.
+ * Path: /api/bookings/*
  */
 @RestController
 @RequestMapping("/api/bookings")
 @CrossOrigin
 public class BookingController {
+
+    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
 
     @Autowired
     private BookingService bookingService;
@@ -29,59 +33,59 @@ public class BookingController {
     private ScooterService scooterService;
 
     /**
-     * �����¶�����ͨ��������⳵���Զ����䳵��??
+     * Create booking by depot (auto-assign scooter)
      * POST /api/bookings/depot
-     * ����: depotId, hireOption
+     * Params: depotId, hireOption
      */
-    @PostMapping(""depot"")
+    @PostMapping("/depot")
     public Result<Booking> createByDepot(@RequestBody Map<String, String> params, HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute(""userId"");
+        Long userId = (Long) request.getAttribute("userId");
 
-        // һ��һ�����ƣ�����û��Ƿ��н����еĶ���
+        // One-to-one principle: check if user has active bookings
         List<Booking> activeBookings = bookingService.findByUserId(userId);
         for (Booking b : activeBookings) {
-            if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
-                return Result.error(""�������ڽ����е��г̣�������ɻ�ȡ�����ٴ����¶�??"");
+            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
+                return Result.error("You have an active ride. Please complete or cancel it before booking again.");
             }
         }
 
-        Long depotId = Long.parseLong(params.get(""depotId""));
-        String hireOption = params.get(""hireOption"");
+        Long depotId = Long.parseLong(params.get("depotId"));
+        String hireOption = params.get("hireOption");
 
         Booking booking = bookingService.createByDepot(userId, depotId, hireOption);
         if (booking != null) {
             return Result.success(booking);
         }
-        return Result.error(""�÷�������޿��ó���"");
+        return Result.error("No available scooters at this depot");
     }
 
     /**
-     * �����¶�����ָ������ID??
+     * Create booking with specific scooter ID
      * POST /api/bookings
-     * ����: scooterId, hireOption, startTime ??
+     * Params: scooterId, hireOption, startTime, etc.
      */
     @PostMapping
     public Result<Booking> create(@RequestBody Booking booking, HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute(""userId"");
+        Long userId = (Long) request.getAttribute("userId");
         booking.setUserId(userId);
 
-        // һ��һ�����ƣ�����û��Ƿ��н����еĶ���
+        // One-to-one principle: check if user has active bookings
         List<Booking> activeBookings = bookingService.findByUserId(userId);
         for (Booking b : activeBookings) {
-            if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
-                return Result.error(""�������ڽ����е��г̣�������:"" + b.getId() + ""����������ɻ�ȡ�����ٴ����¶���"");
+            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
+                return Result.error("You have an active ride. ID:" + b.getId() + ". Please complete or cancel it before booking again.");
             }
         }
 
-        // ����Ҫ��??
+        // Validation
         if (booking.getScooterId() == null) {
-            return Result.error(""���峵ID����Ϊ��"");
+            return Result.error("Scooter ID cannot be empty");
         }
         if (booking.getHireOption() == null || booking.getHireOption().isEmpty()) {
-            return Result.error(""��ѡ������ʱ��"");
+            return Result.error("Please select rental duration");
         }
 
-        // ���û��ָ�� startDepotId���Զ��ӻ��峵��??
+        // If startDepotId is not specified, auto-fill from scooter
         if (booking.getStartDepotId() == null) {
             Scooter scooter = scooterService.findById(booking.getScooterId());
             if (scooter != null && scooter.getDepotId() != null) {
@@ -93,140 +97,164 @@ public class BookingController {
         if (saved) {
             return Result.success(booking);
         }
-        return Result.error(""��������ʧ�ܣ����Ժ�����"");
+        return Result.error("Booking creation failed, please try again later");
     }
 
     /**
-     * ��ȡ��ǰ�û��Ķ�����??
+     * Get current user's bookings
      * GET /api/bookings
      */
     @GetMapping
     public Result<List<Booking>> findMyBookings(HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute(""userId"");
+        Long userId = (Long) request.getAttribute("userId");
         return Result.success(bookingService.findByUserId(userId));
     }
 
     /**
-     * ��ȡ��ǰ�����е�����
+     * Get current active ride
      * GET /api/bookings/current
-     * ���ڼ���û��Ƿ��н����е����У�һ��һ����
-     * ��������δ�����Ķ�����PENDING��PAID��ACTIVE??
+     * Used to check if user has active ride (one-to-one)
+     * Returns pending, paid, or active bookings
      */
-    @GetMapping(""/current"")
+    @GetMapping("/current")
     public Result<Booking> getCurrentRide(HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute(""userId"");
+        Long userId = (Long) request.getAttribute("userId");
         List<Booking> bookings = bookingService.findByUserId(userId);
         for (Booking b : bookings) {
-            if (""PAID"".equals(b.getStatus()) || ""ACTIVE"".equals(b.getStatus())) {
+            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
                 return Result.success(b);
             }
         }
-        return Result.error(""No active ride"");
+        return Result.error("No active ride");
     }
 
     /**
-     * ��ȡ��ǰ�û�δ��ɵĻ����
+     * Get current user's unfinished bookings
      * GET /api/bookings/my/active
-     * ����δ���������ж�����PENDING��PAID��ACTIVE??
+     * Returns bookings with status: PENDING, PAID, ACTIVE
      */
-    @GetMapping(""/my/active"")
+    @GetMapping("/my/active")
     public Result<Booking> getMyActiveBooking(HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute(""userId"");
+        Long userId = (Long) request.getAttribute("userId");
         List<Booking> bookings = bookingService.findByUserId(userId);
-        // ���ص�һ��δ�����Ķ�??
+        // Return first unfinished booking
         for (Booking b : bookings) {
             String status = b.getStatus();
-            // PENDING, PAID, ACTIVE ����δ������״??
-            if (!""COMPLETED"".equals(status) && !""CANCELLED"".equals(status)) {
+            // PENDING, PAID, ACTIVE are unfinished statuses
+            if (!"COMPLETED".equals(status) && !"CANCELLED".equals(status)) {
                 return Result.success(b);
             }
         }
-        return Result.error(""No active booking"");
+        return Result.error("No active booking");
     }
 
     /**
-     * ����ID��ȡ��������
+     * Get booking by ID
      * GET /api/bookings/{id}
      */
-    @GetMapping(""/{id}"")
+    @GetMapping("/{id}")
     public Result<Booking> findById(@PathVariable Long id) {
         Booking booking = bookingService.findById(id);
         if (booking != null) {
             return Result.success(booking);
         }
-        return Result.error(""Booking not found"");
+        return Result.error("Booking not found");
     }
 
     /**
-     * �ӳ�����
+     * Extend booking
      * PUT /api/bookings/{id}/extend?hireOption=1day
-     * ����: hireOption - �ӳ���ʱ��ѡ��
+     * Params: hireOption - extension duration option
      */
-    @PutMapping(""/{id}/extend"")
+    @PutMapping("/{id}/extend")
     public Result<Booking> extend(@PathVariable Long id, @RequestParam String hireOption) {
         if (bookingService.extendBooking(id, hireOption)) {
-            // ���ظ��º�Ķ�����Ϣ
+            // Return updated booking info
             Booking updatedBooking = bookingService.findById(id);
             return Result.success(updatedBooking);
         }
-        return Result.error(""Failed to extend booking"");
+        return Result.error("Failed to extend booking");
     }
 
     /**
-     * ȡ������
+     * Cancel booking
      * POST /api/bookings/{id}/cancel
      */
-    @PostMapping(""/{id}/cancel"")
+    @PostMapping("/{id}/cancel")
     public Result<String> cancel(@PathVariable Long id) {
         if (bookingService.cancelBooking(id)) {
-            return Result.success(""Booking cancelled successfully"");
+            return Result.success("Booking cancelled successfully");
         }
-        return Result.error(""Failed to cancel booking"");
+        return Result.error("Failed to cancel booking");
     }
 
     /**
-     * �������������У�
+     * Return scooter (complete ride)
      * POST /api/bookings/{id}/return
      */
-    @PostMapping(""/{id}/return"")
+    @PostMapping("/{id}/return")
     public Result<String> returnScooter(@PathVariable Long id) {
         if (bookingService.returnScooter(id)) {
-            return Result.success(""Scooter returned successfully"");
+            return Result.success("Scooter returned successfully");
         }
-        return Result.error(""Failed to return scooter"");
+        return Result.error("Failed to return scooter");
     }
 
     /**
-     * ֧������
+     * Pay booking
      * POST /api/bookings/{id}/pay
-     * ����: cardLast4, amount, paymentMethod (��??
+     * Params: cardLast4, amount, paymentMethod (optional), paymentPassword (optional for security)
      */
-    @PostMapping(""/{id}/pay"")
-    public Result<String> pay(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> paymentData) {
-        if (bookingService.payBooking(id)) {
-            return Result.success(""Payment successful"");
+    @PostMapping("/{id}/pay")
+    public Result<String> pay(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> paymentData, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        double amount = 0;
+        String cardLast4 = null;
+        String paymentMethod = "credit";
+        String paymentPassword = null;
+
+        if (paymentData != null) {
+            if (paymentData.get("amount") != null) {
+                amount = Double.parseDouble(paymentData.get("amount").toString());
+            }
+            if (paymentData.get("cardLast4") != null) {
+                cardLast4 = paymentData.get("cardLast4").toString();
+            }
+            if (paymentData.get("paymentMethod") != null) {
+                paymentMethod = paymentData.get("paymentMethod").toString();
+            }
+            if (paymentData.get("paymentPassword") != null) {
+                paymentPassword = paymentData.get("paymentPassword").toString();
+            }
         }
-        return Result.error(""Payment failed"");
+
+        // 使用增强的支付服务（包含Tokenization和支付密码验证）
+        boolean success = bookingService.payBooking(id, userId, cardLast4, amount, paymentMethod, paymentPassword);
+        if (success) {
+            logger.info("支付成功, bookingId={}, userId={}, amount={}", id, userId, amount);
+            return Result.success("Payment successful");
+        }
+        return Result.error("Payment failed");
     }
 
     /**
-     * ��ȡ����ȷ����Ϣ������ȷ����ȣ�
+     * Get booking confirmation info (includes confirmation code)
      * GET /api/bookings/{id}/confirmation
      */
-    @GetMapping(""/{id}/confirmation"")
+    @GetMapping("/{id}/confirmation")
     public Result<Map<String, Object>> getConfirmation(@PathVariable Long id) {
         Booking booking = bookingService.findById(id);
         if (booking == null) {
-            return Result.error(""Booking not found"");
+            return Result.error("Booking not found");
         }
         Map<String, Object> confirmation = new HashMap<>();
-        confirmation.put(""confirmationCode"", booking.getConfirmationCode());
-        confirmation.put(""scooterId"", booking.getScooterId());
-        confirmation.put(""hireOption"", booking.getHireOption());
-        confirmation.put(""startTime"", booking.getStartTime());
-        confirmation.put(""endTime"", booking.getEndTime());
-        confirmation.put(""totalCost"", booking.getTotalCost());
-        confirmation.put(""status"", booking.getStatus());
+        confirmation.put("confirmationCode", booking.getConfirmationCode());
+        confirmation.put("scooterId", booking.getScooterId());
+        confirmation.put("hireOption", booking.getHireOption());
+        confirmation.put("startTime", booking.getStartTime());
+        confirmation.put("endTime", booking.getEndTime());
+        confirmation.put("totalCost", booking.getTotalCost());
+        confirmation.put("status", booking.getStatus());
         return Result.success(confirmation);
     }
 }

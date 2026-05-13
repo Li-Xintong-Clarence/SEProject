@@ -27,4 +27,21 @@ public class User {
     private LocalDateTime registrationDate;
     /** 是否激活 */
     private Boolean isActive = true;
+
+    // ============ 支付安全相关字段 ============
+
+    /** 支付密码（BCrypt加密存储，可选） */
+    private String paymentPassword;
+
+    /** 银行卡Token（用于存储卡号Token，避免明文存储） */
+    private String cardToken;
+
+    /** 卡号后4位（用于显示） */
+    private String cardLast4;
+
+    /** 卡类型（VISA, MASTERCARD等） */
+    private String cardType;
+
+    /** 是否已绑定银行卡 */
+    private Boolean hasCard = false;
 }

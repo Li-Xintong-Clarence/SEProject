@@ -258,4 +258,63 @@ const handleManualInput = async () => {
 .instructions li:last-child {
   margin-bottom: 0;
 }
+
+/* ============================================
+   响应式设计 - 移动端适配
+   ============================================ */
+
+/* 平板 (≤600px) */
+@media (max-width: 600px) {
+  .scan-page {
+    padding: 16px;
+  }
+
+  .scan-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .scan-frame {
+    width: 200px;
+    height: 200px;
+  }
+
+  .corner {
+    width: 24px;
+    height: 24px;
+    border-width: 3px;
+  }
+
+  .scan-hint {
+    font-size: 13px;
+  }
+
+  .input-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .input-row .el-button {
+    width: 100%;
+  }
+
+  .instructions {
+    padding: 14px 16px;
+  }
+
+  .instructions li {
+    font-size: 13px;
+  }
+}
+
+/* 小屏手机 (≤380px) */
+@media (max-width: 380px) {
+  .scan-frame {
+    width: 180px;
+    height: 180px;
+  }
+
+  .scan-hint {
+    font-size: 12px;
+  }
+}
 </style>

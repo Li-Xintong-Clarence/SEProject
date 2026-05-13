@@ -1,25 +1,25 @@
 <template>
-  <div class="trip-page">
+  <main id="main-content" class="trip-page" role="main" aria-label="当前行程">
     <!-- 页面标题 -->
-    <div class="page-header">
-      <h2 class="page-title">当前行程</h2>
-      <p class="page-sub">CapyGlide · 实时行程管理</p>
-    </div>
+    <header class="page-header">
+      <h1 class="page-title">当前行程</h1>
+      <p class="page-sub" role="doc-subtitle">CapyGlide · 实时行程管理</p>
+    </header>
 
     <template v-if="currentBooking">
       <div class="trip-layout">
         <!-- 左侧主卡片 -->
-        <div class="main-content">
+        <section class="main-content" aria-label="行程详情">
           <!-- 行程卡片 -->
-          <div class="trip-card">
-            <div class="card-header">
+          <article class="trip-card">
+            <header class="card-header">
               <div class="status-section">
-                <div class="status-badge">
-                  <span class="status-dot"></span>
+                <div class="status-badge" role="status" :aria-label="'状态：' + getStatusText(currentBooking.status)">
+                  <span class="status-dot" aria-hidden="true"></span>
                   {{ getStatusText(currentBooking.status) }}
                 </div>
                 <div class="vehicle-section">
-                  <div class="vehicle-icon">
+                  <div class="vehicle-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" fill="none">
                       <circle cx="14" cy="50" r="10" stroke="currentColor" stroke-width="2.5"/>
                       <circle cx="50" cy="50" r="10" stroke="currentColor" stroke-width="2.5"/>
@@ -34,22 +34,22 @@
                   </div>
                 </div>
               </div>
-            </div>
+            </header>
 
             <!-- 计时区 -->
-            <div class="timer-section">
+            <div class="timer-section" role="timer" aria-label="行程计时">
               <div class="timer-block elapsed">
-                <span class="timer-label">已使用时长</span>
-                <span class="timer-value">{{ elapsedTime }}</span>
+                <span class="timer-label" id="elapsed-label">已使用时长</span>
+                <span class="timer-value" aria-labelledby="elapsed-label">{{ elapsedTime }}</span>
               </div>
-              <div class="timer-arrow">
+              <div class="timer-arrow" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
               </div>
               <div class="timer-block remaining">
-                <span class="timer-label">预计剩余</span>
-                <span class="timer-value" :class="{ warning: isLowTime }">{{ remainingTime }}</span>
+                <span class="timer-label" id="remaining-label">预计剩余</span>
+                <span class="timer-value" :class="{ warning: isLowTime }" aria-labelledby="remaining-label" :aria-label="'预计剩余时间：' + remainingTime">{{ remainingTime }}</span>
               </div>
             </div>
 
@@ -113,7 +113,7 @@
                 报告问题
               </el-button>
             </div>
-          </div>
+          </article>
 
           <!-- 提示卡片 -->
           <div class="tips-card">
@@ -128,7 +128,7 @@
               <p>请在规定时间内将车辆归还至任意服务点，逾期将按超出时长计费。</p>
             </div>
           </div>
-        </div>
+        </section>
 
         <!-- 右侧统计 -->
         <div class="stats-panel">
@@ -299,7 +299,7 @@
         <el-button type="primary" size="large" @click="finishTrip" class="finish-btn">完成</el-button>
       </template>
     </el-dialog>
-  </div>
+  </main>
 </template>
 
 <script setup>
@@ -1330,5 +1330,202 @@ onUnmounted(() => {
 .empty-text {
   color: #5a7a9a;
   margin-bottom: 20px;
+}
+
+/* ============================================
+   响应式设计 - 移动端适配
+   ============================================ */
+
+/* 平板 (≤900px) */
+@media (max-width: 900px) {
+  .trip-page {
+    padding: 24px 20px;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .trip-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .stats-panel {
+    flex-direction: row;
+    gap: 14px;
+  }
+
+  .stats-card, .fun-card {
+    flex: 1;
+  }
+
+  .fun-card .progress-ring {
+    width: 100px;
+    height: 100px;
+  }
+
+  .ring-value {
+    font-size: 22px;
+  }
+}
+
+/* 手机 (≤600px) */
+@media (max-width: 600px) {
+  .trip-page {
+    padding: 16px 12px;
+  }
+
+  .card-header {
+    padding: 18px 16px;
+  }
+
+  .vehicle-name {
+    font-size: 18px;
+  }
+
+  .timer-section {
+    flex-direction: column;
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .timer-block {
+    width: 100%;
+  }
+
+  .timer-value {
+    font-size: 28px;
+  }
+
+  .timer-arrow {
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    transform: rotate(90deg);
+  }
+
+  .timer-arrow svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .cost-section {
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .cost-value {
+    font-size: 36px;
+  }
+
+  .info-section {
+    padding: 18px 16px;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .info-item.full {
+    grid-column: span 1;
+  }
+
+  .action-section {
+    flex-direction: column;
+    padding: 18px 16px;
+    gap: 10px;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+
+  .tips-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .stats-panel {
+    flex-direction: column;
+  }
+
+  .stats-card, .fun-card {
+    width: 100%;
+  }
+
+  .fun-card .progress-ring {
+    width: 120px;
+    height: 120px;
+  }
+
+  .extend-dialog .extend-options {
+    flex-direction: column;
+  }
+
+  .return-dialog .depot-list {
+    max-height: 280px;
+  }
+
+  .complete-dialog {
+    max-width: calc(100vw - 32px);
+  }
+
+  .summary-block {
+    padding: 16px;
+  }
+
+  .summary-price {
+    font-size: 20px;
+  }
+
+  .rating-stars {
+    gap: 8px;
+  }
+
+  .star {
+    font-size: 32px;
+  }
+}
+
+/* 小屏手机 (≤380px) */
+@media (max-width: 380px) {
+  .page-title {
+    font-size: 20px;
+  }
+
+  .vehicle-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .vehicle-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .timer-value {
+    font-size: 24px;
+  }
+
+  .cost-value {
+    font-size: 30px;
+  }
+
+  .discount-tag {
+    font-size: 11px;
+    padding: 8px 12px;
+  }
+
+  .finish-btn {
+    height: 44px;
+    font-size: 14px;
+  }
 }
 </style>

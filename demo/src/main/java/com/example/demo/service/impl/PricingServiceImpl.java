@@ -41,4 +41,9 @@ public class PricingServiceImpl implements PricingService {
     public boolean deleteById(Long id) {
         return pricingMapper.deleteById(id) > 0;
     }
+
+    @Override
+    public Pricing findByHireOption(String hireOption) {
+        return pricingMapper.findByHireOption(hireOption);
+    }
 }

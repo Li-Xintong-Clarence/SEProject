@@ -1,21 +1,21 @@
 <template>
-  <div class="map-view">
+  <main id="main-content" class="map-view" role="main" aria-label="找车页面">
     <!-- 页面标题 -->
-    <div class="page-header">
-      <h2 class="page-title">找车</h2>
-      <p class="page-sub">CapyGlide · 附近滑板车</p>
-    </div>
-    
+    <header class="page-header">
+      <h1 class="page-title">找车</h1>
+      <p class="page-sub" role="doc-subtitle">CapyGlide · 附近滑板车</p>
+    </header>
+
     <div class="header-actions">
-      <el-button type="primary" @click="$router.push('/scan')">
+      <el-button type="primary" @click="$router.push('/scan')" aria-label="扫码租车">
         <el-icon><Crop /></el-icon> 扫码租车
       </el-button>
     </div>
 
     <!-- 行程提示 -->
-    <div v-if="hasActiveBooking" class="booking-banner">
+    <div v-if="hasActiveBooking" class="booking-banner" role="alert" aria-live="polite">
       <div class="banner-content">
-        <div class="banner-icon">
+        <div class="banner-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="12" cy="12" r="10"/>
             <path d="M12 6v6l4 2"/>
@@ -26,7 +26,7 @@
           <span class="banner-sub">点击前往管理您的滑行</span>
         </div>
       </div>
-      <el-button type="primary" size="small" @click="$router.push('/trip')" class="banner-btn">
+      <el-button type="primary" size="small" @click="$router.push('/trip')" class="banner-btn" aria-label="前往行程管理">
         <el-icon><Van /></el-icon>
         前往行程
       </el-button>
@@ -34,44 +34,44 @@
 
     <div class="content-grid">
       <!-- 左侧地图 -->
-      <div class="map-area">
+      <section class="map-area" aria-label="地图区域">
         <div class="map-container">
-          <div id="map-container"></div>
+          <div id="map-container" role="application" aria-label="交互式地图"></div>
         </div>
 
         <!-- 定位栏 -->
-        <div class="location-bar">
+        <div class="location-bar" role="status" aria-live="polite">
           <div class="location-info" :class="{ active: userLocated }">
-            <div class="loc-icon">
+            <div class="loc-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
                 <circle cx="12" cy="10" r="3"/>
               </svg>
             </div>
-            <span v-if="locating">定位中...</span>
+            <span v-if="locating" aria-live="polite">定位中...</span>
             <span v-else-if="userLocated">{{ locationText }}</span>
             <span v-else>点击定位获取位置</span>
           </div>
-          <el-button type="primary" size="small" @click="refreshLocation" :loading="locating" class="loc-btn">
+          <el-button type="primary" size="small" @click="refreshLocation" :loading="locating" class="loc-btn" :aria-label="userLocated ? '刷新位置' : '获取位置'">
             <el-icon><Location /></el-icon>
             {{ userLocated ? '刷新' : '定位' }}
           </el-button>
         </div>
 
         <!-- 图例 -->
-        <div class="legend-bar">
-          <div class="legend-item"><span class="legend-dot user"></span> 我的位置</div>
-          <div class="legend-item"><span class="legend-dot avail"></span> 可用</div>
-          <div class="legend-item"><span class="legend-dot inuse"></span> 使用中</div>
-          <div class="legend-item"><span class="legend-dot low"></span> 低电量</div>
-        </div>
-      </div>
+        <nav class="legend-bar" aria-label="地图图例">
+          <div class="legend-item"><span class="legend-dot user" aria-hidden="true"></span> 我的位置</div>
+          <div class="legend-item"><span class="legend-dot avail" aria-hidden="true"></span> 可用</div>
+          <div class="legend-item"><span class="legend-dot inuse" aria-hidden="true"></span> 使用中</div>
+          <div class="legend-item"><span class="legend-dot low" aria-hidden="true"></span> 低电量</div>
+        </nav>
+      </section>
 
       <!-- 右侧列表 -->
-      <div class="list-area">
+      <section class="list-area" aria-label="附近滑板车列表">
         <div class="list-header">
-          <h3 class="list-title">附近滑板车</h3>
-          <el-button size="small" @click="loadScooters" :loading="loadingScooters" class="refresh-btn">
+          <h2 class="list-title">附近滑板车</h2>
+          <el-button size="small" @click="loadScooters" :loading="loadingScooters" class="refresh-btn" aria-label="刷新列表">
             <el-icon><Refresh /></el-icon>
           </el-button>
         </div>
@@ -140,7 +140,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
 
     <!-- 详情弹窗 -->
@@ -204,7 +204,7 @@
         </el-button>
       </template>
     </el-dialog>
-  </div>
+  </main>
 </template>
 
 <script setup>
@@ -1106,5 +1106,163 @@ onMounted(async () => {
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
+}
+
+/* ============================================
+   响应式设计 - 移动端适配
+   ============================================ */
+
+/* 平板 (≤1024px) */
+@media (max-width: 1024px) {
+  .map-view {
+    padding: 24px 20px;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+  }
+
+  #map-container {
+    height: 400px;
+  }
+
+  .list-area {
+    max-height: calc(100vh - 280px);
+  }
+}
+
+/* 手机 (≤768px) - 改为单列布局 */
+@media (max-width: 768px) {
+  .map-view {
+    padding: 16px 12px;
+    min-height: calc(100vh - 64px);
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .header-actions {
+    display: flex;
+    justify-content: center;
+  }
+
+  .booking-banner {
+    flex-direction: column;
+    gap: 14px;
+    text-align: center;
+    padding: 14px 16px;
+  }
+
+  .banner-content {
+    flex-direction: column;
+  }
+
+  .banner-btn {
+    width: 100%;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  #map-container {
+    height: 300px;
+  }
+
+  .location-bar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .loc-btn {
+    width: 100%;
+  }
+
+  .legend-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .legend-item {
+    font-size: 12px;
+  }
+
+  .list-area {
+    max-height: none;
+    padding: 16px;
+  }
+
+  .list-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .scooter-card {
+    flex-wrap: wrap;
+  }
+
+  .card-meta {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+
+  .detail-dialog {
+    max-width: calc(100vw - 32px);
+    margin: 16px auto;
+  }
+}
+
+/* 小屏手机 (≤480px) */
+@media (max-width: 480px) {
+  #map-container {
+    height: 250px;
+  }
+
+  .detail-header {
+    flex-wrap: wrap;
+    padding: 0 16px 16px;
+  }
+
+  .detail-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .detail-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .detail-info h4 {
+    font-size: 18px;
+  }
+
+  .detail-stats {
+    flex-direction: column;
+    padding: 0 16px 16px;
+  }
+
+  .stat-cell {
+    padding: 12px;
+  }
+
+  .rent-btn {
+    height: 44px;
+    font-size: 14px;
+  }
 }
 </style>

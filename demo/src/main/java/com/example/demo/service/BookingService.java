@@ -5,62 +5,78 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ��������ӿ�
- * ���嶩�������ޣ���ص�ҵ���??
+ * Booking Service Interface
+ * Defines booking-related business operations
  */
 public interface BookingService {
     /**
-     * ��ѯ���ж���������Ա��
+     * Query all bookings (admin)
      */
     List<Booking> findAll();
     /**
-     * ��ѯ�û��Ķ�����??
+     * Query user's bookings
      */
     List<Booking> findByUserId(Long userId);
     /**
-     * ����ID��ѯ����
+     * Query booking by ID
      */
     Booking findById(Long id);
     /**
-     * �����¶�����ͨ������㣬�Զ����䳵��??
-     * @param userId �û�ID
-     * @param depotId �����ID�����
-     * @param hireOption ����ʱ��
+     * Create booking by depot (auto-assign scooter)
+     * @param userId User ID
+     * @param depotId Depot ID (required)
+     * @param hireOption Rental duration
      */
     Booking createByDepot(Long userId, Long depotId, String hireOption);
     /**
-     * �����¶�����ָ������??
+     * Create booking with specific scooter
      */
     boolean save(Booking booking);
     /**
-     * ���¶�����Ϣ
+     * Admin: Create booking for user (bypasses active booking check)
+     * Used when admin creates booking on behalf of user
+     */
+    boolean adminSave(Booking booking);
+    /**
+     * Update booking info
      */
     boolean update(Booking booking);
     /**
-     * ɾ������
+     * Delete booking
      */
     boolean deleteById(Long id);
     /**
-     * �ӳ�����
-     * @param id ����ID
-     * @param hireOption �ӳ���ʱ��ѡ��??hr, 4hr, 1day, 1week??
+     * Extend booking
+     * @param id Booking ID
+     * @param hireOption Extension duration option: 1hr, 4hr, 1day, 1week
      */
     boolean extendBooking(Long id, String hireOption);
     /**
-     * ȡ������
+     * Cancel booking
      */
     boolean cancelBooking(Long id);
     /**
-     * ֧������
-     */
-    boolean payBooking(Long id);
-    /**
-     * ��ȡ�û�ͳ����Ϣ���������������ѡ���ʱ����
-     */
-    Map<String, Object> getUserStats(Long userId);
-    /**
-     * �������������У�
-     * @param id ����ID
+     * Return scooter (complete ride)
      */
     boolean returnScooter(Long id);
+    /**
+     * Pay booking
+     */
+    boolean payBooking(Long id);
+
+    /**
+     * Pay booking with enhanced security (tokenization and payment password)
+     * @param id Booking ID
+     * @param userId User ID
+     * @param cardLast4 Card last 4 digits
+     * @param amount Payment amount
+     * @param paymentMethod Payment method
+     * @param paymentPassword Payment password (optional)
+     * @return Payment success
+     */
+    boolean payBooking(Long id, Long userId, String cardLast4, double amount, String paymentMethod, String paymentPassword);
+    /**
+     * Get user statistics
+     */
+    Map<String, Object> getUserStats(Long userId);
 }

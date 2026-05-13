@@ -1,19 +1,30 @@
-# ��������??
+# Server Configuration
 server:
   port: 8081
   address: 0.0.0.0
+  # HTTPS Configuration (Production)
+  # ssl:
+  #   enabled: true
+  #   key-store: classpath:keystore.p12
+  #   key-store-password: your-keystore-password
+  #   key-store-type: PKCS12
+  #   key-alias: your-key-alias
+  #   protocol: TLS
+  #   enabled-protocols: TLSv1.2,TLSv1.3
+  # http2:
+  #   enabled: true
 
-# Spring ����
+# Spring Configuration
 spring:
   application:
     name: scooter-rental-system
-  # ���ݿ����ã�Ӧ��??MySQL ͬ������ʱ�� 127.0.0.1����??IP �����ϱ��������� localhost ??MySQL??
+  # Database Configuration - Use 127.0.0.1 for local MySQL, use server IP for remote deployment
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/scooter_rental?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: sep2user
     password: Sep2Pass2026!
-  # �ʼ�����
+  # Email Configuration
   mail:
     host: smtp.qq.com
     port: 587
@@ -26,7 +37,7 @@ spring:
           starttls:
             enable: true
     hikari:
-      # ���ӳ����ã���ֹ���ӳ�ʱ����
+      # Connection Pool Configuration
       minimum-idle: 5
       maximum-pool-size: 20
       idle-timeout: 300000
@@ -34,19 +45,19 @@ spring:
       connection-timeout: 30000
       keepalive-time: 60000
 
-# MyBatis ����
+# MyBatis Configuration
 mybatis:
-  # Mapper XML �ļ�λ��
+  # Mapper XML File Location
   mapper-locations: classpath:mapper/*.xml
-  # ʵ���������
+  # Entity Package
   type-aliases-package: com.example.demo.entity
-  # �����շ�����ӳ??
+  # Underscore to Camel Case Mapping
   configuration:
     map-underscore-to-camel-case: true
-  # ��ӡ SQL ��־������ʱʹ��??
+  # Print SQL logs for debugging
   log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-# ��־����
+# Logging Configuration
 logging:
   level:
     com.example.demo: debug

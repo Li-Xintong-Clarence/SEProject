@@ -29,4 +29,25 @@ public interface IssueReportService {
      * @return 问题报告列表
      */
     List<IssueReport> findByUserId(Long userId);
+
+    /**
+     * 根据ID查询问题报告
+     * @param id 问题报告ID
+     * @return 问题报告对象
+     */
+    IssueReport findById(Long id);
+
+    /**
+     * 按优先级查询问题报告（ID14: 查看高优先级问题）
+     * @param priority 优先级：HIGH, NORMAL, LOW
+     * @return 问题报告列表
+     */
+    List<IssueReport> findByPriority(String priority);
+
+    /**
+     * 更新问题报告
+     * @param issue 问题报告对象
+     * @return 更新是否成功
+     */
+    boolean update(IssueReport issue);
 }

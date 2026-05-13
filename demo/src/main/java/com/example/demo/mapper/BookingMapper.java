@@ -20,14 +20,15 @@ public interface BookingMapper {
     @Select("SELECT * FROM booking WHERE id = #{id}")
     Booking findById(Long id);
 
-    @Insert("INSERT INTO booking(user_id, scooter_id, hire_option, start_time, end_time, total_cost, status, created_at, confirmation_code, start_depot_id, end_depot_id) " +
-            "VALUES(#{userId}, #{scooterId}, #{hireOption}, #{startTime}, #{endTime}, #{totalCost}, #{status}, #{createdAt}, #{confirmationCode}, #{startDepotId}, #{endDepotId})")
+    @Insert("INSERT INTO booking(user_id, scooter_id, hire_option, start_time, end_time, total_cost, status, created_at, confirmation_code, start_depot_id, end_depot_id, booking_type, guest_name, guest_phone, guest_email) " +
+            "VALUES(#{userId}, #{scooterId}, #{hireOption}, #{startTime}, #{endTime}, #{totalCost}, #{status}, #{createdAt}, #{confirmationCode}, #{startDepotId}, #{endDepotId}, #{bookingType}, #{guestName}, #{guestPhone}, #{guestEmail})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Booking booking);
 
     @Update("UPDATE booking SET user_id=#{userId}, scooter_id=#{scooterId}, hire_option=#{hireOption}, " +
             "start_time=#{startTime}, end_time=#{endTime}, total_cost=#{totalCost}, status=#{status}, " +
-            "confirmation_code=#{confirmationCode}, start_depot_id=#{startDepotId}, end_depot_id=#{endDepotId} WHERE id=#{id}")
+            "confirmation_code=#{confirmationCode}, start_depot_id=#{startDepotId}, end_depot_id=#{endDepotId}, " +
+            "booking_type=#{bookingType}, guest_name=#{guestName}, guest_phone=#{guestPhone}, guest_email=#{guestEmail} WHERE id=#{id}")
     int update(Booking booking);
 
     @Delete("DELETE FROM booking WHERE id = #{id}")
@@ -58,6 +59,11 @@ public interface BookingMapper {
 
     @Select("SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, start_time, end_time)), 0) FROM booking WHERE status = 'COMPLETED' AND end_time IS NOT NULL")
     Double avgRideDuration();
+
+    @Select("SELECT COALESCE(SUM(TIMESTAMPDIFF(HOUR, start_time, end_time)), 0) FROM booking " +
+            "WHERE user_id = #{userId} AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) " +
+            "AND status IN ('PAID', 'COMPLETED') AND end_time IS NOT NULL")
+    Integer getUserWeeklyHours(Long userId);
 
     @Select("SELECT DATE(created_at) as date, SUM(total_cost) as income FROM booking WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status IN ('PAID', 'COMPLETED') GROUP BY DATE(created_at) ORDER BY date")
     List<Map<String, Object>> getDailyIncome();

@@ -1,4 +1,7 @@
 <template>
+  <!-- 跳过导航链接 - 提高可访问性 -->
+  <a href="#main-content" class="skip-link">跳转到主要内容</a>
+
   <!-- 管理员页面不使用 DefaultLayout -->
   <template v-if="isAdminRoute">
     <router-view />

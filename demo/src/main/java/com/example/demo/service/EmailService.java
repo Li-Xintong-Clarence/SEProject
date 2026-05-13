@@ -1,46 +1,46 @@
 package com.example.demo.service;
 
 /**
- * �ʼ�����ӿ�
- * ���巢���ʼ�����ز���
+ * Email Service Interface
+ * Provides email sending related functions
  */
 public interface EmailService {
     /**
-     * ����Ԥ��ȷ����??
-     * @param toEmail �ռ�����??
-     * @param username �û�??
-     * @param confirmationCode Ԥ��ȷ��??
-     * @param scooterNumber �綯����??
-     * @param hireOption ����ѡ��
-     * @param startTime ��ʼʱ??
-     * @param endTime ����ʱ��
-     * @param totalCost �ܷ�??
+     * Send booking confirmation email
+     * @param toEmail Recipient email
+     * @param username Username
+     * @param confirmationCode Booking confirmation code
+     * @param scooterNumber Scooter number
+     * @param hireOption Rental option
+     * @param startTime Start time
+     * @param endTime End time
+     * @param totalCost Total fee
      */
     void sendBookingConfirmation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption, String startTime, String endTime, double totalCost);
 
     /**
-     * ���Ͷ���ȡ����??
+     * Send booking cancellation confirmation
      */
     void sendBookingCancellation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption);
 
     /**
-     * ���ͽ���������??
+     * Send ride completion notification
      */
     void sendRideCompletion(String toEmail, String username, String confirmationCode,
                            String scooterNumber, String startTime, String endTime, double totalCost);
 
     /**
-     * �����Զ�����֪ͨ�ʼ�
-     * @param toEmail �ռ�����??
-     * @param username �û�??
-     * @param confirmationCode Ԥ��ȷ��??
-     * @param scooterNumber �綯����??
-     * @param startTime ��ʼʱ??
-     * @param endTime ����ʱ��
-     * @param depotName �����������??
-     * @param totalCost �ܷ�??
+     * Send auto-return notification email
+     * @param toEmail Recipient email
+     * @param username Username
+     * @param confirmationCode Booking confirmation code
+     * @param scooterNumber Scooter number
+     * @param startTime Start time
+     * @param endTime End time
+     * @param depotName Return depot name
+     * @param totalCost Total fee
      */
     void sendAutoReturnNotification(String toEmail, String username, String confirmationCode,
                                     String scooterNumber, String startTime, String endTime,

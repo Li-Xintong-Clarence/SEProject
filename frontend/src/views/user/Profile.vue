@@ -35,6 +35,25 @@
       </el-col>
     </el-row>
 
+    <!-- 频繁用户提示 -->
+    <div v-if="stats.isFrequentUser" class="frequent-user-banner">
+      <div class="frequent-user-icon">
+        <el-icon><Star /></el-icon>
+      </div>
+      <div class="frequent-user-content">
+        <h4>恭喜！您是频繁用户</h4>
+        <p>本周已使用 <strong>{{ stats.weeklyHours }} 小时</strong>，已自动获得 <strong>20% off</strong> 折扣</p>
+      </div>
+    </div>
+    <div v-else-if="stats.weeklyHours > 0" class="frequent-progress">
+      <div class="progress-header">
+        <span class="progress-label">距离频繁用户还差</span>
+        <span class="progress-value">{{ 8 - stats.weeklyHours }} 小时</span>
+      </div>
+      <el-progress :percentage="Math.min(100, (stats.weeklyHours / 8) * 100)" :stroke-width="10" :show-text="false" color="#f59e0b" />
+      <p class="progress-hint">本周使用满 8 小时即可获得 20% off 折扣</p>
+    </div>
+
     <!-- 用户信息卡片 -->
     <el-card class="user-card" shadow="never">
       <template #header>
@@ -89,8 +108,18 @@
               <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" fixed="right">
+          <el-table-column label="操作" width="240" fixed="right">
             <template #default="{ row }">
+              <!-- 待支付状态：显示去支付按钮 -->
+              <el-button
+                v-if="(row.status || '').toUpperCase() === 'PENDING'"
+                type="success"
+                link
+                size="small"
+                @click="goToPay(row)"
+              >
+                <el-icon><Wallet /></el-icon> 去支付
+              </el-button>
               <el-button type="primary" link size="small" @click="viewConfirmation(row.id)">确认信息</el-button>
               <el-button
                 type="primary"
@@ -115,22 +144,41 @@
 
       <!-- 支付卡 -->
       <el-tab-pane label="支付卡" name="cards">
-        <el-alert type="warning" :closable="false" class="mb">
-          <template #title>演示环境：请勿使用真实卡号</template>
+        <el-alert type="info" :closable="false" class="mb">
+          <template #title>
+            <el-icon><InfoFilled /></el-icon>
+            安全提示：我们仅存储卡号后4位，无法获取完整卡号信息
+          </template>
         </el-alert>
-        <el-button type="primary" @click="showCardDialog = true">添加支付卡</el-button>
-        <el-table :data="cards" stripe style="margin-top: 16px">
-          <el-table-column prop="cardHolder" label="持卡人" />
-          <el-table-column label="卡号">
-            <template #default="{ row }">****{{ String(row.cardNumber || '').slice(-4) }}</template>
-          </el-table-column>
-          <el-table-column prop="expiryDate" label="有效期" width="110" />
-          <el-table-column label="操作" width="80">
+        <el-button type="primary" @click="showCardDialog = true">
+          <el-icon><Plus /></el-icon> 添加支付卡
+        </el-button>
+        <el-table :data="cards" stripe style="margin-top: 16px" v-if="cards.length > 0">
+          <el-table-column label="卡号" min-width="200">
             <template #default="{ row }">
-              <el-button type="danger" link @click="removeCard(row.id)">删除</el-button>
+              <div class="card-display">
+                <span class="card-type-badge">{{ row.cardType || 'UNKNOWN' }}</span>
+                <span class="card-number">{{ row.lastFour ? '**** **** **** ' + row.lastFour : '****' }}</span>
+                <el-tag v-if="row.isDefault" type="success" size="small">默认</el-tag>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="cardHolder" label="持卡人" width="120" />
+          <el-table-column prop="expiryDate" label="有效期" width="110" />
+          <el-table-column label="操作" width="150">
+            <template #default="{ row }">
+              <el-button
+                v-if="!row.isDefault"
+                type="primary"
+                link
+                size="small"
+                @click="setDefaultCard(row.id)"
+              >设为默认</el-button>
+              <el-button type="danger" link size="small" @click="removeCard(row.id)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
+        <el-empty v-else description="暂无支付卡" />
       </el-tab-pane>
 
       <!-- 意见反馈 -->
@@ -168,16 +216,28 @@
     <el-dialog v-model="showCardDialog" title="添加支付卡" width="480px" @closed="resetCardForm">
       <el-form :model="cardForm" label-width="90px">
         <el-form-item label="卡号">
-          <el-input v-model="cardForm.cardNumber" placeholder="卡号" maxlength="19" />
+          <el-input
+            v-model="cardForm.cardNumber"
+            placeholder="请输入卡号"
+            maxlength="19"
+            @input="formatCardNumber"
+          />
+          <div class="form-hint">我们只存储卡号后4位用于识别</div>
         </el-form-item>
         <el-form-item label="持卡人">
-          <el-input v-model="cardForm.cardHolder" placeholder="持卡人姓名" />
+          <el-input v-model="cardForm.cardHolder" placeholder="请输入持卡人姓名" />
         </el-form-item>
         <el-form-item label="有效期">
-          <el-input v-model="cardForm.expiryDate" placeholder="MM/YYYY" />
+          <el-input v-model="cardForm.expiryDate" placeholder="MM/YYYY" maxlength="7" />
         </el-form-item>
         <el-form-item label="CVV">
-          <el-input v-model="cardForm.cvv" placeholder="CVV" maxlength="4" show-password />
+          <el-input
+            v-model="cardForm.cvv"
+            placeholder="卡背面3位安全码"
+            maxlength="4"
+            show-password
+          />
+          <div class="form-hint warning">CVV仅用于验证，不会被存储</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -254,12 +314,13 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Ticket, Money, Clock, User } from '@element-plus/icons-vue'
+import { Ticket, Money, Clock, User, Star, Wallet } from '@element-plus/icons-vue'
 import { getUserBookings, cancelBooking, extendBooking, getBookingConfirmation, returnScooter } from '@/api/booking'
 import { getCurrentUser, getUserStats } from '@/api/user'
 import { getMyCards, addCard, deleteCard } from '@/api/card'
 import { getMyFeedbacks, createFeedback } from '@/api/feedback'
 import { createIssueReport, getMyIssueReports } from '@/api/issues'
+import request from '@/utils/request'
 
 const router = useRouter()
 const activeTab = ref('bookings')
@@ -415,6 +476,13 @@ const goToTrip = () => {
   router.push('/trip')
 }
 
+// 前往支付页面
+const goToPay = (booking) => {
+  // 将订单信息存入 localStorage，跳转到预订页面进行支付
+  localStorage.setItem('pendingPaymentBooking', JSON.stringify(booking))
+  router.push('/booking')
+}
+
 // 加载支付卡
 const loadCards = async () => {
   try {
@@ -544,16 +612,21 @@ const resetCardForm = () => {
 }
 
 const saveCard = async () => {
+  if (!cardForm.value.cardNumber || !cardForm.value.cardHolder) {
+    ElMessage.warning('请填写完整的卡信息')
+    return
+  }
   cardSaving.value = true
   try {
+    // 只传递必要信息，后端会自动提取后4位和识别卡片类型
     await addCard({
-      cardNumber: cardForm.value.cardNumber,
       cardHolder: cardForm.value.cardHolder,
       expiryDate: cardForm.value.expiryDate,
-      cvv: cardForm.value.cvv,
+      lastFour: cardForm.value.cardNumber.replace(/\s/g, '').slice(-4),  // 提取后4位
+      cardType: detectCardType(cardForm.value.cardNumber),  // 识别卡片类型
       isDefault: true
     })
-    ElMessage.success('支付卡已保存')
+    ElMessage.success('支付卡已保存（仅存储后4位）')
     showCardDialog.value = false
     await loadCards()
   } catch (e) {
@@ -561,6 +634,28 @@ const saveCard = async () => {
   } finally {
     cardSaving.value = false
   }
+}
+
+// 识别卡片类型
+const detectCardType = (cardNumber) => {
+  if (!cardNumber) return 'UNKNOWN'
+  const clean = cardNumber.replace(/[\s-]/g, '')
+  if (/^4/.test(clean)) return 'VISA'
+  if (/^5[1-5]/.test(clean)) return 'Mastercard'
+  if (/^3[47]/.test(clean)) return 'American Express'
+  if (/^6(?:011|5)/.test(clean)) return 'Discover'
+  if (/^62/.test(clean)) return 'UnionPay'
+  return 'UNKNOWN'
+}
+
+// 格式化卡号（添加空格）
+const formatCardNumber = (val) => {
+  const v = val.replace(/[\s-]/g, '').replace(/\D/g, '')
+  const parts = []
+  for (let i = 0; i < v.length && i < 16; i += 4) {
+    parts.push(v.slice(i, i + 4))
+  }
+  cardForm.value.cardNumber = parts.join(' ')
 }
 
 // 删除支付卡
@@ -574,6 +669,17 @@ const removeCard = (id) => {
       // 静默失败
     }
   })
+}
+
+// 设为默认卡
+const setDefaultCard = async (id) => {
+  try {
+    await request.put(`/api/users/me/cards/${id}/default`)
+    ElMessage.success('已设为默认支付卡')
+    await loadCards()
+  } catch (e) {
+    console.error('设置默认卡失败:', e)
+  }
 }
 
 // 打开反馈弹窗
@@ -714,6 +820,83 @@ onMounted(async () => {
   font-weight: 500;
 }
 
+/* 频繁用户 Banner */
+.frequent-user-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: var(--cg-radius-lg);
+  margin-bottom: 24px;
+}
+
+.frequent-user-icon {
+  width: 52px;
+  height: 52px;
+  background: #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.frequent-user-icon .el-icon {
+  font-size: 28px;
+  color: white;
+}
+
+.frequent-user-content h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.frequent-user-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #b45309;
+}
+
+.frequent-user-content strong {
+  color: #d97706;
+}
+
+/* 频繁用户进度条 */
+.frequent-progress {
+  background: #f0f4f8;
+  border-radius: var(--cg-radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progress-label {
+  font-size: 14px;
+  color: var(--cg-text-light);
+}
+
+.progress-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.progress-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--cg-text-light);
+}
+
 /* 用户卡片 */
 .user-card {
   margin-bottom: 24px;
@@ -754,5 +937,39 @@ onMounted(async () => {
 
 .mb {
   margin-bottom: 16px;
+}
+
+/* 支付卡相关样式 */
+.card-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-type-badge {
+  background: var(--cg-navy);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.card-number {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: var(--cg-text);
+  letter-spacing: 1px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: var(--cg-text-muted);
+  margin-top: 4px;
+}
+
+.form-hint.warning {
+  color: var(--cg-warning);
 }
 </style>

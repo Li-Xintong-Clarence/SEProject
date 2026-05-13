@@ -7,9 +7,13 @@ import java.util.List;
 /**
  * 支付卡Mapper接口
  * 对应数据库card表，使用MyBatis注解方式执行SQL
+ *
+ * 【安全说明】
+ * 只操作脱敏后的卡片信息，不涉及完整卡号
  */
 @Mapper
 public interface CardMapper {
+
     /**
      * 查询用户的支付卡列表
      */
@@ -24,19 +28,21 @@ public interface CardMapper {
 
     /**
      * 插入新支付卡
-     * useGeneratedKeys: 自动生成主键
-     * keyProperty: 将生成的主键赋值给card对象的id属性
+     * 【安全】只存储后4位卡号和卡片类型，不存储完整卡号和CVV
+     *
+     * @param card 卡片对象，应只包含脱敏信息
      */
-    @Insert("INSERT INTO card (user_id, card_number, card_holder, expiry_date, cvv, is_default, created_at) " +
-            "VALUES (#{userId}, #{cardNumber}, #{cardHolder}, #{expiryDate}, #{cvv}, #{isDefault}, NOW())")
+    @Insert("INSERT INTO card (user_id, card_holder, last_four, card_type, expiry_date, is_default, created_at) " +
+            "VALUES (#{userId}, #{cardHolder}, #{lastFour}, #{cardType}, #{expiryDate}, #{isDefault}, NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Card card);
 
     /**
      * 更新支付卡信息
+     * 【安全】只更新脱敏后的信息
      */
-    @Update("UPDATE card SET card_number=#{cardNumber}, card_holder=#{cardHolder}, " +
-            "expiry_date=#{expiryDate}, cvv=#{cvv}, is_default=#{isDefault} WHERE id=#{id}")
+    @Update("UPDATE card SET card_holder=#{cardHolder}, last_four=#{lastFour}, " +
+            "card_type=#{cardType}, expiry_date=#{expiryDate}, is_default=#{isDefault} WHERE id=#{id}")
     int update(Card card);
 
     /**

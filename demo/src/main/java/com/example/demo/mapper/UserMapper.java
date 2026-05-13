@@ -34,8 +34,8 @@ public interface UserMapper {
      * useGeneratedKeys: 自动生成主键
      * keyProperty: 将生成的主键赋值给user对象的id属性
      */
-    @Insert("INSERT INTO users(username, password, email, phone, role, user_type, registration_date, is_active) " +
-            "VALUES(#{username}, #{password}, #{email}, #{phone}, #{role}, #{userType}, #{registrationDate}, #{isActive})")
+    @Insert("INSERT INTO users(username, password, email, phone, role, user_type, registration_date, is_active, payment_password, card_token, card_last4, card_type, has_card) " +
+            "VALUES(#{username}, #{password}, #{email}, #{phone}, #{role}, #{userType}, #{registrationDate}, #{isActive}, #{paymentPassword}, #{cardToken}, #{cardLast4}, #{cardType}, #{hasCard})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(User user);
 
@@ -43,7 +43,9 @@ public interface UserMapper {
      * 更新用户信息
      */
     @Update("UPDATE users SET username=#{username}, password=#{password}, email=#{email}, " +
-            "phone=#{phone}, role=#{role}, user_type=#{userType}, is_active=#{isActive} WHERE id=#{id}")
+            "phone=#{phone}, role=#{role}, user_type=#{userType}, is_active=#{isActive}, " +
+            "payment_password=#{paymentPassword}, card_token=#{cardToken}, card_last4=#{cardLast4}, " +
+            "card_type=#{cardType}, has_card=#{hasCard} WHERE id=#{id}")
     int update(User user);
 
     /**

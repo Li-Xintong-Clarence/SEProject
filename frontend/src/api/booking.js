@@ -69,6 +69,13 @@ export const getMyActiveBookings = () => {
     })
 }
 
+export const getBookingById = (id) => {
+    return request({
+        url: `/api/bookings/${id}`,
+        method: 'get'
+    })
+}
+
 export const endBooking = (id) => {
     return request({
         url: `/api/bookings/${id}/end`,

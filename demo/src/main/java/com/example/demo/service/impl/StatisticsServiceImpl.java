@@ -269,9 +269,12 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         for (Map<String, Object> item : hoursList) {
-            int hour = ((Number) item.get("hour")).intValue();
-            int count = ((Number) item.get("count")).intValue();
-            hoursMap.put(hour + "时", count);
+            Number hourNum = (Number) item.get("hour");
+            if (hourNum != null) {
+                int hour = hourNum.intValue();
+                int count = ((Number) item.get("count")).intValue();
+                hoursMap.put(hour + "时", count);
+            }
         }
 
         result.put("peakHours", hoursMap);

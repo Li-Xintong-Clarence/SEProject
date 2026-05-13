@@ -15,7 +15,7 @@
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO issue_report (user_id, scooter_id, description, status, priority, created_at)
-        VALUES (#{userId}, #{scooterId}, #{description}, 'PENDING', 'NORMAL', NOW())
+        VALUES (#{userId}, #{scooterId}, #{description}, 'PENDING', #{priority}, NOW())
     </insert>
 
     <select id="findById" resultMap="BaseResultMap">
@@ -28,6 +28,10 @@
 
     <select id="findByUserId" resultMap="BaseResultMap">
         SELECT * FROM issue_report WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+
+    <select id="findByPriority" resultMap="BaseResultMap">
+        SELECT * FROM issue_report WHERE priority = #{priority} ORDER BY created_at DESC
     </select>
 
     <update id="update">

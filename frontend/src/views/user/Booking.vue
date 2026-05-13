@@ -1,23 +1,23 @@
 <template>
-  <div class="booking">
+  <main id="main-content" class="booking" role="main" aria-label="预订滑板车">
     <!-- 页面标题 -->
-    <div class="page-header">
-      <h2 class="page-title">预订滑板车</h2>
-      <p class="page-sub">完成您的租赁预订</p>
-    </div>
+    <header class="page-header">
+      <h1 class="page-title">预订滑板车</h1>
+      <p class="page-sub" role="doc-subtitle">完成您的租赁预订</p>
+    </header>
 
     <el-skeleton v-if="loading" :rows="8" animated />
 
     <template v-else-if="depot || selectedScooter">
       <div class="booking-layout">
         <!-- 左侧信息面板 -->
-        <div class="info-panel">
+        <aside class="info-panel" aria-label="车辆信息">
           <!-- 车辆/服务点信息 -->
-          <div v-if="selectedScooter" class="info-card">
+          <div v-if="selectedScooter" class="info-card" role="region" aria-label="选中的滑板车信息">
             <div class="card-accent"></div>
             <div class="card-body">
               <div class="card-header-row">
-                <div class="vehicle-icon">
+                <div class="vehicle-icon" aria-hidden="true">
                   <svg viewBox="0 0 64 64" fill="none">
                     <circle cx="14" cy="50" r="10" stroke="currentColor" stroke-width="2.5"/>
                     <circle cx="50" cy="50" r="10" stroke="currentColor" stroke-width="2.5"/>
@@ -30,12 +30,12 @@
                   <span class="name">{{ selectedScooter.scooterNumber }}</span>
                   <span class="loc">{{ selectedScooter.location || '未知位置' }}</span>
                 </div>
-                <div class="battery" :class="getBatteryClass(selectedScooter.batteryLevel)">
-                  <span class="batt-icon">⚡</span>
+                <div class="battery" :class="getBatteryClass(selectedScooter.batteryLevel)" role="meter" :aria-valuenow="Math.round(selectedScooter.batteryLevel)" aria-valuemin="0" aria-valuemax="100" :aria-label="'电量' + Math.round(selectedScooter.batteryLevel) + '%'">
+                  <span class="batt-icon" aria-hidden="true">⚡</span>
                   <span class="batt-val">{{ Math.round(selectedScooter.batteryLevel) }}%</span>
                 </div>
               </div>
-              <div class="divider"></div>
+              <div class="divider" role="separator"></div>
               <div class="detail-list">
                 <div class="detail-row">
                   <span class="key">服务点</span>
@@ -43,7 +43,7 @@
                 </div>
                 <div class="detail-row">
                   <span class="key">状态</span>
-                  <el-tag type="success" size="small">可用</el-tag>
+                  <el-tag type="success" size="small" role="status" aria-label="可用">可用</el-tag>
                 </div>
               </div>
             </div>
@@ -83,7 +83,7 @@
               <p>请在服务点工作人员处领取取车码，享受愉快的滑行体验！</p>
             </div>
           </div>
-        </div>
+        </aside>
 
         <!-- 右侧表单 -->
         <div class="form-panel">
@@ -107,6 +107,12 @@
                   <span class="duration-price">¥{{ Number(opt.price).toFixed(2) }}</span>
                 </div>
               </div>
+            </div>
+
+            <!-- 频繁用户提示 -->
+            <div v-if="isFrequentUser" class="frequent-user-tip">
+              <el-icon><Star /></el-icon>
+              <span>您是频繁用户！已获得 <strong>20% off</strong> 折扣</span>
             </div>
 
             <!-- 优惠资格 -->
@@ -190,12 +196,52 @@
             <div class="form-group">
               <label class="group-label">银行卡信息</label>
               <div class="card-inputs">
-                <el-input v-model="form.cardNumber" placeholder="卡号" maxlength="19" />
+                <div class="card-number-wrapper">
+                  <el-input
+                    v-model="form.cardNumber"
+                    placeholder="卡号"
+                    maxlength="19"
+                    @input="handleCardNumberInput"
+                    :class="{ 'is-error': cardValidation.error }"
+                  />
+                  <div v-if="detectedCardType !== 'UNKNOWN'" class="card-type-badge">
+                    {{ detectedCardType }}
+                  </div>
+                </div>
                 <div class="card-row">
-                  <el-input v-model="form.expiry" placeholder="有效期" maxlength="5" />
-                  <el-input v-model="form.cvv" placeholder="CVV" maxlength="4" show-password />
+                  <el-input
+                    v-model="form.expiry"
+                    placeholder="有效期 (MM/YY)"
+                    maxlength="5"
+                    @input="handleExpiryInput"
+                  />
+                  <el-input
+                    v-model="form.cvv"
+                    placeholder="CVV"
+                    maxlength="4"
+                    show-password
+                    type="password"
+                  />
+                </div>
+                <!-- 实时验证反馈 -->
+                <div v-if="cardValidation.message" class="validation-feedback" :class="cardValidation.valid ? 'valid' : 'invalid'">
+                  <el-icon v-if="cardValidation.valid"><Check /></el-icon>
+                  <el-icon v-else><Close /></el-icon>
+                  {{ cardValidation.message }}
                 </div>
               </div>
+            </div>
+
+            <!-- 支付密码（如果用户设置了的话） -->
+            <div v-if="hasPaymentPassword" class="form-group">
+              <label class="group-label">支付密码</label>
+              <el-input
+                v-model="form.paymentPassword"
+                placeholder="请输入6位支付密码"
+                maxlength="6"
+                show-password
+                type="password"
+              />
             </div>
 
             <!-- 价格 -->
@@ -299,26 +345,33 @@
         <el-button type="primary" @click="goToTrip">查看行程</el-button>
       </template>
     </el-dialog>
-  </div>
+  </main>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Check, Close, Tickets } from '@element-plus/icons-vue'
+import { Check, Close, Tickets, Star } from '@element-plus/icons-vue'
 import { getDepotById } from '@/api/depot'
 import { getScooterById } from '@/api/scooter'
-import { createBookingByDepot, createBooking, payBooking } from '@/api/booking'
+import { createBookingByDepot, createBooking, payBooking, getBookingById } from '@/api/booking'
 import { getPricingList } from '@/api/pricing'
 import { getUserStats } from '@/api/user'
 import { validateDiscountCode } from '@/api/discount'
+import {
+  validateCardNumber,
+  detectCardType,
+  formatCardNumber,
+  formatExpiry
+} from '@/api/payment'
 
 const route = useRoute()
 const router = useRouter()
 
 const loading = ref(true)
 const submitting = ref(false)
+const creatingOnly = ref(false)
 const showSuccessModal = ref(false)
 const confirmedBooking = ref(null)
 const pricingOptions = ref([])
@@ -348,6 +401,12 @@ const selectedScooter = ref(null)
 const userStats = ref({})
 const profileFlags = ref({ userType: 'none' })
 const discountPrice = ref(0)
+const originalPrice = ref(0)
+
+// 判断是否为频繁用户（每周8+小时）
+const isFrequentUser = computed(() => {
+  return userStats.value?.weeklyHours >= 8
+})
 
 const discountCodeInput = ref('')
 const loadingDiscountCode = ref(false)
@@ -359,8 +418,16 @@ const form = ref({
   paymentMethod: 'credit',
   cardNumber: '',
   expiry: '',
-  cvv: ''
+  cvv: '',
+  paymentPassword: '',
+  bookingId: null,          // 用于待支付订单继续支付
+  isPendingPayment: false  // 标记是否为待支付订单继续支付
 })
+
+// 支付安全相关状态
+const detectedCardType = ref('UNKNOWN')
+const cardValidation = ref({ valid: false, error: false, message: '' })
+const hasPaymentPassword = ref(false)
 
 const getBatteryClass = (level) => {
   if (level >= 60) return 'high'
@@ -395,7 +462,7 @@ const discountAmount = computed(() => {
 })
 
 const hasDiscount = computed(() => {
-  return profileFlags.value.userType !== 'none' || appliedDiscountCode.value
+  return profileFlags.value.userType !== 'none' || appliedDiscountCode.value || isFrequentUser.value
 })
 
 const totalPrice = computed(() => {
@@ -406,11 +473,16 @@ const totalPrice = computed(() => {
     const rate = getDiscountRate(profileFlags.value.userType)
     return (currentPrice.value * rate).toFixed(2)
   }
+  // 频繁用户折扣
+  if (isFrequentUser.value && currentPrice.value > 0) {
+    return (currentPrice.value * 0.8).toFixed(2)
+  }
   return currentPrice.value.toFixed(2)
 })
 
 const getDiscountRate = (userType) => {
-  const rates = { student: 0.9, senior: 0.8 }
+  // student: 30% off (pay 70%), senior: 50% off (pay 50%)
+  const rates = { student: 0.70, senior: 0.50 }
   return rates[userType] ?? 1
 }
 
@@ -444,6 +516,64 @@ const onUserTypeChange = () => {
   fetchDiscountPrice()
 }
 
+// 处理卡号输入（格式化显示）
+const handleCardNumberInput = (value) => {
+  const cleaned = value.replace(/\D/g, '')
+  const formatted = formatCardNumber(cleaned)
+  form.value.cardNumber = formatted
+  detectedCardType.value = detectCardType(cleaned)
+
+  // 实时验证
+  if (cleaned.length >= 13) {
+    if (validateCardNumber(cleaned)) {
+      cardValidation.value = { valid: true, error: false, message: '卡号有效' }
+    } else {
+      cardValidation.value = { valid: false, error: true, message: '卡号格式不正确' }
+    }
+  } else if (cleaned.length > 0) {
+    cardValidation.value = { valid: false, error: false, message: '请输入完整卡号' }
+  } else {
+    cardValidation.value = { valid: false, error: false, message: '' }
+  }
+}
+
+// 处理有效期输入（格式化显示 MM/YY）
+const handleExpiryInput = (value) => {
+  form.value.expiry = formatExpiry(value)
+}
+
+// 验证所有支付信息
+const validatePaymentInfo = () => {
+  const cardNumber = form.value.cardNumber.replace(/\D/g, '')
+
+  if (!cardNumber || !validateCardNumber(cardNumber)) {
+    ElMessage.warning('请输入有效的银行卡号')
+    return false
+  }
+
+  if (!form.value.expiry || form.value.expiry.length !== 5) {
+    ElMessage.warning('请输入有效的有效期 (MM/YY)')
+    return false
+  }
+
+  // 验证CVV
+  const expectedCVVLength = detectedCardType.value === 'AMEX' ? 4 : 3
+  if (!form.value.cvv || form.value.cvv.length !== expectedCVVLength) {
+    ElMessage.warning(`请输入有效的CVV（${expectedCVVLength}位）`)
+    return false
+  }
+
+  // 如果用户设置了支付密码，验证支付密码
+  if (hasPaymentPassword.value) {
+    if (!form.value.paymentPassword || form.value.paymentPassword.length !== 6) {
+      ElMessage.warning('请输入6位支付密码')
+      return false
+    }
+  }
+
+  return true
+}
+
 const fetchDiscountPrice = async () => {
   if (!form.value.hireOption || (profileFlags.value.userType === 'none' && !appliedDiscountCode.value)) {
     discountPrice.value = 0
@@ -459,6 +589,17 @@ const fetchDiscountPrice = async () => {
   } catch {
     discountPrice.value = 0
   }
+}
+
+// 应用折扣
+const applyDiscount = () => {
+  fetchDiscountPrice()
+}
+
+// 更新最终价格
+const updateFinalPrice = () => {
+  // 计算最终价格已经在 computed totalPrice 中处理
+  fetchDiscountPrice()
 }
 
 const applyDiscountCode = async () => {
@@ -496,12 +637,59 @@ const removeDiscountCode = () => {
 }
 
 const handleSubmit = async () => {
-  if (!form.value.cardNumber || !form.value.expiry || !form.value.cvv) {
-    ElMessage.warning('请填写完整的支付信息')
+  // 使用新的验证函数
+  if (!validatePaymentInfo()) {
     return
   }
   submitting.value = true
   try {
+    let bookingId
+
+    // 如果是待支付订单继续支付，直接调用支付接口
+    if (form.value.isPendingPayment && form.value.bookingId) {
+      bookingId = form.value.bookingId
+      await payBooking(bookingId, {
+        cardLast4: form.value.cardNumber.replace(/\D/g, '').slice(-4),
+        amount: Number(totalPrice.value),
+        paymentMethod: form.value.paymentMethod,
+        paymentPassword: form.value.paymentPassword || undefined
+      })
+
+      // 获取更新后的订单信息
+      const bookingRes = await getBookingById(bookingId)
+      const backendBooking = bookingRes?.data || bookingRes
+
+      if (backendBooking) {
+        const startTime = backendBooking.startTime
+        const endTime = backendBooking.endTime
+        const durationMinutes = startTime && endTime
+          ? Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000)
+          : hireOptionToMinutes(backendBooking.hireOption || form.value.hireOption)
+
+        confirmedBooking.value = {
+          id: backendBooking.id || bookingId,
+          scooterNumber: backendBooking.scooterNumber || backendBooking.scooterName,
+          depotName: backendBooking.depotName,
+          hireOption: backendBooking.hireOption || form.value.hireOption,
+          totalCost: backendBooking.totalCost || totalPrice.value,
+          confirmationCode: backendBooking.confirmationCode,
+          startTime: startTime,
+          endTime: endTime,
+          durationMinutes: durationMinutes
+        }
+      } else {
+        confirmedBooking.value = {
+          id: bookingId,
+          hireOption: form.value.hireOption,
+          totalCost: totalPrice.value
+        }
+      }
+
+      showSuccessModal.value = true
+      return
+    }
+
+    // 正常创建新订单流程
     let bookingRes
     if (selectedScooter.value) {
       bookingRes = await createBooking({
@@ -512,13 +700,15 @@ const handleSubmit = async () => {
       bookingRes = await createBookingByDepot(depot.value.id, form.value.hireOption)
     }
 
-    let bookingId = bookingRes?.id
+    bookingId = bookingRes?.id
     if (!bookingId) throw new Error(bookingRes?.message || '预订失败')
 
+    // 增强的支付请求，包含支付密码
     await payBooking(bookingId, {
-      cardLast4: form.value.cardNumber.slice(-4),
+      cardLast4: form.value.cardNumber.replace(/\D/g, '').slice(-4),
       amount: Number(totalPrice.value),
-      paymentMethod: form.value.paymentMethod
+      paymentMethod: form.value.paymentMethod,
+      paymentPassword: form.value.paymentPassword || undefined
     })
 
     // 使用后端返回的完整数据更新 confirmedBooking
@@ -577,6 +767,30 @@ onMounted(async () => {
   try {
     userStats.value = (await getUserStats()) || {}
   } catch {}
+
+  // 检查是否有待支付订单需要继续支付
+  const pendingBookingStr = localStorage.getItem('pendingPaymentBooking')
+  if (pendingBookingStr) {
+    try {
+      const pendingBooking = JSON.parse(pendingBookingStr)
+      localStorage.removeItem('pendingPaymentBooking')
+      // 恢复订单信息用于支付
+      form.value.hireOption = pendingBooking.hireOption || pendingBooking.pricingOption || '1hr'
+      form.value.bookingId = pendingBooking.id
+      form.value.isPendingPayment = true
+      // 计算价格
+      const selected = pricingOptions.value.find(p => p.hireOption === form.value.hireOption)
+      if (selected) {
+        originalPrice.value = Number(selected.price) || 0
+        applyDiscount()
+        updateFinalPrice()
+      }
+      ElMessage.info('正在继续支付订单 #' + pendingBooking.id)
+      return
+    } catch (e) {
+      localStorage.removeItem('pendingPaymentBooking')
+    }
+  }
 
   const scooterId = route.query.scooterId
   const depotId = route.query.depotId
@@ -932,6 +1146,29 @@ onMounted(async () => {
   color: white;
 }
 
+/* 频繁用户提示 */
+.frequent-user-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  color: #92400e;
+}
+
+.frequent-user-tip .el-icon {
+  font-size: 20px;
+  color: #f59e0b;
+}
+
+.frequent-user-tip strong {
+  color: #d97706;
+}
+
 .discount-group {
   display: flex;
   gap: 16px;
@@ -1008,9 +1245,56 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.card-number-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.card-number-wrapper :deep(.el-input__wrapper) {
+  padding-right: 70px;
+}
+
+.card-type-badge {
+  position: absolute;
+  right: 12px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #3b5998 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .card-row {
   display: flex;
   gap: 12px;
+}
+
+.validation-feedback {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.validation-feedback.valid {
+  background: #e6f4ea;
+  color: #2d8a4e;
+}
+
+.validation-feedback.invalid {
+  background: #fde8e8;
+  color: #d14545;
+}
+
+.validation-feedback .el-icon {
+  font-size: 14px;
 }
 
 .price-block {
@@ -1209,5 +1493,126 @@ onMounted(async () => {
   margin: 0;
   font-size: 12px;
   color: #7a8fa8;
+}
+
+/* ============================================
+   响应式设计 - 移动端适配
+   ============================================ */
+
+/* 平板和手机 - 预订布局改为单列 */
+@media (max-width: 900px) {
+  .booking {
+    padding: 16px 12px;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .booking-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .info-panel {
+    order: -1; /* 信息面板显示在表单上方 */
+  }
+
+  .form-panel {
+    width: 100%;
+  }
+
+  .main-card :deep(.el-card__body) {
+    padding: 16px;
+  }
+
+  .card-title {
+    font-size: 16px;
+  }
+}
+
+/* 手机 - 时长选项改为 2x2 网格 */
+@media (max-width: 600px) {
+  .duration-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .duration-item {
+    padding: 12px 8px;
+  }
+
+  .duration-time {
+    font-size: 12px;
+  }
+
+  .duration-price {
+    font-size: 16px;
+  }
+
+  .order-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cell.full {
+    grid-column: span 1;
+  }
+
+  .discount-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .coupon-row {
+    flex-direction: column;
+  }
+
+  .coupon-row :deep(.el-input) {
+    width: 100% !important;
+  }
+
+  .order-footer {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .order-footer .el-button {
+    width: 100%;
+  }
+
+  .pickup-block {
+    padding: 14px;
+  }
+
+  .pickup-code {
+    font-size: 24px;
+    letter-spacing: 3px;
+  }
+}
+
+/* 超小屏幕 */
+@media (max-width: 380px) {
+  .page-title {
+    font-size: 1.4rem;
+  }
+
+  .page-sub {
+    font-size: 13px;
+  }
+
+  .card-header-row {
+    flex-wrap: wrap;
+  }
+
+  .vehicle-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .battery {
+    width: 50px;
+    font-size: 12px;
+  }
 }
 </style>

@@ -16,7 +16,7 @@ export const getHighPriorityIssues = () =>
   request({ url: '/api/admin/issues', method: 'get' })
 
 export const processFeedback = (id, data) =>
-  request({ url: `/api/admin/feedback/${id}`, method: 'put', data })
+  request({ url: `/api/feedback/${id}`, method: 'put', data })
 
 export const getAdminPricing = () =>
   request({ url: '/api/admin/pricing', method: 'get' })

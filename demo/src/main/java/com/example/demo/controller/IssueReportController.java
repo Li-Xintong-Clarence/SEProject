@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.common.Result;
 import com.example.demo.entity.IssueReport;
+import com.example.demo.entity.Feedback;
 import com.example.demo.service.IssueReportService;
 import com.example.demo.vo.IssueReportRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.time.LocalDateTime;
 
 /**
  * 问题报告控制器
@@ -77,5 +79,35 @@ public class IssueReportController {
         } catch (Exception e) {
             return Result.error("Failed to get issue reports");
         }
+    }
+
+    /**
+     * 更新问题报告状态（管理员处理）
+     * @param id 问题报告ID
+     * @param issue 更新请求，包含状态、优先级、管理员反馈
+     * @return 更新成功返回成功信息
+     */
+    @PutMapping("/{id}")
+    public Result<String> update(@PathVariable Long id, @RequestBody IssueReport issue) {
+        IssueReport existing = issueReportService.findById(id);
+        if (existing == null) {
+            return Result.error("Issue report not found");
+        }
+        if (issue.getStatus() != null) {
+            existing.setStatus(issue.getStatus());
+        }
+        if (issue.getPriority() != null) {
+            existing.setPriority(issue.getPriority());
+        }
+        if (issue.getAdminFeedback() != null) {
+            existing.setAdminFeedback(issue.getAdminFeedback());
+        }
+        if ("RESOLVED".equals(issue.getStatus())) {
+            existing.setResolvedAt(LocalDateTime.now());
+        }
+        if (issueReportService.update(existing)) {
+            return Result.success("Issue report updated successfully");
+        }
+        return Result.error("Failed to update issue report");
     }
 }
