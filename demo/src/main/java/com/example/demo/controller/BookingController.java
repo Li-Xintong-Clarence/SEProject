@@ -191,10 +191,15 @@ public class BookingController {
     /**
      * Return scooter (complete ride)
      * POST /api/bookings/{id}/return
+     * Optional body param: endDepotId - the depot where scooter is returned
      */
     @PostMapping("/{id}/return")
-    public Result<String> returnScooter(@PathVariable Long id) {
-        if (bookingService.returnScooter(id)) {
+    public Result<String> returnScooter(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> returnData) {
+        Long endDepotId = null;
+        if (returnData != null && returnData.get("endDepotId") != null) {
+            endDepotId = Long.parseLong(returnData.get("endDepotId").toString());
+        }
+        if (bookingService.returnScooter(id, endDepotId)) {
             return Result.success("Scooter returned successfully");
         }
         return Result.error("Failed to return scooter");

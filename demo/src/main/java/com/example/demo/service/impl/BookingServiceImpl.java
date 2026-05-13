@@ -1,10 +1,12 @@
 package com.example.demo.service.impl;
 
 import com.example.demo.entity.Booking;
+import com.example.demo.entity.Depot;
 import com.example.demo.entity.Pricing;
 import com.example.demo.entity.Scooter;
 import com.example.demo.entity.User;
 import com.example.demo.mapper.BookingMapper;
+import com.example.demo.mapper.DepotMapper;
 import com.example.demo.mapper.PricingMapper;
 import com.example.demo.mapper.ScooterMapper;
 import com.example.demo.mapper.UserMapper;
@@ -37,6 +39,9 @@ public class BookingServiceImpl implements BookingService {
 
     @Autowired
     private BookingMapper bookingMapper;
+
+    @Autowired
+    private DepotMapper depotMapper;
 
     @Autowired
     private PricingMapper pricingMapper;
@@ -257,7 +262,8 @@ public class BookingServiceImpl implements BookingService {
 
         Pricing pricing = pricingMapper.findById(getPricingIdByOption(hireOption));
         if (pricing != null) {
-            booking.setTotalCost(booking.getTotalCost().add(pricing.getPrice()));
+            BigDecimal currentCost = booking.getTotalCost() != null ? booking.getTotalCost() : BigDecimal.ZERO;
+            booking.setTotalCost(currentCost.add(pricing.getPrice()));
         }
 
         return bookingMapper.update(booking) > 0;
@@ -294,21 +300,57 @@ public class BookingServiceImpl implements BookingService {
      * Return scooter (complete booking)
      * 1. Only paid/active bookings can be returned
      * 2. Set status to COMPLETED
-     * 3. Release scooter status to AVAILABLE
-     * 4. Send completion email
+     * 3. Update scooter: status to AVAILABLE, battery -30%, location to end depot
+     * 4. Update depot counts (start depot -1, end depot +1 if different)
+     * 5. Send completion email
+     * @param id Booking ID
+     * @param endDepotId Depot ID where scooter is returned (optional, uses start depot if null)
      */
     @Override
     @Transactional
-    public boolean returnScooter(Long id) {
+    public boolean returnScooter(Long id, Long endDepotId) {
         Booking booking = bookingMapper.findById(id);
         if (booking == null || !("PAID".equals(booking.getStatus()) || "ACTIVE".equals(booking.getStatus()))) {
             return false;
         }
+
+        // Determine end depot
+        Long actualEndDepotId = endDepotId != null ? endDepotId : booking.getStartDepotId();
+        booking.setEndDepotId(actualEndDepotId);
         booking.setStatus("COMPLETED");
         booking.setEndTime(LocalDateTime.now());
 
+        // Update scooter: status, battery, location
         if (booking.getScooterId() != null) {
-            scooterService.updateStatus(booking.getScooterId(), "AVAILABLE");
+            Scooter scooter = scooterMapper.findById(booking.getScooterId());
+            if (scooter != null) {
+                // Update battery level (reduce by 30%, minimum 0)
+                BigDecimal currentBattery = scooter.getBatteryLevel();
+                if (currentBattery != null) {
+                    double newBattery = Math.max(0, currentBattery.doubleValue() - 30);
+                    scooter.setBatteryLevel(BigDecimal.valueOf(newBattery));
+                }
+
+                // Update location to end depot
+                if (actualEndDepotId != null) {
+                    Depot endDepot = depotMapper.findById(actualEndDepotId);
+                    if (endDepot != null) {
+                        scooter.setDepotId(actualEndDepotId);
+                        scooter.setLocation(endDepot.getName());
+                        // Update coordinates if depot has them
+                        if (endDepot.getLatitude() != null) {
+                            scooter.setLatitude(endDepot.getLatitude().doubleValue());
+                        }
+                        if (endDepot.getLongitude() != null) {
+                            scooter.setLongitude(endDepot.getLongitude().doubleValue());
+                        }
+                    }
+                }
+
+                // Update scooter status to AVAILABLE
+                scooterService.updateStatus(booking.getScooterId(), "AVAILABLE");
+                scooterMapper.update(scooter);
+            }
         }
 
         boolean updated = bookingMapper.update(booking) > 0;
@@ -316,6 +358,16 @@ public class BookingServiceImpl implements BookingService {
             sendCompletionEmail(booking);
         }
         return updated;
+    }
+
+    /**
+     * Return scooter (complete booking) - original method for backward compatibility
+     * Uses start depot as end depot
+     */
+    @Override
+    @Transactional
+    public boolean returnScooter(Long id) {
+        return returnScooter(id, null);
     }
 
     /**

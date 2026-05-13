@@ -8,7 +8,7 @@
 
     <el-skeleton v-if="loading" :rows="8" animated />
 
-    <template v-else-if="depot || selectedScooter">
+    <template v-else-if="depot || selectedScooter || form.isPendingPayment">
       <div class="booking-layout">
         <!-- 左侧信息面板 -->
         <aside class="info-panel" aria-label="车辆信息">
@@ -49,7 +49,7 @@
             </div>
           </div>
 
-          <div v-else class="info-card">
+          <div v-else-if="!form.isPendingPayment" class="info-card">
             <div class="card-accent"></div>
             <div class="card-body">
               <div class="card-header-row">
@@ -64,7 +64,7 @@
                   <span class="addr">{{ depot.address || depot.depotNumber }}</span>
                 </div>
               </div>
-              <div class="avail-display">
+              <div v-if="!form.isPendingPayment" class="avail-display">
                 <span class="avail-num">{{ depot.availableCount }}</span>
                 <span class="avail-label">辆可用</span>
               </div>
@@ -786,6 +786,7 @@ onMounted(async () => {
         updateFinalPrice()
       }
       ElMessage.info('正在继续支付订单 #' + pendingBooking.id)
+      loading.value = false  // 重要：设置 loading 为 false 以显示支付表单
       return
     } catch (e) {
       localStorage.removeItem('pendingPaymentBooking')

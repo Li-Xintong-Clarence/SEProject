@@ -57,6 +57,14 @@ public interface BookingService {
     boolean cancelBooking(Long id);
     /**
      * Return scooter (complete ride)
+     * @param id Booking ID
+     * @param endDepotId Depot ID where scooter is returned (optional, uses start depot if null)
+     */
+    boolean returnScooter(Long id, Long endDepotId);
+
+    /**
+     * Return scooter (complete ride) - backward compatible
+     * Uses start depot as end depot
      */
     boolean returnScooter(Long id);
     /**
