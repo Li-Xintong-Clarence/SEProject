@@ -5,55 +5,86 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 订单服务接口
- * 定义订单（租赁）相关的业务操作
+ * Booking Service Interface
+ * Defines booking-related business operations
  */
 public interface BookingService {
     /**
-     * 查询所有订单（管理员）
+     * Query all bookings (admin)
      */
     List<Booking> findAll();
     /**
-     * 查询用户的订单列表
+     * Query user's bookings
      */
     List<Booking> findByUserId(Long userId);
     /**
-     * 根据ID查询订单
+     * Query booking by ID
      */
     Booking findById(Long id);
     /**
-     * 创建新订单
+     * Create booking by depot (auto-assign scooter)
+     * @param userId User ID
+     * @param depotId Depot ID (required)
+     * @param hireOption Rental duration
+     */
+    Booking createByDepot(Long userId, Long depotId, String hireOption);
+    /**
+     * Create booking with specific scooter
      */
     boolean save(Booking booking);
     /**
-     * 更新订单信息
+     * Admin: Create booking for user (bypasses active booking check)
+     * Used when admin creates booking on behalf of user
+     */
+    boolean adminSave(Booking booking);
+    /**
+     * Update booking info
      */
     boolean update(Booking booking);
     /**
-     * 删除订单
+     * Delete booking
      */
     boolean deleteById(Long id);
     /**
-     * 延长租期
-     * @param id 订单ID
-     * @param hireOption 延长的时长选项（1hr, 4hr, 1day, 1week）
+     * Extend booking
+     * @param id Booking ID
+     * @param hireOption Extension duration option: 1hr, 4hr, 1day, 1week
      */
     boolean extendBooking(Long id, String hireOption);
     /**
-     * 取消订单
+     * Cancel booking
      */
     boolean cancelBooking(Long id);
     /**
-     * 支付订单
+     * Return scooter (complete ride)
+     * @param id Booking ID
+     * @param endDepotId Depot ID where scooter is returned (optional, uses start depot if null)
      */
-    boolean payBooking(Long id);
+    boolean returnScooter(Long id, Long endDepotId);
+
     /**
-     * 获取用户统计信息（订单数、总消费、总时长）
-     */
-    Map<String, Object> getUserStats(Long userId);
-    /**
-     * 还车（结束骑行）
-     * @param id 订单ID
+     * Return scooter (complete ride) - backward compatible
+     * Uses start depot as end depot
      */
     boolean returnScooter(Long id);
+    /**
+     * Pay booking
+     */
+    boolean payBooking(Long id);
+
+    /**
+     * Pay booking with enhanced security (tokenization and payment password)
+     * @param id Booking ID
+     * @param userId User ID
+     * @param cardLast4 Card last 4 digits
+     * @param amount Payment amount
+     * @param paymentMethod Payment method
+     * @param paymentPassword Payment password (optional)
+     * @return Payment success
+     */
+    boolean payBooking(Long id, Long userId, String cardLast4, double amount, String paymentMethod, String paymentPassword);
+    /**
+     * Get user statistics
+     */
+    Map<String, Object> getUserStats(Long userId);
 }

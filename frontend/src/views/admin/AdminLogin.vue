@@ -161,4 +161,48 @@ const submit = () => {
 .links a:hover {
   color: var(--cg-accent);
 }
+
+/* ============================================
+   响应式设计 - 移动端适配
+   ============================================ */
+
+/* 平板 (≤600px) */
+@media (max-width: 600px) {
+  .login-card {
+    padding: 28px 20px;
+  }
+
+  .brand-row {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .brand-row h1 {
+    font-size: 1.2rem;
+  }
+
+  .brand-row .sub {
+    font-size: 0.8rem;
+  }
+}
+
+/* 小屏手机 (≤380px) */
+@media (max-width: 380px) {
+  .admin-login-page {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 24px 16px;
+  }
+
+  .logo {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .brand-row h1 {
+    font-size: 1.1rem;
+  }
+}
 </style>

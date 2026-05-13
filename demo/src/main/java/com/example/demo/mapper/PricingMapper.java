@@ -36,4 +36,9 @@ public interface PricingMapper {
      */
     @Delete("DELETE FROM pricing WHERE id = #{id}")
     int deleteById(Long id);
+    /**
+     * 根据租赁选项查询价格配置
+     */
+    @Select("SELECT * FROM pricing WHERE hire_option = #{hireOption}")
+    Pricing findByHireOption(String hireOption);
 }

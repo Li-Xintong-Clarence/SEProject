@@ -182,5 +182,132 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ============================================
+   响应式设计 - 移动端适配
+   ============================================ */
+
+/* 平板 (≤900px) */
+@media (max-width: 900px) {
+  .issues-management {
+    padding: 16px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-header .el-select {
+    width: 100% !important;
+  }
+
+  /* 表格横向滚动 */
+  :deep(.el-table) {
+    overflow-x: auto;
+    display: block;
+    font-size: 13px;
+  }
+
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+
+  :deep(.el-table__header th) {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+
+  :deep(.el-table__body td) {
+    padding: 8px 4px;
+  }
+}
+
+/* 手机 (≤600px) */
+@media (max-width: 600px) {
+  .issues-management {
+    padding: 12px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  :deep(.el-table) {
+    font-size: 12px;
+  }
+
+  :deep(.el-table__header th) {
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+
+  :deep(.el-table__body td) {
+    padding: 8px 4px;
+  }
+
+  :deep(.el-button) {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  :deep(.el-button + .el-button) {
+    margin-left: 4px;
+  }
+
+  /* 操作按钮下拉菜单适配 */
+  :deep(.el-dropdown) {
+    margin-top: 4px;
+  }
+}
+
+/* 超小屏幕 (≤400px) */
+@media (max-width: 400px) {
+  .page-header h2 {
+    font-size: 16px;
+  }
+
+  :deep(.el-tag) {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+
+  :deep(.el-button) {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+}
+
+/* 详情弹窗响应式 */
+@media (max-width: 600px) {
+  :deep(.el-dialog) {
+    max-width: calc(100vw - 32px) !important;
+    width: calc(100vw - 32px) !important;
+    margin: 16px auto;
+  }
+
+  :deep(.el-dialog__header) {
+    padding: 16px;
+  }
+
+  :deep(.el-dialog__body) {
+    padding: 16px;
+  }
+
+  :deep(.el-descriptions) {
+    font-size: 13px;
+  }
+
+  :deep(.el-descriptions__label) {
+    width: 80px;
+  }
+
+  :deep(.el-descriptions__cell) {
+    padding: 8px 10px;
+  }
 }
 </style>

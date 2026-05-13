@@ -1,33 +1,48 @@
 package com.example.demo.service;
 
 /**
- * 邮件服务接口
- * 定义发送邮件的相关操作
+ * Email Service Interface
+ * Provides email sending related functions
  */
 public interface EmailService {
     /**
-     * 发送预订确认邮件
-     * @param toEmail 收件人邮箱
-     * @param username 用户名
-     * @param confirmationCode 预订确认码
-     * @param scooterNumber 电动车编号
-     * @param hireOption 租赁选项
-     * @param startTime 开始时间
-     * @param endTime 结束时间
-     * @param totalCost 总费用
+     * Send booking confirmation email
+     * @param toEmail Recipient email
+     * @param username Username
+     * @param confirmationCode Booking confirmation code
+     * @param scooterNumber Scooter number
+     * @param hireOption Rental option
+     * @param startTime Start time
+     * @param endTime End time
+     * @param totalCost Total fee
      */
     void sendBookingConfirmation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption, String startTime, String endTime, double totalCost);
 
     /**
-     * 发送订单取消邮件
+     * Send booking cancellation confirmation
      */
     void sendBookingCancellation(String toEmail, String username, String confirmationCode,
                                  String scooterNumber, String hireOption);
 
     /**
-     * 发送结束骑行邮件
+     * Send ride completion notification
      */
     void sendRideCompletion(String toEmail, String username, String confirmationCode,
                            String scooterNumber, String startTime, String endTime, double totalCost);
+
+    /**
+     * Send auto-return notification email
+     * @param toEmail Recipient email
+     * @param username Username
+     * @param confirmationCode Booking confirmation code
+     * @param scooterNumber Scooter number
+     * @param startTime Start time
+     * @param endTime End time
+     * @param depotName Return depot name
+     * @param totalCost Total fee
+     */
+    void sendAutoReturnNotification(String toEmail, String username, String confirmationCode,
+                                    String scooterNumber, String startTime, String endTime,
+                                    String depotName, double totalCost);
 }

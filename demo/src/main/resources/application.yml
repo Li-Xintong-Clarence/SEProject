@@ -1,19 +1,30 @@
-# 服务器配置
+# Server Configuration
 server:
   port: 8081
   address: 0.0.0.0
+  # HTTPS Configuration (Production)
+  # ssl:
+  #   enabled: true
+  #   key-store: classpath:keystore.p12
+  #   key-store-password: your-keystore-password
+  #   key-store-type: PKCS12
+  #   key-alias: your-key-alias
+  #   protocol: TLS
+  #   enabled-protocols: TLSv1.2,TLSv1.3
+  # http2:
+  #   enabled: true
 
-# Spring 配置
+# Spring Configuration
 spring:
   application:
     name: scooter-rental-system
-  # 数据库配置（应用与 MySQL 同机部署时用 127.0.0.1；公网 IP 连不上本机仅监听 localhost 的 MySQL）
+  # Database Configuration - Use 127.0.0.1 for local MySQL, use server IP for remote deployment
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/scooter_rental?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/scooter_rental?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: sep2user
     password: Sep2Pass2026!
-  # 邮件配置
+  # Email Configuration
   mail:
     host: smtp.qq.com
     port: 587
@@ -25,20 +36,28 @@ spring:
           auth: true
           starttls:
             enable: true
+    hikari:
+      # Connection Pool Configuration
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      keepalive-time: 60000
 
-# MyBatis 配置
+# MyBatis Configuration
 mybatis:
-  # Mapper XML 文件位置
+  # Mapper XML File Location
   mapper-locations: classpath:mapper/*.xml
-  # 实体类别名包
+  # Entity Package
   type-aliases-package: com.example.demo.entity
-  # 开启驼峰命名映射
+  # Underscore to Camel Case Mapping
   configuration:
     map-underscore-to-camel-case: true
-  # 打印 SQL 日志（开发时使用）
+  # Print SQL logs for debugging
   log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-# 日志配置
+# Logging Configuration
 logging:
   level:
     com.example.demo: debug

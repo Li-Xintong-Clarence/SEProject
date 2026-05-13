@@ -36,6 +36,15 @@ public class UserController {
     }
 
     /**
+     * 获取所有用户列表（管理员）- 别名路径
+     * GET /api/users/all
+     */
+    @GetMapping("/all")
+    public Result<List<User>> findAllAlias() {
+        return Result.success(userService.findAll());
+    }
+
+    /**
      * 根据ID获取用户信息
      * GET /api/users/{id}
      */
@@ -104,6 +113,22 @@ public class UserController {
             return Result.success("User updated successfully");
         }
         return Result.error("Failed to update user");
+    }
+
+    /**
+     * 更新用户状态（启用/禁用）
+     * PUT /api/users/{id}/status
+     */
+    @PutMapping("/{id}/status")
+    public Result<String> updateStatus(@PathVariable Long id, @RequestBody Map<String, Boolean> body) {
+        Boolean isActive = body.get("isActive");
+        if (isActive == null) {
+            return Result.error("isActive field is required");
+        }
+        if (userService.updateStatus(id, isActive)) {
+            return Result.success("User status updated successfully");
+        }
+        return Result.error("Failed to update user status");
     }
 
     /**

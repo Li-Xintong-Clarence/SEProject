@@ -28,4 +28,8 @@ public interface PricingService {
      * 删除价格配置
      */
     boolean deleteById(Long id);
+    /**
+     * 根据租赁选项查询价格配置
+     */
+    Pricing findByHireOption(String hireOption);
 }

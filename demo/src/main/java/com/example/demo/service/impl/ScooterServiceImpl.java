@@ -38,6 +38,22 @@ public class ScooterServiceImpl implements ScooterService {
     }
 
     @Override
+    public List<Scooter> findByDepotId(Long depotId) {
+        return scooterMapper.findByDepotId(depotId);
+    }
+
+    @Override
+    public List<Scooter> findAvailableByDepotId(Long depotId) {
+        return scooterMapper.findAvailableByDepotId(depotId);
+    }
+
+    @Override
+    public Scooter findFirstAvailableByDepotId(Long depotId) {
+        List<Scooter> available = scooterMapper.findAvailableByDepotId(depotId);
+        return available.isEmpty() ? null : available.get(0);
+    }
+
+    @Override
     public boolean save(Scooter scooter) {
         return scooterMapper.insert(scooter) > 0;
     }
@@ -55,5 +71,10 @@ public class ScooterServiceImpl implements ScooterService {
     @Override
     public boolean updateStatus(Long id, String status) {
         return scooterMapper.updateStatus(id, status) > 0;
+    }
+
+    @Override
+    public boolean updateStatusAndDepot(Long id, String status, Long depotId) {
+        return scooterMapper.updateStatusAndDepot(id, status, depotId) > 0;
     }
 }

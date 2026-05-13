@@ -1,5 +1,11 @@
 import request from '@/utils/request'
 
+export const listDiscounts = () =>
+  request({
+    url: '/api/discounts',
+    method: 'get'
+  })
+
 export const applyDiscountCode = (code, bookingId) =>
   request({
     url: '/api/discounts/apply',

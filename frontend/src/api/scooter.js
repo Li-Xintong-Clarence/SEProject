@@ -29,3 +29,19 @@ export const updateScooterStatus = (id, status) => {
         params: { status }
     })
 }
+
+// 获取车型列表
+export const getScooterModels = () => {
+    return request({
+        url: '/api/scooters/models',
+        method: 'get'
+    })
+}
+
+// 获取单个车型详情
+export const getScooterModelById = (id) => {
+    return request({
+        url: `/api/scooters/models/${id}`,
+        method: 'get'
+    })
+}

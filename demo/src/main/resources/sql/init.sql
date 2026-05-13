@@ -24,6 +24,30 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================
+-- 服务点表 (depot) — 存储租车/还车服务点位置
+-- =============================================
+CREATE TABLE IF NOT EXISTS `depot` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `depot_number` VARCHAR(50) NOT NULL UNIQUE,
+    `name` VARCHAR(100) NOT NULL,
+    `latitude` DECIMAL(10, 6),
+    `longitude` DECIMAL(10, 6),
+    `address` VARCHAR(200),
+    `capacity` INT DEFAULT 10,
+    `status` VARCHAR(20) DEFAULT 'ACTIVE',
+    INDEX idx_depot_number (`depot_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 插入服务点测试数据
+INSERT INTO `depot` (`depot_number`, `name`, `latitude`, `longitude`, `address`, `capacity`) VALUES
+('D001', '服务点 A（地铁站A口）', 30.746, 103.922, '地铁1号线科学城站A口', 10),
+('D002', '服务点 B（商业中心）', 30.754, 103.936, '天府新区商业中心', 15),
+('D003', '服务点 C（公园入口）', 30.758, 103.915, '兴隆湖公园南入口', 8),
+('D004', '服务点 D（办公楼）', 30.739, 103.944, '天府软件园G区', 12),
+('D005', '服务点 E（学校门口）', 30.765, 103.928, '四川大学锦江学院', 10)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- =============================================
 -- 电动车表 (scooters)
 -- =============================================
 CREATE TABLE IF NOT EXISTS `scooters` (
@@ -34,9 +58,11 @@ CREATE TABLE IF NOT EXISTS `scooters` (
     `latitude` DOUBLE,
     `longitude` DOUBLE,
     `location` VARCHAR(255),
+    `depot_id` BIGINT COMMENT '所属服务点ID',
     `last_maintenance_date` DATETIME,
     INDEX idx_status (`status`),
-    INDEX idx_scooter_number (`scooter_number`)
+    INDEX idx_scooter_number (`scooter_number`),
+    INDEX idx_depot_id (`depot_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================
@@ -53,6 +79,8 @@ CREATE TABLE IF NOT EXISTS `booking` (
     `status` VARCHAR(20) DEFAULT 'PENDING' COMMENT 'PENDING, PAID, ACTIVE, COMPLETED, CANCELLED',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `confirmation_code` VARCHAR(50) UNIQUE COMMENT '预订确认码',
+    `start_depot_id` BIGINT COMMENT '取车服务点ID',
+    `end_depot_id` BIGINT COMMENT '还车服务点ID',
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),
     FOREIGN KEY (`scooter_id`) REFERENCES `scooters`(`id`),
     INDEX idx_user_id (`user_id`),
@@ -93,17 +121,22 @@ CREATE TABLE IF NOT EXISTS `pricing` (
 
 -- =============================================
 -- 银行卡信息表 (card) — README 3.10 可选接口
+-- 【安全设计】采用 PCI DSS 最小化存储原则
+-- - 只存储后4位卡号（用于识别）
+-- - 不存储完整卡号
+-- - 不存储 CVV
 -- =============================================
 CREATE TABLE IF NOT EXISTS `card` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT NOT NULL,
-    `card_number` VARCHAR(255),
-    `card_holder` VARCHAR(100),
-    `expiry_date` VARCHAR(7),
-    `cvv` VARCHAR(10),
-    `is_default` TINYINT(1) DEFAULT 0,
+    `card_holder` VARCHAR(100) COMMENT '持卡人姓名',
+    `last_four` VARCHAR(4) COMMENT '卡号后4位（用于识别）',
+    `card_type` VARCHAR(20) COMMENT '卡片类型：VISA、Mastercard、UnionPay 等',
+    `expiry_date` VARCHAR(7) COMMENT '有效期（格式：MM/YYYY）',
+    `is_default` TINYINT(1) DEFAULT 0 COMMENT '是否为默认支付卡',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX idx_user_id (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================
@@ -121,10 +154,10 @@ CREATE TABLE IF NOT EXISTS `hire_option` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `hire_option` (`code`, `label`, `duration_minutes`, `price`, `display_order`) VALUES
-('1HR', '1 hour', 60, 5.00, 1),
-('4HR', '4 hours', 240, 15.00, 2),
-('1DAY', '1 day', 1440, 25.00, 3),
-('1WEEK', '1 week', 10080, 80.00, 4)
+('1hr', '1 hour', 60, 5.00, 1),
+('4hr', '4 hours', 240, 15.00, 2),
+('1day', '1 day', 1440, 25.00, 3),
+('1week', '1 week', 10080, 80.00, 4)
 ON DUPLICATE KEY UPDATE label = VALUES(label);
 
 -- =============================================
@@ -345,3 +378,51 @@ INSERT INTO `scooters` (`scooter_number`, `status`, `battery_level`, `latitude`,
 ('SC171', 'AVAILABLE', 91.00, 34.7680, 113.6350, '郑州丹尼斯大卫城'),
 ('SC172', 'AVAILABLE', 86.00, 34.7550, 113.6220, '郑州德化街')
 ON DUPLICATE KEY UPDATE status = VALUES(status), battery_level = VALUES(battery_level), latitude = VALUES(latitude), longitude = VALUES(longitude), location = VALUES(location);
+
+-- 更新滑板车绑定到服务点
+UPDATE `scooters` SET `depot_id` = 1 WHERE `scooter_number` IN ('SC001', 'SC002', 'SC003', 'SC004', 'SC005');
+UPDATE `scooters` SET `depot_id` = 2 WHERE `scooter_number` IN ('SC006', 'SC007', 'SC008', 'SC009', 'SC010');
+UPDATE `scooters` SET `depot_id` = 3 WHERE `scooter_number` IN ('SC011', 'SC012', 'SC013', 'SC014', 'SC015');
+UPDATE `scooters` SET `depot_id` = 4 WHERE `scooter_number` IN ('SC016', 'SC017', 'SC018', 'SC019', 'SC020');
+UPDATE `scooters` SET `depot_id` = 5 WHERE `scooter_number` IN ('SC021', 'SC022', 'SC023', 'SC024', 'SC025', 'SC026', 'SC027', 'SC028', 'SC029', 'SC030');
+
+-- =============================================
+-- 订单测试数据（用于图表统计）
+-- =============================================
+
+-- 插入已完成订单（会被统计到收入）
+INSERT INTO `booking` (`user_id`, `scooter_id`, `hire_option`, `start_time`, `end_time`, `total_cost`, `status`, `created_at`, `confirmation_code`, `start_depot_id`, `booking_type`) VALUES
+-- 今天的订单
+(2, 1, '1hr', NOW(), DATE_ADD(NOW(), INTERVAL 1 HOUR), 3.00, 'COMPLETED', NOW(), 'CONF001', 1, 'REGISTERED'),
+(2, 2, '4hr', NOW(), DATE_ADD(NOW(), INTERVAL 4 HOUR), 10.00, 'COMPLETED', NOW(), 'CONF002', 1, 'REGISTERED'),
+(2, 3, '1day', NOW(), DATE_ADD(NOW(), INTERVAL 1 DAY), 20.00, 'COMPLETED', NOW(), 'CONF003', 1, 'REGISTERED'),
+(2, 4, '1week', NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY), 100.00, 'COMPLETED', NOW(), 'CONF004', 1, 'REGISTERED'),
+-- 昨天的订单
+(2, 5, '1hr', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 1 DAY), INTERVAL 1 HOUR), 3.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 1 DAY), 'CONF005', 1, 'REGISTERED'),
+(2, 6, '4hr', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 1 DAY), INTERVAL 4 HOUR), 10.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 1 DAY), 'CONF006', 2, 'REGISTERED'),
+(2, 7, '1day', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 1 DAY), INTERVAL 1 DAY), 20.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 1 DAY), 'CONF007', 2, 'REGISTERED'),
+-- 前天的订单
+(2, 8, '1hr', DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 DAY), INTERVAL 1 HOUR), 3.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 2 DAY), 'CONF008', 1, 'REGISTERED'),
+(2, 9, '4hr', DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 DAY), INTERVAL 4 HOUR), 10.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 2 DAY), 'CONF009', 3, 'REGISTERED'),
+(2, 10, '1week', DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 DAY), INTERVAL 7 DAY), 100.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 2 DAY), 'CONF010', 3, 'REGISTERED'),
+-- 3天前的订单
+(2, 11, '1hr', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 3 DAY), INTERVAL 1 HOUR), 3.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 3 DAY), 'CONF011', 1, 'REGISTERED'),
+(2, 12, '1day', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 3 DAY), INTERVAL 1 DAY), 20.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 3 DAY), 'CONF012', 4, 'REGISTERED'),
+(2, 13, '4hr', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 3 DAY), INTERVAL 4 HOUR), 10.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 3 DAY), 'CONF013', 4, 'REGISTERED'),
+-- 4天前的订单
+(2, 14, '1hr', DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 4 DAY), INTERVAL 1 HOUR), 3.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 4 DAY), 'CONF014', 2, 'REGISTERED'),
+(2, 15, '4hr', DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 4 DAY), INTERVAL 4 HOUR), 10.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 4 DAY), 'CONF015', 2, 'REGISTERED'),
+(2, 16, '1day', DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 4 DAY), INTERVAL 1 DAY), 20.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 4 DAY), 'CONF016', 5, 'REGISTERED'),
+(2, 17, '1week', DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 4 DAY), INTERVAL 7 DAY), 100.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 4 DAY), 'CONF017', 5, 'REGISTERED'),
+-- 5天前的订单
+(2, 18, '1hr', DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 5 DAY), INTERVAL 1 HOUR), 3.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 5 DAY), 'CONF018', 1, 'REGISTERED'),
+(2, 19, '4hr', DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 5 DAY), INTERVAL 4 HOUR), 10.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 5 DAY), 'CONF019', 3, 'REGISTERED'),
+-- 6天前的订单
+(2, 20, '1hr', DATE_SUB(NOW(), INTERVAL 6 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 6 DAY), INTERVAL 1 HOUR), 3.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 6 DAY), 'CONF020', 1, 'REGISTERED'),
+(2, 21, '1day', DATE_SUB(NOW(), INTERVAL 6 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 6 DAY), INTERVAL 1 DAY), 20.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 6 DAY), 'CONF021', 4, 'REGISTERED'),
+-- 进行中的订单（PAID状态）
+(2, 22, '1hr', DATE_SUB(NOW(), INTERVAL 30 MINUTE), NULL, 3.00, 'ACTIVE', DATE_SUB(NOW(), INTERVAL 30 MINUTE), 'CONF022', 1, 'REGISTERED'),
+(2, 23, '4hr', DATE_SUB(NOW(), INTERVAL 1 HOUR), NULL, 10.00, 'ACTIVE', DATE_SUB(NOW(), INTERVAL 1 HOUR), 'CONF023', 2, 'REGISTERED'),
+-- 已取消的订单（不会被统计）
+(2, 24, '1hr', DATE_SUB(NOW(), INTERVAL 7 DAY), NULL, 3.00, 'CANCELLED', DATE_SUB(NOW(), INTERVAL 7 DAY), 'CONF024', 1, 'REGISTERED')
+ON DUPLICATE KEY UPDATE status = VALUES(status);

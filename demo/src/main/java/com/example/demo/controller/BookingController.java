@@ -2,8 +2,12 @@ package com.example.demo.controller;
 
 import com.example.demo.common.Result;
 import com.example.demo.entity.Booking;
+import com.example.demo.entity.Scooter;
 import com.example.demo.service.BookingService;
+import com.example.demo.service.ScooterService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
@@ -11,35 +15,93 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 订单控制器
- * 处理租赁订单的创建、查询、支付、取消、延期等操作
- * 路径: /api/bookings/*
+ * Booking Controller
+ * Handles booking-related operations: creation, queries, payment, cancellation, extension, etc.
+ * Path: /api/bookings/*
  */
 @RestController
 @RequestMapping("/api/bookings")
 @CrossOrigin
 public class BookingController {
 
+    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
+
     @Autowired
     private BookingService bookingService;
 
+    @Autowired
+    private ScooterService scooterService;
+
     /**
-     * 创建新订单（租车）
+     * Create booking by depot (auto-assign scooter)
+     * POST /api/bookings/depot
+     * Params: depotId, hireOption
+     */
+    @PostMapping("/depot")
+    public Result<Booking> createByDepot(@RequestBody Map<String, String> params, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+
+        // One-to-one principle: check if user has active bookings
+        List<Booking> activeBookings = bookingService.findByUserId(userId);
+        for (Booking b : activeBookings) {
+            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
+                return Result.error("You have an active ride. Please complete or cancel it before booking again.");
+            }
+        }
+
+        Long depotId = Long.parseLong(params.get("depotId"));
+        String hireOption = params.get("hireOption");
+
+        Booking booking = bookingService.createByDepot(userId, depotId, hireOption);
+        if (booking != null) {
+            return Result.success(booking);
+        }
+        return Result.error("No available scooters at this depot");
+    }
+
+    /**
+     * Create booking with specific scooter ID
      * POST /api/bookings
-     * 参数: scooterId, hireOption, startTime 等
+     * Params: scooterId, hireOption, startTime, etc.
      */
     @PostMapping
     public Result<Booking> create(@RequestBody Booking booking, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         booking.setUserId(userId);
-        if (bookingService.save(booking)) {
+
+        // One-to-one principle: check if user has active bookings
+        List<Booking> activeBookings = bookingService.findByUserId(userId);
+        for (Booking b : activeBookings) {
+            if ("PAID".equals(b.getStatus()) || "ACTIVE".equals(b.getStatus())) {
+                return Result.error("You have an active ride. ID:" + b.getId() + ". Please complete or cancel it before booking again.");
+            }
+        }
+
+        // Validation
+        if (booking.getScooterId() == null) {
+            return Result.error("Scooter ID cannot be empty");
+        }
+        if (booking.getHireOption() == null || booking.getHireOption().isEmpty()) {
+            return Result.error("Please select rental duration");
+        }
+
+        // If startDepotId is not specified, auto-fill from scooter
+        if (booking.getStartDepotId() == null) {
+            Scooter scooter = scooterService.findById(booking.getScooterId());
+            if (scooter != null && scooter.getDepotId() != null) {
+                booking.setStartDepotId(scooter.getDepotId());
+            }
+        }
+
+        boolean saved = bookingService.save(booking);
+        if (saved) {
             return Result.success(booking);
         }
-        return Result.error("Failed to create booking");
+        return Result.error("Booking creation failed, please try again later");
     }
 
     /**
-     * 获取当前用户的订单列表
+     * Get current user's bookings
      * GET /api/bookings
      */
     @GetMapping
@@ -49,9 +111,10 @@ public class BookingController {
     }
 
     /**
-     * 获取当前进行中的骑行
+     * Get current active ride
      * GET /api/bookings/current
-     * 用于检查用户是否有进行中的骑行（一人一车）
+     * Used to check if user has active ride (one-to-one)
+     * Returns pending, paid, or active bookings
      */
     @GetMapping("/current")
     public Result<Booking> getCurrentRide(HttpServletRequest request) {
@@ -66,7 +129,27 @@ public class BookingController {
     }
 
     /**
-     * 根据ID获取订单详情
+     * Get current user's unfinished bookings
+     * GET /api/bookings/my/active
+     * Returns bookings with status: PENDING, PAID, ACTIVE
+     */
+    @GetMapping("/my/active")
+    public Result<Booking> getMyActiveBooking(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        List<Booking> bookings = bookingService.findByUserId(userId);
+        // Return first unfinished booking
+        for (Booking b : bookings) {
+            String status = b.getStatus();
+            // PENDING, PAID, ACTIVE are unfinished statuses
+            if (!"COMPLETED".equals(status) && !"CANCELLED".equals(status)) {
+                return Result.success(b);
+            }
+        }
+        return Result.error("No active booking");
+    }
+
+    /**
+     * Get booking by ID
      * GET /api/bookings/{id}
      */
     @GetMapping("/{id}")
@@ -79,20 +162,22 @@ public class BookingController {
     }
 
     /**
-     * 延长租期
+     * Extend booking
      * PUT /api/bookings/{id}/extend?hireOption=1day
-     * 参数: hireOption - 延长的时长选项
+     * Params: hireOption - extension duration option
      */
     @PutMapping("/{id}/extend")
-    public Result<String> extend(@PathVariable Long id, @RequestParam String hireOption) {
+    public Result<Booking> extend(@PathVariable Long id, @RequestParam String hireOption) {
         if (bookingService.extendBooking(id, hireOption)) {
-            return Result.success("Booking extended successfully");
+            // Return updated booking info
+            Booking updatedBooking = bookingService.findById(id);
+            return Result.success(updatedBooking);
         }
         return Result.error("Failed to extend booking");
     }
 
     /**
-     * 取消订单
+     * Cancel booking
      * POST /api/bookings/{id}/cancel
      */
     @PostMapping("/{id}/cancel")
@@ -104,32 +189,61 @@ public class BookingController {
     }
 
     /**
-     * 还车（结束骑行）
+     * Return scooter (complete ride)
      * POST /api/bookings/{id}/return
+     * Optional body param: endDepotId - the depot where scooter is returned
      */
     @PostMapping("/{id}/return")
-    public Result<String> returnScooter(@PathVariable Long id) {
-        if (bookingService.returnScooter(id)) {
+    public Result<String> returnScooter(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> returnData) {
+        Long endDepotId = null;
+        if (returnData != null && returnData.get("endDepotId") != null) {
+            endDepotId = Long.parseLong(returnData.get("endDepotId").toString());
+        }
+        if (bookingService.returnScooter(id, endDepotId)) {
             return Result.success("Scooter returned successfully");
         }
         return Result.error("Failed to return scooter");
     }
 
     /**
-     * 支付订单
+     * Pay booking
      * POST /api/bookings/{id}/pay
-     * 参数: cardLast4, amount, paymentMethod (可选)
+     * Params: cardLast4, amount, paymentMethod (optional), paymentPassword (optional for security)
      */
     @PostMapping("/{id}/pay")
-    public Result<String> pay(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> paymentData) {
-        if (bookingService.payBooking(id)) {
+    public Result<String> pay(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> paymentData, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        double amount = 0;
+        String cardLast4 = null;
+        String paymentMethod = "credit";
+        String paymentPassword = null;
+
+        if (paymentData != null) {
+            if (paymentData.get("amount") != null) {
+                amount = Double.parseDouble(paymentData.get("amount").toString());
+            }
+            if (paymentData.get("cardLast4") != null) {
+                cardLast4 = paymentData.get("cardLast4").toString();
+            }
+            if (paymentData.get("paymentMethod") != null) {
+                paymentMethod = paymentData.get("paymentMethod").toString();
+            }
+            if (paymentData.get("paymentPassword") != null) {
+                paymentPassword = paymentData.get("paymentPassword").toString();
+            }
+        }
+
+        // 使用增强的支付服务（包含Tokenization和支付密码验证）
+        boolean success = bookingService.payBooking(id, userId, cardLast4, amount, paymentMethod, paymentPassword);
+        if (success) {
+            logger.info("支付成功, bookingId={}, userId={}, amount={}", id, userId, amount);
             return Result.success("Payment successful");
         }
         return Result.error("Payment failed");
     }
 
     /**
-     * 获取订单确认信息（生成确认码等）
+     * Get booking confirmation info (includes confirmation code)
      * GET /api/bookings/{id}/confirmation
      */
     @GetMapping("/{id}/confirmation")
