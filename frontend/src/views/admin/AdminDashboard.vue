@@ -587,9 +587,34 @@
               </template>
 
               <el-form-item label="选择车辆" required>
-                <el-select v-model="staffForm.scooterId" filterable placeholder="选择可用车辆" style="width: 100%">
-                  <el-option v-for="s in availableScooters" :key="s.id" :label="`${s.scooterNumber} - ${getStatusText(s.status)}`" :value="s.id" />
+                <div class="scooter-status-note">
+                  <el-icon><InfoFilled /></el-icon>
+                  实时更新：每15秒自动刷新可用车辆列表
+                </div>
+                <el-select v-model="staffForm.scooterId" filterable placeholder="请选择可用车辆" style="width: 100%">
+                  <el-option-group v-for="group in scooterOptions" :key="group.label" :label="group.label">
+                    <el-option
+                      v-for="s in group.options"
+                      :key="s.id"
+                      :label="`${s.scooterNumber} ${s.status === 'AVAILABLE' ? '✓' : '✗'} ${s.batteryLevel !== null ? '🔋' + s.batteryLevel + '%' : ''}`"
+                      :value="s.id"
+                      :disabled="s.status !== 'AVAILABLE'"
+                    >
+                      <div class="scooter-option">
+                        <span class="scooter-name">{{ s.scooterNumber }}</span>
+                        <span class="scooter-status" :class="s.status.toLowerCase().replace('_', '-')">
+                          {{ getStatusText(s.status) }}
+                        </span>
+                        <span v-if="s.batteryLevel !== null" class="scooter-battery">
+                          🔋 {{ s.batteryLevel }}%
+                        </span>
+                      </div>
+                    </el-option>
+                  </el-option-group>
                 </el-select>
+                <div v-if="staffForm.scooterId" class="selected-scooter-info">
+                  已选: {{ getSelectedScooterInfo() }}
+                </div>
               </el-form-item>
               <el-form-item label="租用时长" required>
                 <el-select v-model="staffForm.hireOption" style="width: 100%">
@@ -1051,6 +1076,7 @@ let chartPeakHours = null
 let adminMap = null
 let AMapInstance = null
 let scooterMarkers = []
+let adminRefreshTimer = null
 const DEFAULT_LNG = 116.397428
 const DEFAULT_LAT = 39.90923
 
@@ -1120,6 +1146,32 @@ const filteredUsers = computed(() => {
 })
 
 const availableScooters = computed(() => scooters.value.filter(s => s.status === 'AVAILABLE'))
+
+// ID7: 代客预订车辆选择器分组显示
+const scooterOptions = computed(() => {
+  const available = scooters.value.filter(s => s.status === 'AVAILABLE')
+  const inUse = scooters.value.filter(s => s.status === 'IN_USE')
+  const maintenance = scooters.value.filter(s => s.status === 'MAINTENANCE')
+  const groups = []
+  if (available.length > 0) {
+    groups.push({ label: `✓ 可用车辆 (${available.length})`, options: available })
+  }
+  if (inUse.length > 0) {
+    groups.push({ label: `✗ 使用中 (${inUse.length})`, options: inUse })
+  }
+  if (maintenance.length > 0) {
+    groups.push({ label: `🔧 维护中 (${maintenance.length})`, options: maintenance })
+  }
+  return groups
+})
+
+// ID7: 获取已选车辆信息
+const getSelectedScooterInfo = () => {
+  if (!staffForm.value.scooterId) return ''
+  const scooter = scooters.value.find(s => s.id === staffForm.value.scooterId)
+  if (!scooter) return ''
+  return `${scooter.scooterNumber} - ${getStatusText(scooter.status)} - ${scooter.batteryLevel !== null ? '电量' + scooter.batteryLevel + '%' : '电量未知'}`
+}
 
 // 预警计算
 const lowBatteryScooters = computed(() => scooters.value.filter(s => s.batteryLevel && s.batteryLevel < 20))
@@ -1212,6 +1264,22 @@ const refreshData = async () => {
   }
 }
 
+// 启动自动刷新
+const startAdminAutoRefresh = () => {
+  adminRefreshTimer = setInterval(() => {
+    // 只刷新车辆数据（实时性要求高）
+    loadScooters()
+  }, 15000) // 15秒刷新一次
+}
+
+// 停止自动刷新
+const stopAdminAutoRefresh = () => {
+  if (adminRefreshTimer) {
+    clearInterval(adminRefreshTimer)
+    adminRefreshTimer = null
+  }
+}
+
 // 加载数据
 const loadUsers = async () => {
   try {
@@ -1224,7 +1292,19 @@ const loadUsers = async () => {
 const loadScooters = async () => {
   try {
     const res = await getScooters()
-    scooters.value = Array.isArray(res) ? res : []
+    const newList = Array.isArray(res) ? res : []
+    // 检查状态变化
+    newList.forEach(newScooter => {
+      const oldScooter = scooters.value.find(s => s.id === newScooter.id)
+      if (oldScooter && oldScooter.status !== newScooter.status) {
+        if (newScooter.status === 'IN_USE') {
+          ElMessage.info(`车辆 ${newScooter.scooterNumber} 已被租用`)
+        } else if (newScooter.status === 'AVAILABLE') {
+          ElMessage.info(`车辆 ${newScooter.scooterNumber} 已归还可用`)
+        }
+      }
+    })
+    scooters.value = newList
   } catch (e) { console.error(e) }
 }
 
@@ -1781,6 +1861,7 @@ onMounted(async () => {
   }
 
   await refreshData()
+  startAdminAutoRefresh()
 
   window.addEventListener('resize', () => {
     chartOption?.resize()
@@ -1795,6 +1876,7 @@ onUnmounted(() => {
     adminMap.destroy()
     adminMap = null
   }
+  stopAdminAutoRefresh()
 })
 
 // 监听车辆数据变化，自动更新地图标记
@@ -2225,6 +2307,63 @@ watch(scooters, () => {
 /* 表单 */
 .staff-form {
   max-width: 480px;
+}
+
+.scooter-status-note {
+  font-size: 12px;
+  color: #6b9ac4;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.scooter-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.scooter-name {
+  font-weight: 600;
+}
+
+.scooter-status {
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.scooter-status.available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.scooter-status.in-use {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.scooter-status.maintenance {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.scooter-battery {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.selected-scooter-info {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #1e3a5f;
+  font-weight: 600;
+  padding: 8px 12px;
+  background: #f0f7ff;
+  border-radius: 6px;
+  border: 1px solid #dbeafe;
 }
 
 /* 电池样式 */

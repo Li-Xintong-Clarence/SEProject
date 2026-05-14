@@ -208,7 +208,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Location, Van, Loading, Search, Refresh, Crop } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
@@ -231,6 +231,7 @@ let mapInstance = null
 let AMapInstance = null
 let userMarker = null
 let scooterMarkers = []
+let refreshTimer = null
 
 const DEFAULT_LNG = 103.9305
 const DEFAULT_LAT = 30.7528
@@ -323,13 +324,42 @@ const loadScooters = async () => {
   loadingScooters.value = true
   try {
     const res = await getScooters()
-    scooters.value = res?.data || res || []
+    const newList = res?.data || res || []
+    // 检查状态变化
+    newList.forEach(newScooter => {
+      const oldScooter = scooters.value.find(s => s.id === newScooter.id)
+      if (oldScooter && oldScooter.status !== newScooter.status) {
+        if (newScooter.status === 'IN_USE') {
+          ElMessage.warning(`车辆 ${newScooter.scooterNumber} 已被租用`)
+        }
+      }
+    })
+    scooters.value = newList
     if (mapInstance && AMapInstance) updateScooterMarkers()
   } catch {
     ElMessage.error('获取失败')
   }
   loadingScooters.value = false
 }
+
+// 启动定时刷新
+const startAutoRefresh = () => {
+  refreshTimer = setInterval(() => {
+    loadScooters()
+  }, 30000)
+}
+
+// 停止定时刷新
+const stopAutoRefresh = () => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
+
+onUnmounted(() => {
+  stopAutoRefresh()
+})
 
 const createScooterMarkerContent = (scooter) => {
   const isAvail = scooter.status === 'AVAILABLE'
@@ -462,6 +492,7 @@ onMounted(async () => {
 
     await loadScooters()
     updateScooterMarkers()
+    startAutoRefresh()
 
   } catch (err) {
     console.error('地图加载失败', err)

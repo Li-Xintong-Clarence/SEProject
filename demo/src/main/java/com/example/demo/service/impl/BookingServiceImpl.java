@@ -245,15 +245,16 @@ public class BookingServiceImpl implements BookingService {
 
     /**
      * Extend booking
-     * 1. Find booking with status PAID or ACTIVE
+     * 1. Find booking with status PENDING, PAID or ACTIVE
      * 2. Calculate new end time
      * 3. Add corresponding cost
      */
     @Override
     public boolean extendBooking(Long id, String hireOption) {
         Booking booking = bookingMapper.findById(id);
-        // Only PAID or ACTIVE status bookings can be extended
-        if (booking == null || (!"ACTIVE".equals(booking.getStatus()) && !"PAID".equals(booking.getStatus()))) {
+        // PENDING(待支付)、ACTIVE(进行中)、PAID(已支付) 都可以延长
+        String status = booking != null ? booking.getStatus() : null;
+        if (booking == null || (!"PENDING".equals(status) && !"ACTIVE".equals(status) && !"PAID".equals(status))) {
             return false;
         }
 

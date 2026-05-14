@@ -127,7 +127,9 @@
                 size="small"
                 :disabled="!canExtend(row)"
                 @click="openExtend(row.id)"
-              >延长</el-button>
+              >
+                {{ getExtendText(row.status) }}
+              </el-button>
               <el-button
                 type="danger"
                 link
@@ -559,10 +561,20 @@ const handleCancel = (id) => {
   })
 }
 
-// 能否延长
+// 能否延长（只要不是已取消或已完成，都可以延长）
 const canExtend = (row) => {
   const u = (row?.status || '').toUpperCase()
-  return u === 'ACTIVE' || u === 'PAID'
+  // PENDING(待支付)、ACTIVE(进行中)、PAID(已支付) 都可以延长
+  return u === 'PENDING' || u === 'ACTIVE' || u === 'PAID'
+}
+
+// 获取延长按钮文字
+const getExtendText = (status) => {
+  const u = (status || '').toUpperCase()
+  if (u === 'PENDING') return '去支付/延长'
+  if (u === 'ACTIVE') return '延长租期'
+  if (u === 'PAID') return '延长租期'
+  return '延长'
 }
 
 // 打开延长弹窗
@@ -971,5 +983,236 @@ onMounted(async () => {
 
 .form-hint.warning {
   color: var(--cg-warning);
+}
+
+/* 响应式设计 */
+@media (max-width: 900px) {
+  .profile {
+    padding: 24px 16px;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .page-sub {
+    font-size: 14px;
+  }
+
+  .stat-card {
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .frequent-user-banner {
+    padding: 16px;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .frequent-user-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .frequent-user-icon .el-icon {
+    font-size: 24px;
+  }
+
+  .profile-tabs {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile {
+    padding: 16px 12px;
+  }
+
+  .page-title {
+    font-size: 1.35rem;
+  }
+
+  .stat-row :deep(.el-col) {
+    margin-bottom: 12px;
+  }
+
+  .user-card :deep(.el-descriptions) {
+    font-size: 13px;
+  }
+
+  .active-booking-alert :deep(.el-alert__title) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .active-booking-alert :deep(.el-alert__title) .el-button {
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .profile {
+    padding: 12px 8px;
+  }
+
+  .page-title {
+    font-size: 1.2rem;
+  }
+
+  .page-sub {
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px 12px;
+  }
+
+  .stat-info {
+    margin-top: 8px;
+  }
+
+  .profile-tabs :deep(.el-tabs__header) {
+    overflow-x: auto;
+  }
+
+  .profile-tabs :deep(.el-tabs__nav-wrap) {
+    padding-bottom: 4px;
+  }
+
+  .profile-tabs :deep(.el-tabs__item) {
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  /* 表格响应式 */
+  .profile-tabs :deep(.el-table) {
+    font-size: 12px;
+  }
+
+  .profile-tabs :deep(.el-table__header) {
+    font-size: 12px;
+  }
+
+  .profile-tabs :deep(.el-table .el-table__cell) {
+    padding: 8px 4px;
+  }
+
+  .profile-tabs :deep(.el-button) {
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+
+  .profile-tabs :deep(.el-button .el-icon) {
+    margin-right: 2px;
+  }
+
+  .profile-tabs :deep(.el-button--small) {
+    padding: 3px 5px;
+  }
+
+  .profile-tabs :deep(.el-tag) {
+    padding: 0 4px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile {
+    padding: 8px 6px;
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+  }
+
+  .stat-row {
+    margin-bottom: 16px;
+  }
+
+  .stat-row :deep(.el-col) {
+    margin-bottom: 8px;
+  }
+
+  .frequent-user-content h4 {
+    font-size: 14px;
+  }
+
+  .frequent-user-content p {
+    font-size: 12px;
+  }
+
+  .user-card :deep(.el-descriptions__label) {
+    width: 80px;
+    font-size: 12px;
+  }
+
+  .user-card :deep(.el-descriptions__content) {
+    font-size: 12px;
+  }
+
+  .profile-tabs {
+    padding: 12px;
+    border-radius: var(--cg-radius-lg);
+  }
+
+  /* 操作列按钮堆叠 */
+  .profile-tabs :deep(.el-table__body) .el-table__row > td:last-child {
+    padding: 8px 4px;
+  }
+
+  .profile-tabs :deep(.el-table__body) .el-table__row > td:last-child > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
+  }
+
+  .profile-tabs :deep(.el-table__body) .el-table__row > td:last-child > div .el-button {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .page-title {
+    font-size: 1rem;
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  .frequent-user-banner {
+    padding: 12px;
+  }
+
+  .frequent-user-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .profile-tabs :deep(.el-tabs__item) {
+    padding: 0 8px;
+    font-size: 12px;
+  }
 }
 </style>

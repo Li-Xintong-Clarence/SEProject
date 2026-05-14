@@ -30,7 +30,8 @@ public interface ScooterMapper {
     int insert(Scooter scooter);
 
     @Update("<script>" +
-            "UPDATE scooters SET " +
+            "UPDATE scooters " +
+            "<set>" +
             "<if test='scooterNumber != null'>scooter_number=#{scooterNumber},</if>" +
             "<if test='status != null'>status=#{status},</if>" +
             "<if test='batteryLevel != null'>battery_level=#{batteryLevel},</if>" +
@@ -38,7 +39,8 @@ public interface ScooterMapper {
             "<if test='longitude != null'>longitude=#{longitude},</if>" +
             "<if test='location != null'>location=#{location},</if>" +
             "<if test='depotId != null'>depot_id=#{depotId},</if>" +
-            "<if test='lastMaintenanceDate != null'>last_maintenance_date=#{lastMaintenanceDate}</if>" +
+            "<if test='lastMaintenanceDate != null'>last_maintenance_date=#{lastMaintenanceDate},</if>" +
+            "</set>" +
             " WHERE id=#{id}" +
             "</script>")
     int update(Scooter scooter);
