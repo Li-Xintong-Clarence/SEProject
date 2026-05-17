@@ -1,0 +1,31 @@
+# 服务器配置
+server:
+  port: 8080
+
+# Spring 配置
+spring:
+  application:
+    name: scooter-rental-system
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/scooter_rental?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+
+# MyBatis 配置
+mybatis:
+  # Mapper XML 文件位置
+  mapper-locations: classpath:mapper/*.xml
+  # 实体类别名包
+  type-aliases-package: com.example.demo.entity
+  # 开启驼峰命名映射
+  configuration:
+    map-underscore-to-camel-case: true
+  # 打印 SQL 日志（开发时使用）
+  log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志配置
+logging:
+  level:
+    com.example.demo: debug

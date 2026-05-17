@@ -1,0 +1,13 @@
+com\example\demo\service\ScooterService.class
+com\example\demo\DemoApplication.class
+com\example\demo\entity\User.class
+com\example\demo\entity\Scooter.class
+com\example\demo\controller\ScooterController.class
+com\example\demo\HelloController.class
+com\example\demo\mapper\ScooterMapper.class
+com\example\demo\service\UserService.class
+com\example\demo\common\Result.class
+com\example\demo\service\impl\ScooterServiceImpl.class
+com\example\demo\controller\UserController.class
+com\example\demo\mapper\UserMapper.class
+com\example\demo\service\impl\UserServiceImpl.class
