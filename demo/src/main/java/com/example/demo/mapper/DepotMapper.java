@@ -26,6 +26,15 @@ public interface DepotMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Depot depot);
 
+    @Update("UPDATE depot SET " +
+            "depot_number = #{depotNumber}, " +
+            "name = #{name}, " +
+            "latitude = #{latitude}, " +
+            "longitude = #{longitude}, " +
+            "address = #{address}, " +
+            "capacity = #{capacity}, " +
+            "status = #{status} " +
+            "WHERE id = #{id}")
     int update(Depot depot);
 
     @Delete("DELETE FROM depot WHERE id = #{id}")

@@ -44,10 +44,13 @@ public class DatabaseInitializer implements ApplicationRunner {
             // 2. 创建 hotspot 表（如果不存在）
             createHotspotTableIfNotExists();
 
-            // 3. 更新 scooters 表结构
+            // 3. 创建 overtime_fee 表（如果不存在）
+            createOvertimeFeeTableIfNotExists();
+
+            // 4. 更新 scooters 表结构
             addScooterDepotColumn();
 
-            // 4. 更新 booking 表结构
+            // 5. 更新 booking 表结构
             addBookingDepotColumns();
 
             // 5. 插入测试数据
@@ -118,6 +121,57 @@ public class DatabaseInitializer implements ApplicationRunner {
             }
         } catch (Exception e) {
             logger.warn("创建 hotspot 表时出错: {}", e.getMessage());
+        }
+    }
+
+    private void createOvertimeFeeTableIfNotExists() {
+        try {
+            List<Map<String, Object>> tables = jdbcTemplate.queryForList(
+                "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME = 'overtime_fee'"
+            );
+
+            if (tables.isEmpty()) {
+                jdbcTemplate.execute("""
+                    CREATE TABLE overtime_fee (
+                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                        hire_option VARCHAR(20) NOT NULL,
+                        hire_option_name VARCHAR(50) NOT NULL,
+                        fee_type VARCHAR(20) NOT NULL DEFAULT 'HOURLY',
+                        fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        max_overtime_minutes INT DEFAULT NULL,
+                        enabled TINYINT(1) NOT NULL DEFAULT 1,
+                        UNIQUE KEY uk_hire_option (hire_option)
+                    )
+                """);
+                logger.info(" overtime_fee 表创建成功");
+            } else {
+                logger.info(" overtime_fee 表已存在，跳过创建");
+            }
+
+            // 插入默认数据
+            insertOvertimeFeeData();
+        } catch (Exception e) {
+            logger.warn("创建 overtime_fee 表时出错: {}", e.getMessage());
+        }
+    }
+
+    private void insertOvertimeFeeData() {
+        try {
+            Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM overtime_fee", Integer.class);
+            if (count != null && count == 0) {
+                jdbcTemplate.execute("""
+                    INSERT INTO overtime_fee (hire_option, hire_option_name, fee_type, fee, max_overtime_minutes, enabled) VALUES
+                    ('1hr', '1小时租赁', 'HOURLY', 5.00, 60, 1),
+                    ('4hr', '4小时租赁', 'HOURLY', 3.00, 120, 1),
+                    ('1day', '1天租赁', 'HOURLY', 2.00, 240, 1),
+                    ('1week', '1周租赁', 'FIXED', 50.00, NULL, 1)
+                """);
+                logger.info(" overtime_fee 默认数据插入成功");
+            } else {
+                logger.info(" overtime_fee 数据已存在，跳过插入");
+            }
+        } catch (Exception e) {
+            logger.warn("插入 overtime_fee 数据时出错: {}", e.getMessage());
         }
     }
 

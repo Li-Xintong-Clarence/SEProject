@@ -76,4 +76,16 @@ public interface UserMapper {
 
     @Select("SELECT DATE(registration_date) as date, COUNT(*) as count FROM users WHERE registration_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND role != 'ADMIN' GROUP BY DATE(registration_date) ORDER BY date")
     List<Map<String, Object>> getDailyNewUsers();
+
+    /**
+     * 获取用户的累计租用时长（小时）
+     * 基于实际租用时间计算（只统计已完成和已支付的订单）
+     */
+    @Select("SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, b.start_time, b.end_time)) / 60.0, 0) as total_duration " +
+            "FROM booking b " +
+            "WHERE b.user_id = #{userId} " +
+            "AND b.status IN ('PAID', 'COMPLETED') " +
+            "AND b.start_time IS NOT NULL " +
+            "AND b.end_time IS NOT NULL")
+    Double getUserTotalDuration(Long userId);
 }

@@ -97,6 +97,9 @@ public class UserServiceImpl implements UserService {
         if (!PasswordEncoder.matches(request.getPassword(), user.getPassword())) {
             return null;
         }
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            return null;
+        }
         user.setPassword(null);
         return user;
     }

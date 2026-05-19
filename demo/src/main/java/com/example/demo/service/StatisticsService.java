@@ -56,4 +56,16 @@ public interface StatisticsService {
      * 获取热门预订时段
      */
     Map<String, Object> getPeakHours();
+
+    /**
+     * ID20: 获取一周内每天的热门租赁日统计
+     * 返回周一到周日的订单数量
+     */
+    Map<String, Object> getWeeklyHotDays();
+
+    /**
+     * ID20: 获取一周内每天各租期的收入详情
+     * 返回每天的收入明细，包含1hr, 4hr, 1day, 1week各租期的收入
+     */
+    Map<String, Object> getDailyIncomeBreakdown();
 }

@@ -64,6 +64,15 @@ public class IssueReportController {
     }
 
     /**
+     * 查询高优先级问题报告（管理员功能 - ID15）
+     * @return 高优先级问题报告列表
+     */
+    @GetMapping("/high-priority")
+    public Result<List<IssueReport>> findHighPriority() {
+        return Result.success(issueReportService.findByPriority("HIGH"));
+    }
+
+    /**
      * 查询当前登录用户提交的问题报告
      * 需要用户登录
      * @return 当前用户提交的所有问题报告列表

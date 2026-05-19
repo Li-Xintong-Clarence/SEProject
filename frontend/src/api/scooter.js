@@ -22,11 +22,29 @@ export const getScooterById = (id) => {
     })
 }
 
+// 根据车牌号获取滑板车
+export const getScooterByNumber = (scooterNumber) => {
+    return request({
+        url: '/api/scooters/number',
+        method: 'get',
+        params: { scooterNumber }
+    })
+}
+
 export const updateScooterStatus = (id, status) => {
     return request({
         url: `/api/scooters/${id}/status`,
         method: 'put',
         params: { status }
+    })
+}
+
+// ID16: 更新电动车电量（管理员）
+export const updateScooterBattery = (id, batteryLevel) => {
+    return request({
+        url: `/api/scooters/${id}/battery`,
+        method: 'put',
+        params: { batteryLevel }
     })
 }
 

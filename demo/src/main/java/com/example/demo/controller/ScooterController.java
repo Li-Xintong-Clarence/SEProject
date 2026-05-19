@@ -5,6 +5,7 @@ import com.example.demo.entity.Scooter;
 import com.example.demo.service.ScooterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -112,5 +113,26 @@ public class ScooterController {
             return Result.success("Status updated successfully");
         }
         return Result.error("Failed to update status");
+    }
+
+    /**
+     * ID16: 更新电动车电量（管理员）
+     * PUT /api/scooters/{id}/battery?batteryLevel=85
+     * 电量范围: 0-100
+     */
+    @PutMapping("/{id}/battery")
+    public Result<String> updateBatteryLevel(@PathVariable Long id, @RequestParam Integer batteryLevel) {
+        if (batteryLevel == null || batteryLevel < 0 || batteryLevel > 100) {
+            return Result.error("Battery level must be between 0 and 100");
+        }
+        Scooter scooter = scooterService.findById(id);
+        if (scooter == null) {
+            return Result.error("Scooter not found");
+        }
+        scooter.setBatteryLevel(BigDecimal.valueOf(batteryLevel));
+        if (scooterService.update(scooter)) {
+            return Result.success("Battery level updated successfully");
+        }
+        return Result.error("Failed to update battery level");
     }
 }

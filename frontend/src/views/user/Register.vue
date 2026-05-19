@@ -43,7 +43,17 @@
             />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" size="large" @click="handleRegister" :loading="loading" class="register-btn">
+            <div class="terms-wrapper">
+              <el-checkbox v-model="agreedToTerms">
+                我已阅读并同意
+                <el-link type="primary" @click.prevent="showTermsDialog = true">《用户协议》</el-link>
+                和
+                <el-link type="primary" @click.prevent="showPrivacyDialog = true">《隐私政策》</el-link>
+              </el-checkbox>
+            </div>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" size="large" @click="handleRegister" :loading="loading" :disabled="!agreedToTerms" class="register-btn">
               {{ loading ? '注册中...' : '注册' }}
             </el-button>
           </el-form-item>
@@ -53,6 +63,52 @@
         </div>
       </el-card>
     </div>
+
+    <!-- 用户协议弹窗 -->
+    <el-dialog v-model="showTermsDialog" title="用户协议" width="600px" destroy-on-close>
+      <div class="terms-content">
+        <h3>用户协议</h3>
+        <p>欢迎使用 CapyGlide 服务。</p>
+        <h4>1. 服务说明</h4>
+        <p>CapyGlide 是一家共享电动车租赁平台，用户可通过本平台租用电动车。</p>
+        <h4>2. 用户责任</h4>
+        <p>用户须年满16周岁，并持有有效驾驶证方可使用服务。使用车辆时应遵守交通规则，因违反交通规则导致的法律责任由用户自行承担。</p>
+        <h4>3. 费用说明</h4>
+        <p>租金根据租赁时长和所选套餐计算，具体费用以平台显示为准。</p>
+        <h4>4. 车辆损坏</h4>
+        <p>用户应妥善使用车辆，如因人为原因造成车辆损坏，用户需承担相应维修费用。</p>
+        <h4>5. 隐私保护</h4>
+        <p>我们尊重并保护用户隐私，个人信息仅用于提供服务。</p>
+        <h4>6. 服务变更</h4>
+        <p>平台保留随时修改服务条款的权利，修改后的条款将在网站公布。</p>
+      </div>
+      <template #footer>
+        <el-button @click="showTermsDialog = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 隐私政策弹窗 -->
+    <el-dialog v-model="showPrivacyDialog" title="隐私政策" width="600px" destroy-on-close>
+      <div class="terms-content">
+        <h3>隐私政策</h3>
+        <p>CapyGlide 致力于保护您的个人信息和隐私。</p>
+        <h4>1. 信息收集</h4>
+        <p>我们收集您在使用服务时主动提供的信息，包括注册信息、联系信息、支付信息等。</p>
+        <h4>2. 信息使用</h4>
+        <p>您的信息将用于：提供和优化服务、处理交易、联系用户、发送服务通知等。</p>
+        <h4>3. 信息保护</h4>
+        <p>我们采用加密技术保护您的个人信息，防止未经授权的访问。</p>
+        <h4>4. 信息共享</h4>
+        <p>未经您同意，我们不会与第三方共享您的个人信息，法律法规要求除外。</p>
+        <h4>5. Cookie 使用</h4>
+        <p>我们使用 Cookie 改善用户体验，您可选择禁用 Cookie（可能影响部分功能）。</p>
+        <h4>6. 联系我们</h4>
+        <p>如对隐私政策有疑问，请联系我们的客服。</p>
+      </div>
+      <template #footer>
+        <el-button @click="showPrivacyDialog = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -65,6 +121,12 @@ import { register } from '@/api/auth'
 const router = useRouter()
 const formRef = ref(null)
 const loading = ref(false)
+const agreedToTerms = ref(false)
+const showTermsDialog = ref(false)
+const showPrivacyDialog = ref(false)
+
+// 检查是否已同意过免责条款
+const hasAgreedDisclaimer = localStorage.getItem('disclaimer_agreed') === 'true'
 
 const form = ref({
   username: '',
@@ -102,6 +164,10 @@ const rules = {
 }
 
 const handleRegister = () => {
+  if (!agreedToTerms.value) {
+    ElMessage.warning('请先阅读并同意用户协议和隐私政策')
+    return
+  }
   formRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
@@ -113,15 +179,21 @@ const handleRegister = () => {
           password: form.value.password
         }
         await register(registerData)
-        ElMessage.success('注册成功，请登录')
+        ElMessage.success('注册成功')
         router.push('/login')
       } catch (error) {
         console.error('注册出错:', error)
+        ElMessage.error(error.message || '注册失败，请稍后重试')
       } finally {
         loading.value = false
       }
     }
   })
+}
+
+// 用户不同意免责条款
+const handleDisclaimerDecline = () => {
+  ElMessage.warning('您需要同意用户协议才能继续使用服务')
 }
 </script>
 
@@ -137,8 +209,33 @@ const handleRegister = () => {
     grid-template-columns: 1fr;
   }
   .register-hero {
-    min-height: 260px;
-    padding: 40px 24px;
+    min-height: 200px;
+    padding: 30px 20px;
+  }
+  .hero-title {
+    font-size: 28px;
+  }
+  .hero-tag {
+    font-size: 14px;
+  }
+  .register-form-wrapper {
+    padding: 24px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-hero {
+    min-height: 160px;
+    padding: 20px 16px;
+  }
+  .hero-title {
+    font-size: 24px;
+  }
+  .register-form-wrapper {
+    padding: 20px 12px;
+  }
+  .form-title {
+    font-size: 20px;
   }
 }
 
@@ -248,5 +345,33 @@ const handleRegister = () => {
 
 .login-link a:hover {
   color: var(--cg-accent-dark);
+}
+
+.terms-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.terms-content {
+  max-height: 400px;
+  overflow-y: auto;
+  line-height: 1.8;
+}
+
+.terms-content h3 {
+  margin: 0 0 16px;
+  color: var(--cg-navy);
+}
+
+.terms-content h4 {
+  margin: 20px 0 8px;
+  color: var(--cg-navy);
+  font-weight: 600;
+}
+
+.terms-content p {
+  margin: 8px 0;
+  color: var(--cg-text);
 }
 </style>

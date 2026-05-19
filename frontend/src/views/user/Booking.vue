@@ -118,10 +118,14 @@
             <!-- 优惠资格 -->
             <div class="form-group">
               <label class="group-label">优惠资格</label>
+              <div class="discount-notice">
+                <el-icon><InfoFilled /></el-icon>
+                <span>学生可享 <strong>7折</strong> 优惠，长者可享 <strong>5折</strong> 优惠</span>
+              </div>
               <el-radio-group v-model="profileFlags.userType" @change="onUserTypeChange" class="discount-group">
                 <el-radio value="none">无优惠</el-radio>
-                <el-radio value="student">学生 9折</el-radio>
-                <el-radio value="senior">长者 8折</el-radio>
+                <el-radio value="student">学生 (7折)</el-radio>
+                <el-radio value="senior">长者 (5折)</el-radio>
               </el-radio-group>
             </div>
 
@@ -352,9 +356,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Check, Close, Tickets, Star } from '@element-plus/icons-vue'
+import { Check, Close, Tickets, Star, InfoFilled } from '@element-plus/icons-vue'
 import { getDepotById } from '@/api/depot'
-import { getScooterById } from '@/api/scooter'
+import { getScooterById, getScooterByNumber } from '@/api/scooter'
 import { createBookingByDepot, createBooking, payBooking, getBookingById } from '@/api/booking'
 import { getPricingList } from '@/api/pricing'
 import { getUserStats } from '@/api/user'
@@ -798,9 +802,26 @@ onMounted(async () => {
 
   if (scooterId) {
     try {
-      const scooterRes = await getScooterById(scooterId)
+      let scooterRes
+      // 判断是数字ID还是车牌号（字母开头如SC004）
+      if (/^\d+$/.test(scooterId)) {
+        // 纯数字，按ID查询
+        scooterRes = await getScooterById(scooterId)
+      } else {
+        // 字母开头，按车牌号查询
+        scooterRes = await getScooterByNumber(scooterId)
+      }
       selectedScooter.value = scooterRes?.data || scooterRes
-      if (!selectedScooter.value) throw new Error()
+      if (!selectedScooter.value) throw new Error('Scooter not found')
+
+      // 检查车辆是否可用
+      if (selectedScooter.value.status !== 'AVAILABLE') {
+        ElMessage.error('该车辆当前不可用，请选择其他车辆')
+        router.push('/map')
+        loading.value = false
+        return
+      }
+
       if (selectedScooter.value.depotId) {
         const depotRes = await getDepotById(selectedScooter.value.depotId)
         depot.value = depotRes?.data || depotRes?.depot || depotRes
@@ -1173,6 +1194,28 @@ onMounted(async () => {
 .discount-group {
   display: flex;
   gap: 16px;
+}
+
+.discount-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f0f4f8;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #5a7a9a;
+}
+
+.discount-notice .el-icon {
+  color: #1e3a5f;
+  font-size: 16px;
+}
+
+.discount-notice strong {
+  color: #1e3a5f;
+  font-weight: 700;
 }
 
 .coupon-row {
@@ -1562,6 +1605,12 @@ onMounted(async () => {
   .discount-group {
     flex-direction: column;
     gap: 10px;
+  }
+
+  .discount-notice {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   .coupon-row {

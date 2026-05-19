@@ -23,12 +23,6 @@ const routes = [
     component: () => import('../views/user/ScanView.vue')
   },
   {
-    path: '/scooters/list',
-    name: 'ScooterList',
-    meta: { requiresAuth: true },
-    component: () => import('../views/user/ScooterList.vue')
-  },
-  {
     path: '/booking',
     name: 'Booking',
     meta: { requiresAuth: true },
@@ -74,7 +68,7 @@ const router = createRouter({
 })
 
 // 路由守卫 - 检查登录状态和权限
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
   const token = localStorage.getItem('token')
   let user = null
   try {
@@ -86,18 +80,19 @@ router.beforeEach((to, from, next) => {
   // 检查管理员权限
   if (to.meta.requiresAdmin) {
     if (!token || !user || user.role !== 'ADMIN') {
-      return next({ path: '/admin/login', query: { redirect: to.fullPath } })
+      return { path: '/admin/login', query: { redirect: to.fullPath } }
     }
   }
 
   // 检查用户登录状态
   if (to.meta.requiresAuth) {
     if (!token || !user) {
-      return next({ path: '/login', query: { redirect: to.fullPath } })
+      return { path: '/login', query: { redirect: to.fullPath } }
     }
   }
 
-  next()
+  // 放行
+  return true
 })
 
 export default router

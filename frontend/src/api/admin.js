@@ -49,3 +49,24 @@ export const getStatisticsBookingStatus = () =>
 
 export const getStatisticsPeakHours = () =>
   request({ url: '/api/statistics/bookings/peak-hours', method: 'get' })
+
+// 获取一周内每天的热门租赁日统计
+export const getWeeklyHotDays = () =>
+  request({ url: '/api/statistics/bookings/weekly-days', method: 'get' })
+
+// 获取一周内每天各租期的收入详情
+export const getDailyIncomeBreakdown = () =>
+  request({ url: '/api/statistics/bookings/daily-breakdown', method: 'get' })
+
+// ============ 超时费用 API ============
+export const getOvertimeFees = () =>
+  request({ url: '/api/overtime-fee', method: 'get' })
+
+export const updateOvertimeFee = (data) =>
+  request({ url: '/api/overtime-fee', method: 'put', data })
+
+export const addOvertimeFee = (data) =>
+  request({ url: '/api/overtime-fee', method: 'post', data })
+
+export const deleteOvertimeFee = (id) =>
+  request({ url: `/api/overtime-fee/${id}`, method: 'delete' })

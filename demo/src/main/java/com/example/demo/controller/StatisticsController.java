@@ -108,4 +108,24 @@ public class StatisticsController {
     public Result<Map<String, Object>> getPeakHours() {
         return Result.success(statisticsService.getPeakHours());
     }
+
+    /**
+     * ID20: 获取一周内每天的热门租赁日统计
+     * GET /api/statistics/bookings/weekly-days
+     * 返回周一到周日的订单数量，用于分析哪天最热门
+     */
+    @GetMapping("/bookings/weekly-days")
+    public Result<Map<String, Object>> getWeeklyDays() {
+        return Result.success(statisticsService.getWeeklyHotDays());
+    }
+
+    /**
+     * ID20: 获取一周内每天各租期的收入详情
+     * GET /api/statistics/bookings/daily-breakdown
+     * 返回每天的收入明细，包含1hr, 4hr, 1day, 1week各租期的收入
+     */
+    @GetMapping("/bookings/daily-breakdown")
+    public Result<Map<String, Object>> getDailyBreakdown() {
+        return Result.success(statisticsService.getDailyIncomeBreakdown());
+    }
 }
