@@ -558,7 +558,24 @@ const confirmReturn = async () => {
     }
 
     await returnScooter(currentBooking.value.id, selectedDepot.value.id)
-    finalCost.value = calculateFinalCost()
+
+    // 重新获取订单信息以获取实际费用（含超时费用）
+    try {
+      const bookings = await getMyActiveBookings()
+      const completed = Array.isArray(bookings) ? bookings.filter(b => b.status === 'COMPLETED') : []
+      if (completed.length > 0) {
+        // 找到刚完成的订单
+        const myBooking = completed.find(b => b.id === currentBooking.value.id)
+        if (myBooking && myBooking.totalCost !== undefined) {
+          finalCost.value = typeof myBooking.totalCost === 'number' ? myBooking.totalCost : parseFloat(myBooking.totalCost)
+          currentBooking.value = { ...currentBooking.value, ...myBooking }
+        }
+      }
+    } catch (e) {
+      console.error('获取订单详情失败:', e)
+      finalCost.value = calculateFinalCost()
+    }
+
     localStorage.removeItem('activeTrip')
     returnVisible.value = false
     isTripEnded.value = true

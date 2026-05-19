@@ -27,3 +27,26 @@ export function getDepotById(id) {
     method: 'get'
   })
 }
+
+export function createDepot(data) {
+  return request({
+    url: '/api/depots',
+    method: 'post',
+    data
+  })
+}
+
+export function updateDepot(id, data) {
+  return request({
+    url: `/api/depots/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+export function deleteDepot(id) {
+  return request({
+    url: `/api/depots/${id}`,
+    method: 'delete'
+  })
+}

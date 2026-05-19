@@ -6,16 +6,24 @@ import java.util.List;
 
 @Mapper
 public interface ScooterMapper {
-    @Select("SELECT * FROM scooters")
+    @Select("SELECT s.id, s.scooter_number, s.status, s.battery_level, s.latitude, s.longitude, " +
+            "COALESCE(s.location, d.name) as location, s.depot_id, d.name as depot_name, s.last_maintenance_date " +
+            "FROM scooters s LEFT JOIN depot d ON s.depot_id = d.id")
     List<Scooter> findAll();
 
-    @Select("SELECT * FROM scooters WHERE id = #{id}")
+    @Select("SELECT s.id, s.scooter_number, s.status, s.battery_level, s.latitude, s.longitude, " +
+            "COALESCE(s.location, d.name) as location, s.depot_id, d.name as depot_name, s.last_maintenance_date " +
+            "FROM scooters s LEFT JOIN depot d ON s.depot_id = d.id WHERE s.id = #{id}")
     Scooter findById(Long id);
 
-    @Select("SELECT * FROM scooters WHERE scooter_number = #{scooterNumber}")
+    @Select("SELECT s.id, s.scooter_number, s.status, s.battery_level, s.latitude, s.longitude, " +
+            "COALESCE(s.location, d.name) as location, s.depot_id, d.name as depot_name, s.last_maintenance_date " +
+            "FROM scooters s LEFT JOIN depot d ON s.depot_id = d.id WHERE s.scooter_number = #{scooterNumber}")
     Scooter findByScooterNumber(String scooterNumber);
 
-    @Select("SELECT * FROM scooters WHERE status = 'AVAILABLE'")
+    @Select("SELECT s.id, s.scooter_number, s.status, s.battery_level, s.latitude, s.longitude, " +
+            "COALESCE(s.location, d.name) as location, s.depot_id, d.name as depot_name, s.last_maintenance_date " +
+            "FROM scooters s LEFT JOIN depot d ON s.depot_id = d.id WHERE s.status = 'AVAILABLE'")
     List<Scooter> findAvailable();
 
     @Select("SELECT * FROM scooters WHERE depot_id = #{depotId}")

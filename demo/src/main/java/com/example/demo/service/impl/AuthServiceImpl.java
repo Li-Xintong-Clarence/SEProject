@@ -91,6 +91,10 @@ public class AuthServiceImpl implements AuthService {
         if (!"CUSTOMER".equals(user.getRole())) {
             throw new RuntimeException("Use /auth/admin/login for admin access");
         }
+        // 检查用户是否被禁用
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new RuntimeException("User account is disabled");
+        }
 
         // 生成JWT Token
         String token = JwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
@@ -129,6 +133,10 @@ public class AuthServiceImpl implements AuthService {
         // 检查是否为管理员
         if (!"ADMIN".equals(user.getRole())) {
             throw new RuntimeException("Not an admin user");
+        }
+        // 检查用户是否被禁用
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new RuntimeException("User account is disabled");
         }
 
         // 生成JWT Token

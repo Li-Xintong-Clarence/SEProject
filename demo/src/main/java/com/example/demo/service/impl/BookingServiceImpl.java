@@ -2,6 +2,7 @@ package com.example.demo.service.impl;
 
 import com.example.demo.entity.Booking;
 import com.example.demo.entity.Depot;
+import com.example.demo.entity.OvertimeFee;
 import com.example.demo.entity.Pricing;
 import com.example.demo.entity.Scooter;
 import com.example.demo.entity.User;
@@ -13,6 +14,7 @@ import com.example.demo.mapper.UserMapper;
 import com.example.demo.service.BookingService;
 import com.example.demo.service.DiscountService;
 import com.example.demo.service.EmailService;
+import com.example.demo.service.OvertimeFeeService;
 import com.example.demo.service.PaymentService;
 import com.example.demo.service.ScooterService;
 import org.slf4j.Logger;
@@ -60,6 +62,9 @@ public class BookingServiceImpl implements BookingService {
 
     @Autowired
     private DiscountService discountService;
+
+    @Autowired
+    private OvertimeFeeService overtimeFeeService;
 
     @Autowired
     private PaymentService paymentService;
@@ -173,6 +178,14 @@ public class BookingServiceImpl implements BookingService {
         logger.info("Insert result: {}, new booking ID: {}", result, booking.getId());
 
         if (result > 0) {
+            // 预订成功后，将车辆状态更新为已预订（RESERVED）
+            // 注意：不是 IN_USE，因为用户可能还没支付
+            Scooter scooter = scooterService.findById(booking.getScooterId());
+            if (scooter != null) {
+                scooter.setStatus("RESERVED");
+                scooterService.update(scooter);
+                logger.info("Scooter {} status updated to RESERVED", booking.getScooterId());
+            }
             logger.info("=== BookingService.save() success ===");
         } else {
             logger.error("=== BookingService.save() failed: insert returns 0 ===");
@@ -226,6 +239,13 @@ public class BookingServiceImpl implements BookingService {
         logger.info("Insert result: {}, new booking ID: {}", result, booking.getId());
 
         if (result > 0) {
+            // 管理员预订成功后，将车辆状态更新为已预订（RESERVED）
+            Scooter scooter = scooterService.findById(booking.getScooterId());
+            if (scooter != null) {
+                scooter.setStatus("RESERVED");
+                scooterService.update(scooter);
+                logger.info("Scooter {} status updated to RESERVED (admin booking)", booking.getScooterId());
+            }
             logger.info("=== BookingService.adminSave() success ===");
         } else {
             logger.error("=== BookingService.adminSave() failed: insert returns 0 ===");
@@ -318,8 +338,15 @@ public class BookingServiceImpl implements BookingService {
         // Determine end depot
         Long actualEndDepotId = endDepotId != null ? endDepotId : booking.getStartDepotId();
         booking.setEndDepotId(actualEndDepotId);
+
+        // 保存原计划结束时间用于计算超时
+        LocalDateTime plannedEndTime = booking.getEndTime();
+
         booking.setStatus("COMPLETED");
         booking.setEndTime(LocalDateTime.now());
+
+        // 计算超时费用
+        calculateAndAddOvertimeFee(booking, plannedEndTime);
 
         // Update scooter: status, battery, location
         if (booking.getScooterId() != null) {
@@ -610,12 +637,64 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
+     * Calculate and add overtime fee to booking
+     * If user exceeds the rental duration, calculate overtime charges based on configuration
+     */
+    private void calculateAndAddOvertimeFee(Booking booking, LocalDateTime plannedEndTime) {
+        if (plannedEndTime == null || booking.getHireOption() == null) {
+            return;
+        }
+
+        LocalDateTime actualEndTime = LocalDateTime.now();
+
+        // Only charge overtime if returned after planned end time
+        if (actualEndTime.isAfter(plannedEndTime)) {
+            OvertimeFee overtimeConfig = overtimeFeeService.findByHireOption(booking.getHireOption());
+            if (overtimeConfig == null || !Boolean.TRUE.equals(overtimeConfig.getEnabled())) {
+                return; // No overtime fee configured or disabled
+            }
+
+            // Calculate overtime duration in minutes
+            long overtimeMinutes = java.time.Duration.between(plannedEndTime, actualEndTime).toMinutes();
+            if (overtimeMinutes <= 0) {
+                return;
+            }
+
+            // Check max overtime limit
+            if (overtimeConfig.getMaxOvertimeMinutes() != null &&
+                overtimeMinutes > overtimeConfig.getMaxOvertimeMinutes()) {
+                overtimeMinutes = overtimeConfig.getMaxOvertimeMinutes();
+            }
+
+            double overtimeCharge = 0;
+            if ("HOURLY".equals(overtimeConfig.getFeeType())) {
+                // 按小时计费：向上取整到半小时
+                double hours = Math.ceil(overtimeMinutes / 30.0) / 2.0;
+                overtimeCharge = hours * overtimeConfig.getFee().doubleValue();
+            } else {
+                // 固定金额：按配置的超时次数收费
+                overtimeCharge = overtimeConfig.getFee().doubleValue();
+            }
+
+            // Add overtime to total cost
+            if (overtimeCharge > 0) {
+                BigDecimal currentCost = booking.getTotalCost() != null ? booking.getTotalCost() : BigDecimal.ZERO;
+                BigDecimal overtimeBigDecimal = BigDecimal.valueOf(overtimeCharge).setScale(2, java.math.RoundingMode.HALF_UP);
+                booking.setTotalCost(currentCost.add(overtimeBigDecimal));
+                logger.info("超时费用计算: bookingId={}, 超时{}分钟, 费用={}",
+                    booking.getId(), overtimeMinutes, overtimeCharge);
+            }
+        }
+    }
+
+    /**
      * Get user statistics
      * Returns: total bookings, total duration, total cost, weekly usage for frequent user detection
      */
     @Override
     public Map<String, Object> getUserStats(Long userId) {
         int totalBookings = bookingMapper.countByUserId(userId);
+        // 累计消费：包含已完成和进行中的订单（取消的不算）
         double totalCost = bookingMapper.sumTotalCostByUserId(userId);
         Integer weeklyHours = bookingMapper.getUserWeeklyHours(userId);
         if (weeklyHours == null) weeklyHours = 0;
@@ -623,21 +702,32 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> userBookings = bookingMapper.findByUserId(userId);
         double totalDuration = 0;
         for (Booking b : userBookings) {
+            // 只统计已支付和已完成的订单（不含已取消）
             if ("PAID".equals(b.getStatus()) || "COMPLETED".equals(b.getStatus())) {
-                totalDuration += switch (b.getHireOption()) {
-                    case "1hr" -> 1;
-                    case "4hr" -> 4;
-                    case "1day" -> 24;
-                    case "1week" -> 168;
-                    default -> 1;
-                };
+                // 使用实际租用时长（分钟），转换为小时
+                if (b.getStartTime() != null && b.getEndTime() != null) {
+                    long minutes = java.time.Duration.between(
+                        b.getStartTime().atZone(java.time.ZoneId.systemDefault()),
+                        b.getEndTime().atZone(java.time.ZoneId.systemDefault())
+                    ).toMinutes();
+                    totalDuration += minutes / 60.0;
+                } else {
+                    // 如果没有结束时间，使用套餐时长
+                    totalDuration += switch (b.getHireOption()) {
+                        case "1hr" -> 1;
+                        case "4hr" -> 4;
+                        case "1day" -> 24;
+                        case "1week" -> 168;
+                        default -> 1;
+                    };
+                }
             }
         }
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalBookings", totalBookings);
-        stats.put("totalDuration", totalDuration);
-        stats.put("totalCost", totalCost);
+        stats.put("totalDuration", Math.round(totalDuration * 10) / 10.0); // 保留一位小数
+        stats.put("totalCost", Math.round(totalCost * 100) / 100.0); // 保留两位小数
         stats.put("weeklyHours", weeklyHours);
         stats.put("isFrequentUser", weeklyHours >= 8);
         return stats;

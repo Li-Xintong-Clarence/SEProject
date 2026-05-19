@@ -64,4 +64,65 @@ public class DepotController {
                 .collect(java.util.stream.Collectors.toList());
         return Result.success(availableDepots);
     }
+
+    /**
+     * 创建服务点
+     * POST /api/depots
+     */
+    @PostMapping
+    public Result<Depot> create(@RequestBody Depot depot) {
+        if (depot.getStatus() == null) {
+            depot.setStatus("ACTIVE");
+        }
+        if (depot.getDepotNumber() == null || depot.getDepotNumber().isEmpty()) {
+            return Result.error("服务点编号不能为空");
+        }
+        // 检查编号是否已存在
+        Depot existing = depotService.findByNumber(depot.getDepotNumber());
+        if (existing != null) {
+            return Result.error("服务点编号已存在");
+        }
+        boolean success = depotService.save(depot);
+        if (success) {
+            return Result.success(depot);
+        }
+        return Result.error("创建失败");
+    }
+
+    /**
+     * 更新服务点
+     * PUT /api/depots/{id}
+     */
+    @PutMapping("/{id}")
+    public Result<Depot> update(@PathVariable Long id, @RequestBody Depot depot) {
+        depot.setId(id);
+        // 检查编号是否与其他服务点冲突
+        Depot existing = depotService.findByNumber(depot.getDepotNumber());
+        if (existing != null && !existing.getId().equals(id)) {
+            return Result.error("服务点编号已存在");
+        }
+        boolean success = depotService.update(depot);
+        if (success) {
+            return Result.success(depot);
+        }
+        return Result.error("更新失败");
+    }
+
+    /**
+     * 删除服务点
+     * DELETE /api/depots/{id}
+     */
+    @DeleteMapping("/{id}")
+    public Result<String> delete(@PathVariable Long id) {
+        // 检查该服务点下是否有车辆
+        Map<String, Object> depotInfo = depotService.getDepotWithScooterCount(id);
+        if (depotInfo != null && (Long) depotInfo.getOrDefault("totalScooters", 0L) > 0) {
+            return Result.error("该服务点下仍有车辆，无法删除");
+        }
+        boolean success = depotService.deleteById(id);
+        if (success) {
+            return Result.success("删除成功");
+        }
+        return Result.error("删除失败");
+    }
 }

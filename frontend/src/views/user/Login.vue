@@ -147,13 +147,6 @@
         </footer>
       </div>
     </section>
-
-    <!-- 免责声明弹窗 -->
-    <DisclaimerDialog
-      v-model="showDisclaimer"
-      @accept="handleDisclaimerAccept"
-      @decline="handleDisclaimerDecline"
-    />
   </main>
 </template>
 
@@ -162,21 +155,16 @@ import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/auth'
-import DisclaimerDialog from '@/components/DisclaimerDialog.vue'
 
 const router = useRouter()
 const formRef = ref(null)
 const loading = ref(false)
-const showDisclaimer = ref(false)
 
 // 错误状态 - 用于 ARIA 属性
 const errors = reactive({
   username: '',
   password: ''
 })
-
-// 检查是否已同意过免责条款
-const hasAgreedDisclaimer = localStorage.getItem('disclaimer_agreed') === 'true'
 
 const form = ref({
   username: '',
@@ -235,14 +223,10 @@ const handleLogin = () => {
       if (res.token && res.user) {
         localStorage.setItem('token', res.token)
         localStorage.setItem('user', JSON.stringify(res.user))
-        if (!hasAgreedDisclaimer) {
-          showDisclaimer.value = true
-        } else {
-          ElMessage.success('登录成功')
-          window.dispatchEvent(new Event('login-state-change'))
-          const redirect = router.currentRoute.value.query.redirect || '/scooters'
-          router.push(redirect)
-        }
+        ElMessage.success('登录成功')
+        window.dispatchEvent(new Event('login-state-change'))
+        const redirect = router.currentRoute.value.query.redirect || '/scooters'
+        router.push(redirect)
       } else {
         ElMessage.error('登录失败：返回数据格式不正确')
       }
@@ -263,24 +247,6 @@ const handleLogin = () => {
       loading.value = false
     })
 }
-
-// 用户同意免责条款
-const handleDisclaimerAccept = () => {
-  localStorage.setItem('disclaimer_agreed', 'true')
-  ElMessage.success('登录成功')
-  // 触发登录状态变更事件
-  window.dispatchEvent(new Event('login-state-change'))
-  const redirect = router.currentRoute.value.query.redirect || '/scooters'
-  router.push(redirect)
-}
-
-// 用户不同意免责条款
-const handleDisclaimerDecline = () => {
-  // 退出登录
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-  ElMessage.warning('您需要同意用户协议才能使用服务')
-}
 </script>
 
 <style scoped>
@@ -295,8 +261,54 @@ const handleDisclaimerDecline = () => {
     grid-template-columns: 1fr;
   }
   .login-hero {
-    min-height: 280px;
-    padding: 40px 24px;
+    min-height: 200px;
+    padding: 30px 20px;
+  }
+  .hero-title {
+    font-size: 28px;
+  }
+  .hero-tag {
+    font-size: 14px;
+  }
+  .hero-desc {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .hero-features {
+    gap: 20px;
+  }
+  .feature-item .feature-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .feature-item span {
+    font-size: 11px;
+  }
+  .login-form-wrapper {
+    padding: 24px 16px;
+  }
+  .form-title {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-hero {
+    min-height: 160px;
+    padding: 20px 16px;
+  }
+  .hero-title {
+    font-size: 24px;
+  }
+  .hero-features {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .login-form-wrapper {
+    padding: 20px 12px;
+  }
+  .form-title {
+    font-size: 20px;
   }
 }
 

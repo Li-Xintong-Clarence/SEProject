@@ -26,13 +26,33 @@ public class UserController {
     @Autowired
     private BookingService bookingService;
 
+    @Autowired
+    private com.example.demo.mapper.UserMapper userMapper;
+
     /**
      * 获取所有用户列表（管理员）
      * GET /api/users
      */
     @GetMapping
-    public Result<List<User>> findAll() {
-        return Result.success(userService.findAll());
+    public Result<List<Map<String, Object>>> findAll() {
+        List<User> users = userService.findAll();
+        // 转换用户列表，为每个用户添加累计租用时长
+        List<Map<String, Object>> result = users.stream().map(user -> {
+            java.util.HashMap<String, Object> map = new java.util.HashMap<>();
+            map.put("id", user.getId());
+            map.put("username", user.getUsername());
+            map.put("email", user.getEmail());
+            map.put("phone", user.getPhone());
+            map.put("role", user.getRole());
+            map.put("userType", user.getUserType());
+            map.put("isActive", user.getIsActive());
+            map.put("createdAt", user.getRegistrationDate());
+            // 查询该用户的累计租用时长
+            Double totalDuration = userMapper.getUserTotalDuration(user.getId());
+            map.put("totalDuration", totalDuration != null ? Math.round(totalDuration * 10) / 10.0 : 0.0);
+            return map;
+        }).collect(java.util.stream.Collectors.toList());
+        return Result.success(result);
     }
 
     /**
@@ -40,8 +60,8 @@ public class UserController {
      * GET /api/users/all
      */
     @GetMapping("/all")
-    public Result<List<User>> findAllAlias() {
-        return Result.success(userService.findAll());
+    public Result<List<Map<String, Object>>> findAllAlias() {
+        return findAll(); // 复用上面的逻辑
     }
 
     /**

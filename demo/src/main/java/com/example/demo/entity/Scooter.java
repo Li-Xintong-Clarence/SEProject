@@ -27,6 +27,8 @@ public class Scooter {
     private String location;
     /** 服务点ID（绑定到哪个服务点，NULL表示未绑定） */
     private Long depotId;
+    /** 服务点名称（用于前端展示，从depot表关联查询） */
+    private String depotName;
     /** 最后维护时间 */
     private LocalDateTime lastMaintenanceDate;
 }

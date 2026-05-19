@@ -111,6 +111,7 @@
             class="scooter-card"
             :class="{
               'avail': scooter.status === 'AVAILABLE',
+              'reserved': scooter.status === 'RESERVED',
               'inuse': scooter.status === 'IN_USE',
               'low': scooter.batteryLevel < 30
             }"
@@ -271,15 +272,32 @@ const getBrowserLocation = () => {
 
 const reverseGeocode = (lng, lat) => {
   return new Promise((resolve) => {
+    if (!AMapInstance) {
+      // 如果地图实例未准备好，返回成都作为默认值
+      resolve('成都')
+      return
+    }
     AMapInstance.plugin('AMap.Geocoder', () => {
-      const geocoder = new AMap.Geocoder()
+      const geocoder = new AMap.Geocoder({ city: '成都' })
       geocoder.getAddress([lng, lat], (status, result) => {
-        if (status === 'complete' && result.regeocode) {
+        if (status === 'complete' && result && result.regeocode) {
           const address = result.regeocode.formattedAddress
-          const shortAddress = address.replace(/^(四川省|成都市|.*?区|.*?县)/, '')
-          resolve(shortAddress || '未知位置')
+          // 简化地址
+          const shortAddress = address
+            .replace(/^(中国|四川省|成都市|.*?区|.*?县)/, '')
+            .replace(/街道$/, '')
+            .trim()
+          resolve(shortAddress || '成都')
         } else {
-          resolve('未知位置')
+          // 地理编码失败时，根据坐标范围返回大致位置
+          // 成都经度: 102~104.5, 纬度: 30~31.5
+          if (lng >= 102 && lng <= 104.5 && lat >= 30 && lat <= 31.5) {
+            resolve('成都')
+          } else if (lng >= 113 && lng <= 123 && lat >= 22 && lat <= 42) {
+            resolve('中国')
+          } else {
+            resolve('未知位置')
+          }
         }
       })
     })
@@ -412,7 +430,7 @@ const getBatteryClass = (level) => {
 }
 
 const getStatusText = (status) => {
-  const map = { 'AVAILABLE': '可租', 'IN_USE': '使用中', 'MAINTENANCE': '维护中', 'LOW_BATTERY': '低电量' }
+  const map = { 'AVAILABLE': '可租', 'RESERVED': '已预订', 'IN_USE': '使用中', 'MAINTENANCE': '维护中', 'LOW_BATTERY': '低电量' }
   return map[status] || status
 }
 
@@ -431,9 +449,9 @@ onMounted(async () => {
     await new Promise(resolve => setTimeout(resolve, 300))
 
     console.log('开始加载高德地图 API...')
-    
+
     const AMap = await AMapLoader.load({
-      key: '27ec2a64ff4acc99ccf61c8c897a69d3',
+      key: import.meta.env.VITE_AMAP_KEY || '27ec2a64ff4acc99ccf61c8c897a69d3',
       version: '2.0',
       plugins: ['AMap.Geocoder']
     })
@@ -441,15 +459,18 @@ onMounted(async () => {
     console.log('高德地图 API 加载完成')
 
     const mapContainer = document.getElementById('map-container')
-    if (!mapContainer) return
+    if (!mapContainer) {
+      console.error('地图容器未找到')
+      loading.value = false
+      return
+    }
 
-    console.log('创建地图实例...')
     const map = new AMap.Map('map-container', {
       zoom: 15,
       center: [DEFAULT_LNG, DEFAULT_LAT],
       resizeEnable: true
     })
-    
+
     console.log('地图实例创建成功')
 
     mapInstance = map
@@ -1084,6 +1105,7 @@ onMounted(async () => {
 }
 
 :global(.scooter-marker.avail) { color: #2d8a4e; }
+:global(.scooter-marker.reserved) { color: #e6a23c; }
 :global(.scooter-marker.inuse) { color: #5a7a9a; }
 :global(.scooter-marker.low) { color: #c4880c; }
 

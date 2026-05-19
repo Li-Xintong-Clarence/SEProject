@@ -128,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watchEffect } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Location, Van, User, ArrowDown, SwitchButton, Menu } from '@element-plus/icons-vue'
@@ -197,8 +197,7 @@ const handleLogout = () => {
   window.location.href = '/login'
 }
 
-watchEffect(() => {
-  const path = route.path
+watch(() => route.path, (path) => {
   if (path.includes('scooters') || path.includes('booking')) {
     activeIndex.value = 'scooters'
   } else if (path.includes('trip')) {

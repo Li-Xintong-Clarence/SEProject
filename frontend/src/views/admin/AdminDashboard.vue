@@ -344,6 +344,10 @@
                   <el-icon><Warning /></el-icon>
                   <span>{{ depot.name }} 库存不足 ({{ depot.currentStock }}/{{ depot.capacity }})</span>
                 </div>
+                <div v-for="depot in overflowDepots" :key="'overflow-' + depot.id" class="alert-item danger">
+                  <el-icon><WarningFilled /></el-icon>
+                  <span>{{ depot.name }} 库存溢出 ({{ depot.currentStock }}/{{ depot.capacity }})</span>
+                </div>
                 <div v-for="scooter in maintenanceNeeded.slice(0, 3)" :key="scooter.id" class="alert-item info">
                   <el-icon><Tools /></el-icon>
                   <span>{{ scooter.scooterNumber }} 需要维护</span>
@@ -509,12 +513,13 @@
               <el-table-column prop="depotId" label="服务点" width="130">
                 <template #default="{ row }">{{ getDepotName(row.depotId) }}</template>
               </el-table-column>
-              <el-table-column label="操作" width="230" fixed="right">
+              <el-table-column label="操作" width="280" fixed="right">
                 <template #default="{ row }">
                   <div class="action-buttons">
                     <el-button size="small" type="success" plain @click="setStatus(row.id, 'AVAILABLE')">可用</el-button>
                     <el-button size="small" type="warning" plain @click="setStatus(row.id, 'IN_USE')">使用中</el-button>
                     <el-button size="small" type="info" plain @click="setStatus(row.id, 'MAINTENANCE')">维护</el-button>
+                    <el-button size="small" type="primary" plain @click="openBatteryDialog(row)">⚡电量</el-button>
                   </div>
                 </template>
               </el-table-column>
@@ -528,6 +533,9 @@
             <div class="card-header">
               <h3>服务点列表</h3>
               <div class="header-actions">
+                <el-button type="primary" @click="openAddDepotDialog">
+                  <el-icon><Plus /></el-icon>新增服务点
+                </el-button>
                 <el-button type="primary" @click="refreshData">
                   <el-icon><Refresh /></el-icon>刷新
                 </el-button>
@@ -535,16 +543,30 @@
             </div>
             <el-table :data="depots" stripe v-loading="loading">
               <el-table-column prop="id" label="ID" width="70" />
+              <el-table-column prop="depotNumber" label="编号" width="100" />
               <el-table-column prop="name" label="名称" min-width="160" />
-              <el-table-column prop="address" label="地址" min-width="240" />
-              <el-table-column prop="latitude" label="纬度" width="110" />
-              <el-table-column prop="longitude" label="经度" width="110" />
+              <el-table-column prop="address" label="地址" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="latitude" label="纬度" width="100" />
+              <el-table-column prop="longitude" label="经度" width="100" />
               <el-table-column prop="capacity" label="容量" width="80" />
-              <el-table-column prop="currentStock" label="当前库存" width="100">
+              <el-table-column prop="currentStock" label="当前库存" width="110">
                 <template #default="{ row }">
                   <span class="stock-badge" :class="getStockClass(row.currentStock, row.capacity)">
                     {{ row.currentStock }}/{{ row.capacity }}
                   </span>
+                </template>
+              </el-table-column>
+              <el-table-column label="状态" width="90">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'" size="small">
+                    {{ row.status === 'ACTIVE' ? '正常' : '停用' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="140" fixed="right">
+                <template #default="{ row }">
+                  <el-button size="small" type="primary" plain @click="openEditDepotDialog(row)">编辑</el-button>
+                  <el-button size="small" type="danger" plain @click="handleDeleteDepot(row)" :disabled="row.totalScooters > 0">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -675,7 +697,73 @@
               </el-table-column>
             </el-table>
           </div>
+          <!-- 超时费用配置 -->
+          <div class="content-card overtime-card">
+            <div class="card-header">
+              <h3>超时费用配置</h3>
+              <p class="card-tip">超过租赁时长后，每超时一定时间收取的费用</p>
+            </div>
+            <el-table :data="overtimeFees" stripe v-loading="overtimeLoading">
+              <el-table-column prop="hireOption" label="租期" width="100" />
+              <el-table-column prop="hireOptionName" label="说明" min-width="140" />
+              <el-table-column prop="feeType" label="收费方式" width="110" align="center">
+                <template #default="{ row }">
+                  <el-tag size="small" :type="row.feeType === 'HOURLY' ? 'primary' : 'warning'">
+                    {{ row.feeType === 'HOURLY' ? '按小时' : '固定' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="超时费率" width="140" align="center">
+                <template #default="{ row }">
+                  <span class="overtime-fee-text">
+                    ¥{{ Number(row.fee).toFixed(2) }}{{ row.feeType === 'HOURLY' ? '/小时' : '/次' }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="maxOvertimeMinutes" label="最大超时" width="100" align="center">
+                <template #default="{ row }">
+                  {{ row.maxOvertimeMinutes ? (row.maxOvertimeMinutes + '分钟') : '不限' }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="enabled" label="状态" width="80" align="center">
+                <template #default="{ row }">
+                  <el-switch v-model="row.enabled" @change="toggleOvertimeEnabled(row)" size="small" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="80" align="center">
+                <template #default="{ row }">
+                  <el-button type="primary" size="small" @click="editOvertimeFee(row)">编辑</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
         </div>
+
+        <!-- 超时费用编辑弹窗 -->
+        <el-dialog v-model="overtimeDialogVisible" title="编辑超时费用" width="450px">
+          <el-form :model="overtimeForm" label-width="110px">
+            <el-form-item label="租期">
+              <el-input v-model="overtimeForm.hireOption" disabled />
+            </el-form-item>
+            <el-form-item label="收费方式">
+              <el-radio-group v-model="overtimeForm.feeType">
+                <el-radio value="HOURLY">按小时</el-radio>
+                <el-radio value="FIXED">固定金额</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item :label="overtimeForm.feeType === 'HOURLY' ? '每小时费用' : '固定费用'">
+              <el-input-number v-model="overtimeForm.fee" :min="0" :precision="2" :step="0.5" controls-position="right" style="width: 100%" />
+            </el-form-item>
+            <el-form-item label="最大超时(分钟)">
+              <el-input-number v-model="overtimeForm.maxOvertimeMinutes" :min="0" :step="30" controls-position="right" style="width: 100%" />
+              <span style="font-size: 12px; color: #909399; margin-left: 8px">0=不限制</span>
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-button @click="overtimeDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="saveOvertimeFee" :loading="saving">保存</el-button>
+          </template>
+        </el-dialog>
 
         <!-- 折扣管理 -->
         <div v-if="activeTab === 'discount'" class="tab-content">
@@ -952,6 +1040,19 @@
               <div ref="chartPeakHoursRef" class="chart"></div>
             </div>
           </div>
+          <div class="overview-row">
+            <div class="chart-card">
+              <div class="card-header">
+                <h3>一周内热门租赁日</h3>
+                <el-tag v-if="hottestDay !== '无数据'" type="danger">{{ hottestDay }} 最热门 ({{ hottestDayCount }} 单)</el-tag>
+              </div>
+              <div ref="chartHotDaysRef" class="chart"></div>
+            </div>
+            <div class="chart-card">
+              <div class="card-header"><h3>每日收入明细</h3></div>
+              <div ref="chartDailyBreakdownRef" class="chart"></div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -984,6 +1085,78 @@
         <el-button type="primary" :loading="processLoading" @click="submitProcess">提交处理</el-button>
       </template>
     </el-dialog>
+
+    <!-- ID16: 电量配置弹窗 -->
+    <el-dialog v-model="batteryDialogVisible" title="配置车辆电量" width="400px" class="battery-dialog">
+      <el-form v-if="batteryRow" :model="batteryForm" label-width="80px">
+        <el-form-item label="车辆编号">
+          <span class="battery-scooter-number">{{ batteryRow.scooterNumber }}</span>
+        </el-form-item>
+        <el-form-item label="当前电量">
+          <div class="battery-current">
+            <div class="battery-bar-large">
+              <div class="battery-fill-large" :class="getBatteryClass(batteryRow.batteryLevel)" :style="{ width: (batteryRow.batteryLevel || 0) + '%' }"></div>
+            </div>
+            <span class="battery-percentage">{{ batteryRow.batteryLevel || 0 }}%</span>
+          </div>
+        </el-form-item>
+        <el-form-item label="设置电量">
+          <el-slider
+            v-model="batteryForm.batteryLevel"
+            :min="0"
+            :max="100"
+            :step="5"
+            show-stops
+            :format-tooltip="(val) => val + '%'"
+          />
+          <div class="battery-presets">
+            <el-button size="small" @click="batteryForm.batteryLevel = 100">100%</el-button>
+            <el-button size="small" @click="batteryForm.batteryLevel = 75">75%</el-button>
+            <el-button size="small" @click="batteryForm.batteryLevel = 50">50%</el-button>
+            <el-button size="small" @click="batteryForm.batteryLevel = 25">25%</el-button>
+            <el-button size="small" type="warning" @click="batteryForm.batteryLevel = 10">低电量</el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batteryDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="batteryLoading" @click="saveBatteryLevel">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 服务点管理对话框 -->
+    <el-dialog v-model="depotDialogVisible" :title="depotDialogTitle" width="500px" destroy-on-close>
+      <el-form :model="depotForm" label-width="100px">
+        <el-form-item label="服务点编号" required>
+          <el-input v-model="depotForm.depotNumber" placeholder="如 D001" />
+        </el-form-item>
+        <el-form-item label="服务点名称" required>
+          <el-input v-model="depotForm.name" placeholder="如 服务点 A（地铁站A口）" />
+        </el-form-item>
+        <el-form-item label="地址">
+          <el-input v-model="depotForm.address" placeholder="详细地址描述" />
+        </el-form-item>
+        <el-form-item label="纬度">
+          <el-input-number v-model="depotForm.latitude" :precision="6" :step="0.001" :min="-90" :max="90" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="经度">
+          <el-input-number v-model="depotForm.longitude" :precision="6" :step="0.001" :min="-180" :max="180" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="最大容量">
+          <el-input-number v-model="depotForm.capacity" :min="1" :max="200" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-radio-group v-model="depotForm.status">
+            <el-radio value="ACTIVE">正常</el-radio>
+            <el-radio value="INACTIVE">停用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="depotDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="depotSubmitting" @click="submitDepot">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -991,12 +1164,13 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import {
   DataLine, TrendCharts, User, Van, LocationFilled, Tickets, Money, Sell,
-  Warning, ChatDotRound, SwitchButton, Refresh, HomeFilled, Top,
-  Calendar, Clock, Search, MapLocation, Tools, UserFilled, CircleCheck, Coin, Menu
+  Warning, WarningFilled, ChatDotRound, SwitchButton, Refresh, HomeFilled, Top,
+  Calendar, Clock, Search, MapLocation, Tools, UserFilled, CircleCheck, Coin, Menu,
+  Plus, InfoFilled
 } from '@element-plus/icons-vue'
 import {
   adminCreateBooking,
@@ -1006,6 +1180,8 @@ import {
   processFeedback,
   getAdminPricing,
   updateAdminPricing,
+  getOvertimeFees,
+  updateOvertimeFee,
   getStatisticsOverview,
   getStatisticsUsers,
   getStatisticsBookings,
@@ -1013,12 +1189,14 @@ import {
   getStatisticsUserGrowth,
   getStatisticsTopUsers,
   getStatisticsBookingStatus,
-  getStatisticsPeakHours
+  getStatisticsPeakHours,
+  getWeeklyHotDays,
+  getDailyIncomeBreakdown
 } from '@/api/admin'
 import { listUsers, updateUserStatus } from '@/api/user'
-import { getScooters, updateScooterStatus } from '@/api/scooter'
+import { getScooters, updateScooterStatus, updateScooterBattery } from '@/api/scooter'
 import { listHireOptions, updateHireOption } from '@/api/hireOptions'
-import { getDepots } from '@/api/depot'
+import { getDepots, createDepot, updateDepot, deleteDepot } from '@/api/depot'
 import { listDiscounts } from '@/api/discount'
 import { updateIssueReport } from '@/api/issues'
 import request from '@/utils/request'
@@ -1028,6 +1206,8 @@ const router = useRouter()
 // 状态
 const activeTab = ref('overview')
 const loading = ref(false)
+const overtimeLoading = ref(false)
+const saving = ref(false)
 const adminName = ref('管理员')
 const userSearch = ref('')
 const mobileMenuVisible = ref(false)
@@ -1038,9 +1218,38 @@ const scooters = ref([])
 const depots = ref([])
 const pricingList = ref([])
 const hireOptions = ref([])
+const overtimeFees = ref([])
 const feedbacks = ref([])
 const issueReports = ref([])
+const issuePriorityFilter = ref('')
 const discounts = ref([])
+
+// 超时费用弹窗
+const overtimeDialogVisible = ref(false)
+const overtimeForm = ref({
+  id: null,
+  hireOption: '',
+  hireOptionName: '',
+  feeType: 'HOURLY',
+  fee: 0,
+  maxOvertimeMinutes: null,
+  enabled: true
+})
+
+// 服务点管理状态
+const depotDialogVisible = ref(false)
+const depotForm = ref({
+  id: null,
+  depotNumber: '',
+  name: '',
+  address: '',
+  latitude: '',
+  longitude: '',
+  capacity: 10,
+  status: 'ACTIVE'
+})
+const depotDialogTitle = ref('新增服务点')
+const depotSubmitting = ref(false)
 
 // 统计数据
 const totalIncome = ref('0.00')
@@ -1066,11 +1275,15 @@ const chartDailyRef2 = ref(null)
 const chartUserGrowthRef = ref(null)
 const chartOrderStatusRef = ref(null)
 const chartPeakHoursRef = ref(null)
+const chartHotDaysRef = ref(null)
+const chartDailyBreakdownRef = ref(null)
 let chartOption = null
 let chartDaily = null
 let chartUserGrowth = null
 let chartOrderStatus = null
 let chartPeakHours = null
+let chartHotDays = null
+let chartDailyBreakdown = null
 
 // 地图
 let adminMap = null
@@ -1113,8 +1326,15 @@ const processRow = ref(null)
 const processForm = ref({ status: 'OPEN', priority: 'LOW', adminResponse: '' })
 const processLoading = ref(false)
 
-// ID14: 故障工单优先级筛选
-const issuePriorityFilter = ref('')
+// ID16: 电量配置
+const batteryDialogVisible = ref(false)
+const batteryRow = ref(null)
+const batteryForm = ref({ batteryLevel: 100 })
+const batteryLoading = ref(false)
+
+// 热门租赁日统计
+const hottestDay = ref('无数据')
+const hottestDayCount = ref(0)
 
 // 统计数据计算
 const availableCount = computed(() => scooters.value.filter(s => s.status === 'AVAILABLE').length)
@@ -1177,18 +1397,23 @@ const getSelectedScooterInfo = () => {
 const lowBatteryScooters = computed(() => scooters.value.filter(s => s.batteryLevel && s.batteryLevel < 20))
 const maintenanceNeeded = computed(() => scooters.value.filter(s => s.status === 'MAINTENANCE'))
 const lowStockDepots = computed(() => depots.value.filter(d => {
+  if (!d.capacity || d.capacity <= 0) return false
   const ratio = d.currentStock / d.capacity
-  return ratio < 0.3
+  return ratio < 0.3 // 库存不足（低于30%）
+}))
+const overflowDepots = computed(() => depots.value.filter(d => {
+  if (!d.capacity || d.capacity <= 0) return false
+  return d.currentStock > d.capacity // 库存溢出（超过容量）
 }))
 
 // 工具函数
 const getStatusType = (status) => {
-  const map = { AVAILABLE: 'success', IN_USE: 'warning', MAINTENANCE: 'info', RETIRED: 'danger' }
+  const map = { AVAILABLE: 'success', RESERVED: 'warning', IN_USE: 'warning', MAINTENANCE: 'info', RETIRED: 'danger' }
   return map[status] || 'info'
 }
 
 const getStatusText = (status) => {
-  const map = { AVAILABLE: '可用', IN_USE: '使用中', MAINTENANCE: '维护中', RETIRED: '退役' }
+  const map = { AVAILABLE: '可用', RESERVED: '已预订', IN_USE: '使用中', MAINTENANCE: '维护中', RETIRED: '退役' }
   return map[status] || status
 }
 
@@ -1250,6 +1475,7 @@ const refreshData = async () => {
       loadDepots(),
       loadPricing(),
       loadHireOptions(),
+      loadOvertimeFees(),
       loadFeedbacks(),
       loadIssues(),
       // loadDiscounts(), // TODO: 后端接口修复后再启用
@@ -1315,6 +1541,90 @@ const loadDepots = async () => {
   } catch (e) { console.error(e) }
 }
 
+// 服务点管理函数
+const openAddDepotDialog = () => {
+  depotForm.value = {
+    id: null,
+    depotNumber: '',
+    name: '',
+    address: '',
+    latitude: '',
+    longitude: '',
+    capacity: 10,
+    status: 'ACTIVE'
+  }
+  depotDialogTitle.value = '新增服务点'
+  depotDialogVisible.value = true
+}
+
+const openEditDepotDialog = (row) => {
+  depotForm.value = {
+    id: row.id,
+    depotNumber: row.depotNumber || '',
+    name: row.name || '',
+    address: row.address || '',
+    latitude: row.latitude || '',
+    longitude: row.longitude || '',
+    capacity: row.capacity || 10,
+    status: row.status || 'ACTIVE'
+  }
+  depotDialogTitle.value = '编辑服务点'
+  depotDialogVisible.value = true
+}
+
+const submitDepot = async () => {
+  if (!depotForm.value.depotNumber || !depotForm.value.name) {
+    ElMessage.warning('请填写服务点编号和名称')
+    return
+  }
+  depotSubmitting.value = true
+  try {
+    const data = {
+      depotNumber: depotForm.value.depotNumber,
+      name: depotForm.value.name,
+      address: depotForm.value.address,
+      latitude: parseFloat(depotForm.value.latitude) || 0,
+      longitude: parseFloat(depotForm.value.longitude) || 0,
+      capacity: parseInt(depotForm.value.capacity) || 10,
+      status: depotForm.value.status
+    }
+    if (depotForm.value.id) {
+      await updateDepot(depotForm.value.id, data)
+      ElMessage.success('更新成功')
+    } else {
+      await createDepot(data)
+      ElMessage.success('创建成功')
+    }
+    depotDialogVisible.value = false
+    await loadDepots()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '操作失败')
+  } finally {
+    depotSubmitting.value = false
+  }
+}
+
+const handleDeleteDepot = async (row) => {
+  if (row.totalScooters > 0) {
+    ElMessage.warning('该服务点下仍有车辆，无法删除')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除服务点「${row.name}」吗？`,
+      '删除确认',
+      { type: 'warning' }
+    )
+    await deleteDepot(row.id)
+    ElMessage.success('删除成功')
+    await loadDepots()
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error(e.response?.data?.message || '删除失败')
+    }
+  }
+}
+
 const loadPricing = async () => {
   try {
     const res = await getAdminPricing()
@@ -1327,6 +1637,15 @@ const loadHireOptions = async () => {
     const res = await listHireOptions()
     hireOptions.value = Array.isArray(res) ? res.map(r => ({ ...r, price: Number(r.price) })) : []
   } catch (e) { console.error(e) }
+}
+
+const loadOvertimeFees = async () => {
+  overtimeLoading.value = true
+  try {
+    const res = await getOvertimeFees()
+    overtimeFees.value = Array.isArray(res) ? res : []
+  } catch (e) { console.error(e) }
+  finally { overtimeLoading.value = false }
 }
 
 const loadFeedbacks = async () => {
@@ -1582,6 +1901,113 @@ const renderOrderAnalysisCharts = () => {
         })
       })
     }
+
+    // 热门租赁日图表
+    if (chartHotDaysRef.value) {
+      const chart = echarts.getInstanceByDom(chartHotDaysRef.value) || echarts.init(chartHotDaysRef.value)
+
+      getWeeklyHotDays().then(res => {
+        const hotDaysData = res?.hotDays || {}
+        const days = Object.keys(hotDaysData)
+        const data = Object.values(hotDaysData)
+
+        // 更新最热门日期
+        hottestDay.value = res?.hottestDay || '无数据'
+        hottestDayCount.value = res?.hottestDayCount || 0
+
+        chart.setOption({
+          color: ['#1e3a5f', '#3b5998', '#6b9ac4', '#94a3b8'],
+          tooltip: { trigger: 'axis' },
+          xAxis: { type: 'category', data: days },
+          yAxis: { type: 'value', name: '订单数' },
+          series: [{
+            type: 'bar',
+            data,
+            itemStyle: {
+              borderRadius: [4, 4, 0, 0],
+              color: (params) => {
+                if (days[params.dataIndex] === hottestDay.value && hottestDay.value !== '无数据') {
+                  return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#d14545' },
+                    { offset: 1, color: '#ef4444' }
+                  ])
+                }
+                return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#1e3a5f' },
+                  { offset: 1, color: '#3b5998' }
+                ])
+              }
+            }
+          }]
+        })
+      }).catch(() => {
+        const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+        const data = [5, 12, 8, 15, 10, 18, 22]
+        chart.setOption({
+          color: ['#1e3a5f'],
+          tooltip: { trigger: 'axis' },
+          xAxis: { type: 'category', data: days },
+          yAxis: { type: 'value', name: '订单数' },
+          series: [{ type: 'bar', data, itemStyle: { borderRadius: [4, 4, 0, 0] } }]
+        })
+      })
+    }
+
+    // 每日收入明细堆叠图
+    if (chartDailyBreakdownRef.value) {
+      const chart = echarts.getInstanceByDom(chartDailyBreakdownRef.value) || echarts.init(chartDailyBreakdownRef.value)
+
+      getDailyIncomeBreakdown().then(res => {
+        const breakdown = res?.dailyBreakdown || {}
+        const dates = Object.keys(breakdown)
+        const option1hr = dates.map(d => breakdown[d]?.['1hr'] || 0)
+        const option4hr = dates.map(d => breakdown[d]?.['4hr'] || 0)
+        const option1day = dates.map(d => breakdown[d]?.['1day'] || 0)
+        const option1week = dates.map(d => breakdown[d]?.['1week'] || 0)
+
+        chart.setOption({
+          color: ['#1e3a5f', '#3b5998', '#6b9ac4', '#94a3b8'],
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' },
+            formatter: (params) => {
+              let total = 0
+              let html = params[0].name + '<br/>'
+              params.forEach(p => {
+                total += p.value
+                html += p.marker + p.seriesName + ': ¥' + p.value.toFixed(2) + '<br/>'
+              })
+              html += '<strong>总计: ¥' + total.toFixed(2) + '</strong>'
+              return html
+            }
+          },
+          legend: { data: ['1小时', '4小时', '1天', '1周'] },
+          xAxis: { type: 'category', data: dates },
+          yAxis: { type: 'value', name: '收入 (¥)' },
+          series: [
+            { name: '1小时', type: 'bar', stack: 'total', data: option1hr },
+            { name: '4小时', type: 'bar', stack: 'total', data: option4hr },
+            { name: '1天', type: 'bar', stack: 'total', data: option1day },
+            { name: '1周', type: 'bar', stack: 'total', data: option1week }
+          ]
+        })
+      }).catch(() => {
+        const dates = ['05-13', '05-14', '05-15', '05-16', '05-17', '05-18', '05-19']
+        chart.setOption({
+          color: ['#1e3a5f', '#3b5998', '#6b9ac4', '#94a3b8'],
+          tooltip: { trigger: 'axis' },
+          legend: { data: ['1小时', '4小时', '1天', '1周'] },
+          xAxis: { type: 'category', data: dates },
+          yAxis: { type: 'value', name: '收入 (¥)' },
+          series: [
+            { name: '1小时', type: 'bar', stack: 'total', data: [120, 150, 100, 80, 200, 180, 220] },
+            { name: '4小时', type: 'bar', stack: 'total', data: [80, 120, 150, 100, 150, 200, 180] },
+            { name: '1天', type: 'bar', stack: 'total', data: [60, 80, 100, 120, 100, 150, 200] },
+            { name: '1周', type: 'bar', stack: 'total', data: [40, 60, 80, 100, 80, 100, 120] }
+          ]
+        })
+      })
+    }
   })
 }
 
@@ -1594,7 +2020,7 @@ const initAdminMap = async () => {
     try {
       console.log('开始加载高德地图 API...')
       const AMap = await AMapLoader.load({
-        key: '27ec2a64ff4acc99ccf61c8c897a69d3',
+        key: import.meta.env.VITE_AMAP_KEY || '27ec2a64ff4acc99ccf61c8c897a69d3',
         version: '2.0'
       })
       console.log('高德地图 API 加载完成')
@@ -1728,6 +2154,30 @@ const setStatus = async (id, status) => {
   } catch (e) { console.error(e) }
 }
 
+// ID16: 打开电量配置弹窗
+const openBatteryDialog = (row) => {
+  batteryRow.value = row
+  batteryForm.value.batteryLevel = row.batteryLevel || 100
+  batteryDialogVisible.value = true
+}
+
+// ID16: 保存电量配置
+const saveBatteryLevel = async () => {
+  if (!batteryRow.value) return
+  batteryLoading.value = true
+  try {
+    await updateScooterBattery(batteryRow.value.id, batteryForm.value.batteryLevel)
+    ElMessage.success('电量配置已保存')
+    batteryDialogVisible.value = false
+    await loadScooters()
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('电量配置保存失败')
+  } finally {
+    batteryLoading.value = false
+  }
+}
+
 // ID7: 代客预订（支持已注册和未注册用户）
 const submitStaffBooking = async () => {
   // ID7: 根据预订类型验证
@@ -1765,6 +2215,8 @@ const submitStaffBooking = async () => {
       guestEmail: staffForm.value.guestEmail
     })
     ElMessage.success('代客订单创建成功')
+    // 刷新车辆列表，显示最新的状态变化
+    loadScooters()
     staffForm.value = {
       userId: null,
       scooterId: null,
@@ -1796,6 +2248,36 @@ const saveHireOption = async (row) => {
     await updateHireOption(row.id, { code: row.code, label: row.label, durationMinutes: row.durationMinutes, price: row.price })
     ElMessage.success('租用选项已保存')
   } catch (e) { console.error(e) }
+}
+
+// 超时费用相关
+const editOvertimeFee = (row) => {
+  overtimeForm.value = { ...row }
+  overtimeDialogVisible.value = true
+}
+
+const saveOvertimeFee = async () => {
+  saving.value = true
+  try {
+    await updateOvertimeFee(overtimeForm.value)
+    ElMessage.success('保存成功')
+    overtimeDialogVisible.value = false
+    await loadOvertimeFees()
+  } catch (e) {
+    ElMessage.error('保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+const toggleOvertimeEnabled = async (row) => {
+  try {
+    await updateOvertimeFee({ ...row })
+    ElMessage.success(row.enabled ? '已启用' : '已禁用')
+  } catch (e) {
+    row.enabled = !row.enabled
+    ElMessage.error('操作失败')
+  }
 }
 
 // 处理反馈
@@ -1872,6 +2354,10 @@ onMounted(async () => {
 onUnmounted(() => {
   chartOption?.dispose()
   chartDaily?.dispose()
+  chartOrderStatus?.dispose()
+  chartPeakHours?.dispose()
+  chartHotDays?.dispose()
+  chartDailyBreakdown?.dispose()
   if (adminMap) {
     adminMap.destroy()
     adminMap = null
@@ -2299,6 +2785,27 @@ watch(scooters, () => {
   margin-bottom: 20px;
 }
 
+.overtime-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fcd34d;
+}
+
+.overtime-card .card-header h3 {
+  color: #92400e;
+}
+
+.card-tip {
+  font-size: 13px;
+  color: #92400e;
+  margin: 4px 0 0;
+  font-weight: normal;
+}
+
+.overtime-fee-text {
+  font-weight: 600;
+  color: #d97706;
+}
+
 .header-actions {
   display: flex;
   gap: 12px;
@@ -2695,6 +3202,62 @@ watch(scooters, () => {
 .process-dialog :deep(.el-dialog__title) {
   font-weight: 700;
   color: #1e3a5f;
+}
+
+/* ID16: 电量配置弹窗样式 */
+.battery-dialog :deep(.el-dialog__header) {
+  border-bottom: 1px solid #e8eef5;
+  padding-bottom: 16px;
+}
+
+.battery-dialog :deep(.el-dialog__title) {
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.battery-scooter-number {
+  font-weight: 700;
+  font-size: 16px;
+  color: #1e3a5f;
+}
+
+.battery-current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.battery-bar-large {
+  flex: 1;
+  height: 20px;
+  background: #e8eef5;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.battery-fill-large {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s;
+}
+
+.battery-fill-large.high { background: linear-gradient(90deg, #2d8a4e, #5cb885); }
+.battery-fill-large.medium { background: linear-gradient(90deg, #c4880c, #e6a82d); }
+.battery-fill-large.low { background: linear-gradient(90deg, #d14545, #ef4444); }
+
+.battery-percentage {
+  font-weight: 700;
+  font-size: 18px;
+  color: #1e3a5f;
+  min-width: 50px;
+  text-align: right;
+}
+
+.battery-presets {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
 }
 
 /* 响应式 */

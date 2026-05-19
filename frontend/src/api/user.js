@@ -12,5 +12,5 @@ export const listUsers = () =>
 export const getAllUsers = () =>
   request({ url: '/api/users/all', method: 'get' })
 
-export const updateUserStatus = (id, status) =>
-  request({ url: `/api/users/${id}/status`, method: 'put', data: { status } })
+export const updateUserStatus = (id, isActive) =>
+  request({ url: `/api/users/${id}/status`, method: 'put', data: { isActive } })

@@ -65,8 +65,8 @@
           </el-table-column>
           <el-table-column label="状态" width="100">
             <template #default="{ row }">
-              <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'danger'">
-                {{ row.status === 'ACTIVE' ? '正常' : '禁用' }}
+              <el-tag :type="row.isActive ? 'success' : 'danger'">
+                {{ row.isActive ? '正常' : '禁用' }}
               </el-tag>
             </template>
           </el-table-column>
@@ -80,10 +80,10 @@
               <el-button size="small" @click="viewUserDetail(row)">详情</el-button>
               <el-button
                 size="small"
-                :type="row.status === 'ACTIVE' ? 'danger' : 'success'"
+                :type="row.isActive ? 'danger' : 'success'"
                 @click="toggleUserStatus(row)"
               >
-                {{ row.status === 'ACTIVE' ? '禁用' : '启用' }}
+                {{ row.isActive ? '禁用' : '启用' }}
               </el-button>
             </template>
           </el-table-column>
@@ -106,7 +106,7 @@
         <el-descriptions-item label="邮箱">{{ selectedUser.email }}</el-descriptions-item>
         <el-descriptions-item label="手机号">{{ selectedUser.phone || '—' }}</el-descriptions-item>
         <el-descriptions-item label="用户类型">{{ getUserTypeLabel(selectedUser.userType) }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ selectedUser.status === 'ACTIVE' ? '正常' : '禁用' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ selectedUser.isActive ? '正常' : '禁用' }}</el-descriptions-item>
         <el-descriptions-item label="累计租用时长">{{ selectedUser.totalDuration || 0 }} 小时</el-descriptions-item>
         <el-descriptions-item label="注册时间">{{ formatDate(selectedUser.createdAt) }}</el-descriptions-item>
       </el-descriptions>
@@ -169,7 +169,7 @@ const loadUsers = async () => {
     users.value = Array.isArray(res) ? res : (res?.data || [])
     totalUsers.value = users.value.length
     stats.value.totalUsers = users.value.length
-    stats.value.activeUsers = users.value.filter(u => u.status === 'ACTIVE').length
+    stats.value.activeUsers = users.value.filter(u => u.isActive).length
   } catch (e) {
     console.error(e)
   } finally {
@@ -183,11 +183,11 @@ const viewUserDetail = (user) => {
 }
 
 const toggleUserStatus = async (user) => {
-  const newStatus = user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE'
+  const newStatus = !user.isActive
   try {
     await updateUserStatus(user.id, newStatus)
-    user.status = newStatus
-    ElMessage.success(`用户已${newStatus === 'ACTIVE' ? '启用' : '禁用'}`)
+    user.isActive = newStatus
+    ElMessage.success(`用户已${newStatus ? '启用' : '禁用'}`)
   } catch (e) {
     ElMessage.error('操作失败')
   }

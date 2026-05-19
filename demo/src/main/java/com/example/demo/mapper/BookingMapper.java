@@ -37,7 +37,7 @@ public interface BookingMapper {
     @Select("SELECT COUNT(*) FROM booking WHERE user_id = #{userId}")
     int countByUserId(Long userId);
 
-    @Select("SELECT COALESCE(SUM(total_cost), 0) FROM booking WHERE user_id = #{userId} AND status IN ('PAID', 'COMPLETED')")
+    @Select("SELECT COALESCE(SUM(total_cost), 0) FROM booking WHERE user_id = #{userId} AND status IN ('PAID', 'COMPLETED', 'ACTIVE')")
     Double sumTotalCostByUserId(Long userId);
 
     // ============ 统计查询 ============
@@ -83,4 +83,21 @@ public interface BookingMapper {
     // 工单/故障统计（需要issue_reports表）
     @Select("SELECT COUNT(*) FROM issue_report WHERE status IN ('PENDING', 'OPEN')")
     int countPendingIssues();
+
+    // ID20: 获取一周内每天的订单数量（按星期统计热门租赁日）
+    @Select("SELECT DAYOFWEEK(created_at) as day_of_week, COUNT(*) as count " +
+            "FROM booking " +
+            "WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) " +
+            "GROUP BY DAYOFWEEK(created_at) " +
+            "ORDER BY day_of_week")
+    List<Map<String, Object>> getBookingsByDayOfWeek();
+
+    // ID20: 获取一周内每天各租期的收入统计
+    @Select("SELECT DATE(created_at) as date, hire_option, SUM(total_cost) as income " +
+            "FROM booking " +
+            "WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) " +
+            "AND status IN ('PAID', 'COMPLETED') " +
+            "GROUP BY DATE(created_at), hire_option " +
+            "ORDER BY date, hire_option")
+    List<Map<String, Object>> getDailyIncomeByOption();
 }
